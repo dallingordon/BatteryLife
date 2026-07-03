@@ -9,7 +9,7 @@ Here are the update details of Version 12 compared with Version 11:
 
 # Announcement
 
-Starting from Version 12, all newly added datasets from the BatteryLife project will be released exclusively on the Hugging Face platform. Each new dataset will be made available as an individual dataset under the BatteryLife project space.
+Starting from Version 12, all newly added datasets in the BatteryLife project will be released exclusively on the Hugging Face platform. Each new dataset will be made available as a separate dataset under the BatteryLife project space.
 
-We sincerely invite researchers in battery health management to continue following and supporting the BatteryLife.
+We sincerely thank the community for its continued support of BatteryLife.
 
