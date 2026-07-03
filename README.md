@@ -2,6 +2,8 @@
 
 This is the official repository for [BatteryLife: A Comprehensive Dataset and Benchmark for Battery Life Prediction](https://dl.acm.org/doi/10.1145/3711896.3737372). If you find this repository useful, we would appreciate citations to our paper and stars to this repository.
 
+:triangular_flag_on_post: **News** (2026.07) BatteryLife v12 is now released, with fixes for some reported issues. Please see the [update details](https://github.com/Ruifeng-Tan/BatteryLife/blob/main/assets/Version12_Update_Details.md) for more information.
+
 :triangular_flag_on_post: **News** (2026.04) BatteryLife v11 is now released, with fixes for some reported issues. Please see the [update details](https://github.com/Ruifeng-Tan/BatteryLife/blob/main/assets/Version11_Update_Details.md) for more information.
 
 :triangular_flag_on_post: **News** (2026.02) BatteryLife has exceeded 30,000 downloads. BatteryLife v10 is now released, with fixes for issues reported over the past year (update details are available [here](https://github.com/Ruifeng-Tan/BatteryLife/blob/main/assets/Version10_Update_Details.md)). We sincerely appreciate the support from the community.
@@ -30,14 +32,20 @@ This is the official repository for [BatteryLife: A Comprehensive Dataset and Be
 - **A comprehensive benchmark for battery life prediction:** BatteryLife provides 18 benchmark methods with open-source codes in this repository. The 18 benchmark methods include popular methods for battery life prediction, popular baselines in time series analysis, and a series of baselines proposed by this work.
 
 ## Data availability
-
+### Processed dataset
 The processed datasets can be accessed via multiple ways:
+For the same datasets used in the BatteryLife paper, you can download from:
 
-1. You can download the datasets from [Huggingface](https://huggingface.co/datasets/Hongwxx/BatteryLife_processed/tree/main) [[tutorial]](./assets/Data_download.md).
+1. You can download the BatteryLife datasets from [Huggingface](https://huggingface.co/datasets/Hongwxx/BatteryLife_processed/tree/main) [[tutorial]](./assets/Data_download.md).
 2. You can download the datasets from [Zenodo](https://zenodo.org/records/19688272).
+
+For the newly added datasets after version 12, you can download from:
+
+1. [Processe_Farasis](https://huggingface.co/datasets/Battery-Life/BatteryLife_Farasis).
 
 Note that brief introductions to each dataset are available under the directory of each dataset.
 
+### Raw dataset
 All the raw datasets are publicly available, interested users can download them from the following links:
 
 - Zn-ion, Na-ion, and CALB datasets: [Zenodo link](https://zenodo.org/records/17960956) [Huggingface link](https://huggingface.co/datasets/Hongwxx/BatteryLife_Raw/tree/main) [[tutorial]](./assets/Data_download.md#how-to-download-the-raw-data-from-huggingface)
@@ -51,6 +59,7 @@ All the raw datasets are publicly available, interested users can download them 
 - Stanford: [link](https://data.matr.io/8/)
 - HNEI, SNL, MICH, MICH_EXP and UL_PUR datasets: [BatteryArchive](https://www.batteryarchive.org/index.html).
 - SDU dataset: [link](https://zenodo.org/records/14859405).
+- Farasis dataset: [link](https://doi.org/10.5281/zenodo.17654407).
 
 ## Benchmark results of Battery Life Prediction (BLP) task
 
@@ -208,6 +217,7 @@ series = {KDD '25}
 - Additionally, please cite the original papers that conducted experiments. Please cite [BatteryArchive](https://www.batteryarchive.org/index.html) as the data source for the HNEI, SNL, MICH, MICH_EXP, and UL_PUR datasets.
 - Please cite [BatteryML](https://iclr.cc/virtual/2024/poster/17628) if you use the processed CALCE, MATR, HUST, HNEI, RWTH, SNL, and UL_PUR datasets. Our preprocessing for these 7 datasets relies heavily on BatteryML's preprocessing scripts.
 - Please cite [SDU paper](https://www.cell.com/cell-reports-physical-science/fulltext/S2666-3864(25)00256-5) if you use the SDU dataset.
+- Please cite [Farasis paper](https://www.nature.com/articles/s41586-025-09951-7) if you use the Farasis dataset.
 
 
 ## Acknowledgement
