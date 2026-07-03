@@ -2,7 +2,7 @@
 
 This is the official repository for [BatteryLife: A Comprehensive Dataset and Benchmark for Battery Life Prediction](https://dl.acm.org/doi/10.1145/3711896.3737372). If you find this repository useful, we would appreciate citations to our paper and stars to this repository.
 
-:triangular_flag_on_post: **News** (2026.07) BatteryLife v12 is now released, Added the standardized [Farasis dataset](https://huggingface.co/datasets/Battery-Life/BatteryLife_Farasis). Please see the [update details](https://github.com/Ruifeng-Tan/BatteryLife/blob/main/assets/Version12_Update_Details.md) for more information.
+:triangular_flag_on_post: **News** (2026.07) BatteryLife v12 is now released, Added the standardized [Farasis dataset](https://huggingface.co/datasets/Battery-Life/BatteryLife_Farasis) and the complete version of the XJTU dataset. Please see the [update details](https://github.com/Ruifeng-Tan/BatteryLife/blob/main/assets/Version12_Update_Details.md) for more information.
 
 :triangular_flag_on_post: **News** (2026.04) BatteryLife v11 is now released, with fixes for some reported issues. Please see the [update details](https://github.com/Ruifeng-Tan/BatteryLife/blob/main/assets/Version11_Update_Details.md) for more information.
 
