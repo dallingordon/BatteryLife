@@ -305,6 +305,8 @@ for ii in range(args.itr):
     total_seen_unseen_ids = []
     total_seen_number_of_cycles = []
     model.eval() # set the model to evaluation mode
+
+
     with torch.no_grad():
         for i, (cycle_curve_data, curve_attn_mask, labels, life_class, scaled_life_class, weights, dataset_ids, seen_unseen_ids) in tqdm(enumerate(test_loader)):
             
@@ -326,6 +328,8 @@ for ii in range(args.itr):
             total_dataset_ids = total_dataset_ids + dataset_ids.detach().cpu().numpy().reshape(-1).tolist()
             total_seen_unseen_ids = total_seen_unseen_ids + seen_unseen_ids.detach().cpu().numpy().reshape(-1).tolist()
             total_seen_number_of_cycles = total_seen_number_of_cycles + seen_number_of_cycles.detach().cpu().numpy().reshape(-1).tolist()
+    
+
     
 
     res_path='./results'
