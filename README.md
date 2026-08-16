@@ -229,19 +229,19 @@ This repo is constructed based on the following repos:
 
 ## Star History
 <p align="center">
-  <a href="https://www.star-history.com/Ruifeng-Tan/BatteryLife">
+  <a href="https://star-history.dera.page/#Ruifeng-Tan/BatteryLife&amp;type=date">
     <picture>
       <source
         media="(prefers-color-scheme: dark)"
-        srcset="https://api.star-history.com/chart?repos=Ruifeng-Tan/BatteryLife&amp;type=date&amp;theme=dark&amp;legend=top-left"
+        srcset="https://star-history.dera.page/svg?repos=Ruifeng-Tan/BatteryLife&amp;type=date&amp;theme=dark&amp;legend=top-left"
       />
       <source
         media="(prefers-color-scheme: light)"
-        srcset="https://api.star-history.com/chart?repos=Ruifeng-Tan/BatteryLife&amp;type=date&amp;legend=top-left"
+        srcset="https://star-history.dera.page/svg?repos=Ruifeng-Tan/BatteryLife&amp;type=date&amp;legend=top-left"
       />
       <img
         alt="BatteryLife Star History Chart"
-        src="https://api.star-history.com/chart?repos=Ruifeng-Tan/BatteryLife&amp;type=date&amp;legend=top-left"
+        src="https://star-history.dera.page/svg?repos=Ruifeng-Tan/BatteryLife&amp;type=date&amp;legend=top-left"
       />
     </picture>
   </a>
