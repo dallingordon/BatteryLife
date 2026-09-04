@@ -1,0 +1,98 @@
+Synthetic data + battery EOL/RUL prediction - literature notes (9/4)
+
+Two different questions get conflated under "synthetic data" here:
+  (a) synthesize plausible degradation TRAJECTORIES (capacity-fade curves) to bulk up a
+      training set for an EOL predictor
+  (b) synthesize the actual per-cycle VOLTAGE(-capacity) CURVE at a cycle that was never
+      measured, given a degradation state
+DMA below is squarely (b). The GAN work below is mostly (a), sometimes (b).
+
+1. GANs - noted, not pursuing
+   - Modified TimeGAN for SOH prediction (2025, ScienceDirect S0951832025004983)
+   - GAN-based synthetic augmentation for general battery condition eval (Wiley, er.7013, ~2021)
+   - Conditional GAN + transfer learning for fault detection under limited data (2025,
+     ScienceDirect S0378775325010286)
+   - GAN data augmentation for SOC estimation (ResearchGate 378641146)
+   - Survey: "Generative data augmentation for improving state estimation and prognostics in
+     Li-ion batteries" (2026, ScienceDirect S2352152X26006705) - best single entry point if
+     ever revisited.
+   - DiffBatt: diffusion model for degradation prediction + synthesis (arXiv 2410.23893, 2024) -
+     same category as GANs (learned generative model), newer machinery.
+   - Why I'm skeptical / not pursuing: no physical-consistency constraint on the output curve -
+     the model can produce a voltage curve that is locally plausible but corresponds to no real
+     electrochemical state. Aging datasets are small by GAN standards (tens to low hundreds of
+     cells even pooled), so mode collapse / memorization risk is real. Evaluation in most of
+     these papers is "did the downstream predictor's metric improve," not "is the synthesized
+     curve physically correct" - i.e. no ground truth check on the synthetic samples themselves.
+     DMA below gives that physical-consistency check for free since it's a closed-form
+     electrochemical model, not a learned one.
+
+2. Degradation Mode Analysis (DMA) - the one that matters here
+
+   Origin: Dubarry, Truchot, Liaw et al., "Synthesize battery degradation modes via a
+   diagnostic and prognostic model," J. Power Sources, 2012 (Hawaii Natural Energy Institute).
+   Still active - see Nature Communications 2025 (s41467-025-57968-3), "The importance of
+   degradation mode analysis in parameterising lifetime prediction models of lithium-ion
+   battery degradation," which uses DMA params to parameterize/condition lifetime models
+   directly (not just post-hoc diagnosis).
+
+   Core equation:
+     V_cell(Q) = OCV_pos(z_pos(Q))  -  OCV_neg(z_neg(Q))
+   where z_pos, z_neg are the lithiation-fraction (stoichiometry) windows swept by each
+   electrode as the cell goes from empty to full. OCV_pos(z) and OCV_neg(z) are each
+   electrode's intrinsic open-circuit-voltage curve vs stoichiometry - these are fixed
+   material properties, not degradation-dependent themselves. Get them once, either from
+   half-cell (3-electrode) testing, or reconstructed purely from a full-cell BOL curve
+   against a reference electrode-curve library ("pseudo-OCV" - avoids teardown).
+
+   Degradation enters ONLY as transformations of the stoichiometry windows each electrode is
+   allowed to sweep - three (sometimes four) scalar parameters per cycle:
+     - LLI  (loss of lithium inventory): cyclable Li goes down -> slides the two electrodes'
+       windows out of alignment relative to each other along Q.
+     - LAM_PE (loss of active material, positive electrode): active site loss at the cathode
+       -> compresses/rescales that electrode's usable stoichiometry window.
+     - LAM_NE (loss of active material, negative electrode): same, at the anode.
+     - (some formulations split LAM further into "with loss of lithium" vs "without," for
+       electrodes with staging plateaus - not needed unless curve residuals demand it.)
+
+   Two directions this runs:
+     INVERSE (diagnosis): given a measured V(Q) or dQ/dV curve at some aged cycle, fit
+       (LLI, LAM_PE, LAM_NE) by nonlinear least-squares so the reconstructed curve matches
+       the measured one. Only 3-4 free parameters -> well-conditioned, doesn't need much
+       data per cycle.
+     FORWARD (synthesis - what I actually want): fit how LLI(n), LAM_PE(n), LAM_NE(n) evolve
+       vs cycle number n from a handful of measured/fitted cycles (some assumed parametric
+       growth law - sqrt(n), power law, whatever fits), then forward-evaluate the superposition
+       equation at ANY n to generate a full V(Q) curve for a cycle that was never measured.
+       This is closed-form given the electrode curves + the fitted trend - no training, no
+       network, fully deterministic.
+
+   Classification: purely analytical / physics-based. Electrochemical bookkeeping + curve
+   shift-and-rescale ops on two fixed reference curves. Not ML in any part of the forward
+   synthesis step.
+
+   Relevance to this project: most datasets in BatteryLife (like most aging datasets generally)
+   only log full charge/discharge curves every N cycles, not every single one - so DMA is a
+   candidate for filling in the GAPS BETWEEN measured cycles with physically-consistent
+   synthesized curves, as opposed to CyclePatch's existing augmentation (data_loader.py cutoff
+   sweep), which only varies how many early cycles are exposed, not their resolution/density.
+   Real obstacle: needs electrode reference OCV curves per chemistry, and BatteryLife spans 59
+   chemical systems - extracting/pseudo-OCV-fitting per chemistry is nontrivial and not
+   something the repo provides. Would need to scope this to whichever chemistries have
+   half-cell data available (or are common enough - NMC/graphite, LFP/graphite) before treating
+   it as a general augmentation strategy across the whole mixed dataset.
+
+3. Other close hits, lower priority
+
+   - Tian et al., "Data-driven battery degradation prediction: Forecasting voltage-capacity
+     curves using one-cycle data," EcoMat, 2022 (Wiley eom2.12213). Same target framing as
+     what I described (one cycle -> synthesize future curves) but the forecasting step itself
+     is data-driven/ML, not a closed-form physical model like DMA.
+   - "Fast data augmentation for battery degradation prediction," arXiv 2503.13552 (2025).
+     Purely mathematical too, but coarser than DMA: 3-parameter affine transform (offset,
+     slope, elongation) applied to whole CAPACITY-FADE curves (scalar-per-cycle, not full V(Q)
+     reconstruction), fit from statistics of seed curves rather than electrochemistry. Directly
+     validated at the downstream task DMA papers don't test: CNN/GPR EOL + knee-point
+     prediction, up to 50% of real training curves swappable for synthetic ones across 5
+     datasets without hurting accuracy. Worth reading for the validation methodology even if
+     the synthesis itself is cruder than DMA.

@@ -1,0 +1,79 @@
+9/4 session summary
+
+1. Data download / preprocess
+   - scc/downlaod_data.sh: SGE job, wgets 20 dataset zips from Zenodo record 19688272 into
+     dataset/, unzips, deletes zip on success. Check download.log for "FAILED to unzip" +
+     no leftover .zip to confirm complete.
+   - preprocess_scripts.py (home dir): runs `batteryml preprocess <SRC> ./datasets/raw/<X>
+     ./datasets/processed/<X>/` per dataset - note this path (datasets/raw|processed) does NOT
+     match where downlaod_data.sh drops files (dataset/) - the dataloader actually reads
+     directly from dataset/<SOURCE>/*.pkl (flat), confirmed by run_main.py/train_eval_scripts
+     root_path convention.
+   - Found MATR incomplete on SCC (MATR_b4c42.pkl missing) - HUST and Tongji loaded fine.
+     Worth spot-checking other source folders' file counts / download.log before assuming
+     "all downloaded" is actually complete everywhere.
+   - Full details: notes/data_notes.txt
+
+2. Dataloader / training loop architecture
+   - Dataset_original (data_provider/data_loader.py) is the one dataset class. Splits per
+     --dataset come from hardcoded file lists in data_provider/data_split_recorder.py, not
+     directory scanning.
+   - Per file: reads early_cycle_threshold (100) cycles, each resampled to
+     charge_discharge_length points, 3 channels [voltage/Vmax, current/nominal_capacity (C-rate),
+     capacity(Qi)/nominal_capacity]. One cell -> many samples via a growing observation window:
+     for i in range(seq_len, early_cycle_threshold+1), attn_mask marks cycles 1..i as real,
+     rest zeroed; label is always the same fixed eol (life/RUL) for every i.
+   - Prediction level: whole-cell single scalar (regression, output_num=1), NOT per-cycle.
+     Intra-cycle encoding (per-cycle -> token) then inter-cycle encoding (attention/RNN over
+     the L=early_cycle_threshold token sequence) then flatten+project to one number.
+   - life_class/class_num=8 classification apparatus exists in the dataset but is DEAD CODE in
+     run_main.py (life_class_criterion defined, never called) - actual task is pure regression,
+     labels standardized via StandardScaler (train-fit), loss MSE or MAPE.
+   - Masking mechanism differs by architecture: Transformers use it as an attention mask;
+     RNNs (CPLSTM etc.) use lengths + pack_padded_sequence + gather at index (length-1); MLPs
+     (CPMLP) ignore the mask arg entirely, rely on collate-fn zeroing.
+   - vali_baseline (utils/tools.py) computes RMSE/MAE/MAPE + alpha-acc(15%,10%) pooled across
+     ALL cells x ALL cutoff-i samples together (mixed observation lengths), plus seen/unseen
+     split. evaluate_model.py's calculate_metrics_based_on_seen_number_of_cycles gives the
+     per-exact-cycle-count breakdown (the paper's "accuracy vs cycles observed" curves).
+
+3. Paper comparability (arXiv 2502.18807 / ACM KDD'25)
+   - Full plan + official train_eval_scripts/*.sh shared-harness values (dataset=MIX_large,
+     seq_len=1, charge_discharge_length=300, early_cycle_threshold=100, task_name=classification)
+     saved in notes/paper_comparability_notes.txt.
+   - Decision: keeping current (non-300) dataloader settings rather than matching paper exactly;
+     plan is to hold dataloader/harness settings identical between my model and any CyclePatch
+     baseline I compare against, let CP baseline keep its own tuned per-model hyperparams, run
+     >=3 matched seeds, report mean+/-std of RMSE/MAE/MAPE/alpha-acc + seen/unseen.
+
+4. Mamba plan (design discussion, not yet implemented)
+   - Masking not needed for causal correctness (Mamba is unidirectional/causal like CPLSTM, so
+     no future-leakage issue like attention would have) - but the same length signal is still
+     needed as a GATHER INDEX (read out prediction at position i-1), because zero-padded cycles
+     after position i still perturb Mamba's state (its Delta/B/C depend on input, zero isn't a
+     true no-op).
+   - Plan: batch size 1, token stream per cell with [start], per-cycle embeddings (flatten+linear,
+     mimicking the existing intra_flatten/intra_embed "vectorize the spectrogram" pattern used by
+     CPTransformer/CPLSTM/CPMLP), [next_cycle] between cycles, [predict] special token read out at
+     the end -> single continuous scalar (linear regression head, NOT classification - confirmed
+     the real task is regression to stay comparable w/ existing RMSE/MAE/MAPE/alpha-acc stack).
+   - Natural augmentation: can randomly sample cutoff point per epoch (cheaper than materializing
+     every cutoff like Dataset_original does) for train; use exhaustive/deterministic cutoffs for
+     val/test so pooled metrics stay comparable to the benchmark's sample counts.
+
+5. Plotting: plot_scripts/plot_dataloader_cycles.py
+   - Loads real Dataset_original (no reimplemented normalization), pulls a file's first + last
+     stored cycle exactly as the model would see it, reports filename + source dataset (traced
+     via original file-prefix logic, works even under a mixed --dataset like MIX_large) + label.
+   - Iterated based on SCC run feedback: font fallback (Arial not installed on SCC -> tries
+     Arial/Liberation Sans/DejaVu Sans, no more findfont warnings), dual y-axis so current's
+     +-5C swings don't squash voltage/Qi's ~0-1 range, then combined into ONE plot showing
+     voltage+Qi for both cycle 1 and last cycle (light/dark shade pairs per channel) with current
+     checked via np.allclose and drawn once if identical across cycles (printed to confirm) or
+     twice if not.
+   - SCC env setup: separate venv at plot_scripts/venv (kept isolated from whatever the Mamba
+     work will need), gitignored. BatteryML (microsoft/BatteryML, NOT the BatteryLife repo -
+     confusingly similar names) had to be git-cloned + `pip install .` from source since it's not
+     on PyPI under the pinned name - cloned to repo-root/batteryml/ (already gitignored).
+   - Usage: source plot_scripts/venv/bin/activate; python plot_dataloader_cycles.py --dataset
+     <NAME> [--file_name X.pkl]. No GPU needed for any of this.
