@@ -16,3 +16,5 @@ outputs/
 dataset/
 
 /tmp*
+
+plot_scripts/venv/

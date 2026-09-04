@@ -3,10 +3,11 @@ Visualize the first and last stored cycle of one processed battery file, exactly
 Dataset_original (data_provider/data_loader.py) normalizes it - same resampling,
 same voltage/current/capacity normalization, no re-implementation.
 
-Mimics the styling conventions of plot_scripts/plt_MATR_sequences.py (Arial font,
-editable pdf.fonttype=42, seaborn color palette, set_ax_linewidth helper) but plots
-the *normalized* [3, charge_discharge_length] curve arrays the dataloader actually
-feeds to the models, rather than raw pkl records.
+Mimics the styling conventions of plot_scripts/plt_MATR_sequences.py (Arial font when
+available, editable pdf.fonttype=42, seaborn color palette, set_ax_linewidth helper,
+dual y-axes so current's larger C-rate swings don't squash voltage/Qi) but plots the
+*normalized* [3, charge_discharge_length] curve arrays the dataloader actually feeds
+to the models, rather than raw pkl records.
 
 Usage (must be able to see the real processed dataset at --root_path, e.g. on the SCC):
     python plot_scripts/plot_dataloader_cycles.py --dataset HUST --flag train
@@ -30,10 +31,25 @@ os.chdir(REPO_ROOT)
 from data_provider.data_loader import Dataset_original
 from data_provider.data_split_recorder import split_recorder
 
-font = {'family': 'Arial'}
+
+def _pick_font(preferred=('Arial', 'Liberation Sans', 'DejaVu Sans')):
+    '''plt_MATR_sequences.py hardcodes Arial (for Illustrator-editable figures), but that
+    font isn't installed everywhere (e.g. the SCC). Use it if present, otherwise fall back
+    to a metric-compatible or matplotlib-bundled font instead of findfont warning on every
+    draw.'''
+    import matplotlib.font_manager as fm
+    available = {f.name for f in fm.fontManager.ttflist}
+    for name in preferred:
+        if name in available:
+            return name
+    return 'DejaVu Sans'  # ships with matplotlib itself, always present
+
+
+FONT_NAME = _pick_font()
+font = {'family': FONT_NAME}
 matplotlib.rcParams['mathtext.fontset'] = 'custom'
-matplotlib.rcParams['mathtext.rm'] = 'Arial'
-matplotlib.rcParams['mathtext.it'] = 'Arial'
+matplotlib.rcParams['mathtext.rm'] = FONT_NAME
+matplotlib.rcParams['mathtext.it'] = FONT_NAME
 matplotlib.rc('font', **font)
 matplotlib.rcParams['pdf.fonttype'] = 42  # make the text editable for Adobe Illustrator
 matplotlib.rcParams['ps.fonttype'] = 42
@@ -76,17 +92,32 @@ def build_dataset_args(root_path, dataset, seq_len, charge_discharge_length, ear
 
 
 def plot_cycle(ax, curve, title):
-    '''curve: [3, fixed_len] normalized array (voltage, current, Qi) exactly as stored by the dataloader'''
+    '''curve: [3, fixed_len] normalized array (voltage, current, Qi) exactly as stored by the
+    dataloader. Voltage and Qi are both normalized to roughly [0, 1] so they share the primary
+    axis; current (C-rate) swings much larger (e.g. -5 to 5) and gets its own twin axis so it
+    doesn't squash the other two - same dual-axis idea as plt_MATR_sequences.py's voltage/current
+    split, extended to a third channel.'''
     x = np.arange(curve.shape[1])
     colors = sns.color_palette()
-    for ch in range(curve.shape[0]):
-        ax.plot(x, curve[ch], '-', color=colors[ch], label=CHANNEL_NAMES[ch], linewidth=1.5)
+    voltage, current, qi = curve[0], curve[1], curve[2]
+
+    l1, = ax.plot(x, voltage, '-', color=colors[0], label=CHANNEL_NAMES[0], linewidth=1.5)
+    l2, = ax.plot(x, qi, '-', color=colors[2], label=CHANNEL_NAMES[2], linewidth=1.5)
     ax.set_xlabel('Resampled point index (charge + discharge)', fontsize=12)
-    ax.set_ylabel('Normalized value', fontsize=12)
+    ax.set_ylabel('Voltage / Qi (normalized)', fontsize=12)
     ax.set_title(title, fontsize=13)
-    ax.legend(fontsize=9, frameon=False)
     set_ax_linewidth(ax)
     set_ax_font_size(ax, fontsize=10)
+
+    ax2 = ax.twinx()
+    l3, = ax2.plot(x, current, '-', color=colors[1], label=CHANNEL_NAMES[1], linewidth=1.5)
+    ax2.set_ylabel(CHANNEL_NAMES[1], color=colors[1], fontsize=12)
+    ax2.tick_params('y', colors=colors[1])
+    set_ax_linewidth(ax2)
+    set_ax_font_size(ax2, fontsize=10)
+
+    lines = [l1, l2, l3]
+    ax.legend(lines, [l.get_label() for l in lines], fontsize=9, frameon=False, loc='best')
 
 
 def find_usable_file(dataset, requested_file_name):
