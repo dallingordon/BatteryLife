@@ -1,0 +1,54 @@
+PAPER: BatteryLife (arXiv 2502.18807 / ACM KDD'25) - what to match for comparable results
+
+Baselines (18 + dummy) - all already in models/:
+  MLP: DLinear, MLP, CPMLP
+  Transformer: PatchTST, Autoformer, iTransformer, Transformer, CPTransformer
+  CNN: CNN, MICN
+  RNN: LSTM, BiLSTM, GRU, BiGRU, CPLSTM, CPBiLSTM, CPGRU, CPBiGRU
+  + dummy (mean train label)
+CyclePatch (CP*-prefixed models) = paper's contribution: intra-cycle FFN encoder (per-cycle token)
+  + inter-cycle encoder (MLP/Transformer/LSTM/BiLSTM/GRU/BiGRU) across cycle tokens.
+  Include a CP vs non-CP pair to reproduce the "CyclePatch helps" comparison.
+
+Metrics: RMSE, MAE, MAPE, alpha-Accuracy @15% and @10% relative error.
+  MAPE used for model selection / early stopping (matches run_main.py: vali_loss = vali_mape).
+  alpha1=0.15, alpha2=0.1 in run_main.py already match paper thresholds.
+
+Splits: random 6:2:2 train/val/test (should already be baked into data_provider/data_split_recorder.py).
+  Also report the seen vs unseen aging-condition breakout (paper Table 5) - this is what
+  seen_unseen_id / cal_for_test_*.json in data_loader.py implements. Don't just report aggregate test.
+
+Training protocol to match:
+  Adam optimizer, MSE loss.
+  HP search grid: batch_size [16,32,64,128], lr [5e-4, 5e-3, 1e-3], dropout [0, 0.05, 0.1],
+    embed dim [32,64,128,256]. Pick best on val set.
+  Run each config 3x with different seeds, report mean +/- std.
+  run_main.py defaults: batch_size=32 (ok), lr=1e-4 (NOT in their grid - use 5e-4 or 1e-3 instead),
+    dropout=0.1 (ok), d_model=16 (not in grid - consider 32+). Currently only 1 seed/itr by default.
+
+MISMATCH TO FIX: paper resamples charge & discharge curves to 150 pts each (300/cycle).
+  run_main.py default --charge_discharge_length is 100. Set to 150 for comparable numbers.
+
+---
+UPDATE: official train_eval_scripts/*.sh (ground truth, more authoritative than paper text) show a
+SHARED HARNESS identical across every baseline script (Autoformer, CNN, CP*, DLinear, MICN, MLP,
+PatchTST, iTransformer all agree):
+  --dataset MIX_large --early_cycle_threshold 100 --seq_len 1 --charge_discharge_length 300
+  --task_name classification --features MS --label_len 50 --factor 3 --enc_in 3 --dec_in 1 --c_out 1
+Per-model (varies): d_model, e_layers/lstm_layers, n_heads, dropout, patch_len/stride,
+  learning_rate, batch_size, patience. e.g.:
+  CPTransformer: d_model=128 e_layers=6 dropout=0 lr=5e-5 batch=32 patience=5
+  PatchTST:      d_model=64  dropout=0.1 lr=1e-3 batch=16 patch_len=stride=150 patience=5
+
+DECISION (this project): keeping current dataloader settings (NOT switching to 300/seq_len=1/MIX_large).
+Plan for comparing new model vs CyclePatch fairly:
+  - Hold identical between both runs: charge_discharge_length, seq_len, early_cycle_threshold,
+    dataset, task_name(=classification), features, loss=MSE, weighted_loss/sampling, lradj,
+    least_epochs, train_epochs, patience, seed list (run >=3 matched seeds).
+  - Let CP baseline keep ITS OWN tuned architecture hyperparams (d_model/e_layers/dropout/lr/batch)
+    from its .sh script rather than forcing it to match my model's config.
+  - Pick CP variant matching new model's architecture family; also run its non-CP counterpart to
+    separate "CyclePatch helps" from "my model beats CyclePatch".
+  - Report mean +/- std of RMSE/MAE/MAPE/alpha-acc(15%,10%) + seen/unseen split via vali_baseline.
+  - task_name defaults to long_term_forecast in run_main.py argparse but every official script
+    overrides to 'classification' - must set explicitly, likely gates model-internal behavior.

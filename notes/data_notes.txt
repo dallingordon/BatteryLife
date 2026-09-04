@@ -1,0 +1,11 @@
+DATA NOTES
+
+scc/downlaod_data.sh
+- SGE job (SCC, project nsf-energize, 12h) run from dataset/
+- wgets 20 dataset zips from Zenodo record 19688272, unzips into dataset/, deletes zip on success
+- check download.log for "FAILED to unzip" and no leftover .zip files to confirm all downloaded
+
+preprocess_scripts.py (home dir)
+- Python driver, runs `batteryml preprocess <SRC> ./datasets/raw/<X> ./datasets/processed/<X>/` per dataset
+- reads from datasets/raw/... (not dataset/ where download script puts files) - paths need to line up before running
+- name mismatches to watch: NAion->NA-ion, Farasis command reused for both SDU and Farasis raw dirs
