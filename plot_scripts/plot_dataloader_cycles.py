@@ -3,11 +3,16 @@ Visualize the first and last stored cycle of one processed battery file, exactly
 Dataset_original (data_provider/data_loader.py) normalizes it - same resampling,
 same voltage/current/capacity normalization, no re-implementation.
 
+Both cycles are drawn on one combined plot: voltage and Qi (capacity) are shown for
+both cycle 1 and the last stored cycle (they're what actually shift with degradation),
+each channel in a light/dark shade pair so the two cycles are easy to tell apart.
+Current is checked for whether it's effectively identical across the two cycles (it
+usually is - same fixed charge/discharge protocol every cycle) and drawn once if so,
+or as two distinct lines if it isn't.
+
 Mimics the styling conventions of plot_scripts/plt_MATR_sequences.py (Arial font when
-available, editable pdf.fonttype=42, seaborn color palette, set_ax_linewidth helper,
-dual y-axes so current's larger C-rate swings don't squash voltage/Qi) but plots the
-*normalized* [3, charge_discharge_length] curve arrays the dataloader actually feeds
-to the models, rather than raw pkl records.
+available, editable pdf.fonttype=42, set_ax_linewidth helper, dual y-axes so current's
+larger C-rate swings don't squash voltage/Qi).
 
 Usage (must be able to see the real processed dataset at --root_path, e.g. on the SCC):
     python plot_scripts/plot_dataloader_cycles.py --dataset HUST --flag train
@@ -19,7 +24,6 @@ import argparse
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
@@ -54,7 +58,11 @@ matplotlib.rc('font', **font)
 matplotlib.rcParams['pdf.fonttype'] = 42  # make the text editable for Adobe Illustrator
 matplotlib.rcParams['ps.fonttype'] = 42
 
-CHANNEL_NAMES = ('Voltage (V / V_max)', 'Current (C-rate)', 'Qi (Capacity, normalized)')
+# Voltage: light -> dark blue (cycle 1 -> last cycle). Qi: light -> dark green. Current: gray.
+VOLTAGE_COLORS = ('#9ecae1', '#08519c')
+QI_COLORS = ('#a1d99b', '#006d2c')
+CURRENT_COLOR = '#636363'
+CURRENT_SPLIT_COLORS = ('#fdae6b', '#e6550d')  # used only if current actually differs between cycles
 
 
 def set_ax_linewidth(ax, bw=1.5):
@@ -91,33 +99,42 @@ def build_dataset_args(root_path, dataset, seq_len, charge_discharge_length, ear
     return ns
 
 
-def plot_cycle(ax, curve, title):
-    '''curve: [3, fixed_len] normalized array (voltage, current, Qi) exactly as stored by the
-    dataloader. Voltage and Qi are both normalized to roughly [0, 1] so they share the primary
-    axis; current (C-rate) swings much larger (e.g. -5 to 5) and gets its own twin axis so it
-    doesn't squash the other two - same dual-axis idea as plt_MATR_sequences.py's voltage/current
-    split, extended to a third channel.'''
-    x = np.arange(curve.shape[1])
-    colors = sns.color_palette()
-    voltage, current, qi = curve[0], curve[1], curve[2]
+def plot_combined(ax, first_cycle, last_cycle, last_cycle_number, atol=1e-3):
+    '''first_cycle, last_cycle: [3, fixed_len] normalized arrays (voltage, current, Qi) exactly
+    as stored by the dataloader. Voltage and Qi both live in roughly [0, 1] normalized units so
+    they share the primary axis (light shade = cycle 1, dark shade = last cycle); current (C-rate)
+    swings much larger and gets its own twin axis. Current is only drawn twice if the two cycles'
+    current profiles actually differ by more than `atol` - otherwise a single shared line is drawn,
+    since most protocols apply the same fixed charge/discharge current every cycle.'''
+    voltage1, current1, qi1 = first_cycle
+    voltage2, current2, qi2 = last_cycle
+    x = np.arange(first_cycle.shape[1])
 
-    l1, = ax.plot(x, voltage, '-', color=colors[0], label=CHANNEL_NAMES[0], linewidth=1.5)
-    l2, = ax.plot(x, qi, '-', color=colors[2], label=CHANNEL_NAMES[2], linewidth=1.5)
+    lines = []
+    lines.append(ax.plot(x, voltage1, '-', color=VOLTAGE_COLORS[0], linewidth=1.5, label='Voltage - cycle 1')[0])
+    lines.append(ax.plot(x, voltage2, '-', color=VOLTAGE_COLORS[1], linewidth=1.5, label=f'Voltage - cycle {last_cycle_number}')[0])
+    lines.append(ax.plot(x, qi1, '-', color=QI_COLORS[0], linewidth=1.5, label='Qi - cycle 1')[0])
+    lines.append(ax.plot(x, qi2, '-', color=QI_COLORS[1], linewidth=1.5, label=f'Qi - cycle {last_cycle_number}')[0])
+
     ax.set_xlabel('Resampled point index (charge + discharge)', fontsize=12)
     ax.set_ylabel('Voltage / Qi (normalized)', fontsize=12)
-    ax.set_title(title, fontsize=13)
     set_ax_linewidth(ax)
     set_ax_font_size(ax, fontsize=10)
 
     ax2 = ax.twinx()
-    l3, = ax2.plot(x, current, '-', color=colors[1], label=CHANNEL_NAMES[1], linewidth=1.5)
-    ax2.set_ylabel(CHANNEL_NAMES[1], color=colors[1], fontsize=12)
-    ax2.tick_params('y', colors=colors[1])
+    current_matches = np.allclose(current1, current2, atol=atol)
+    if current_matches:
+        lines.append(ax2.plot(x, current1, '--', color=CURRENT_COLOR, linewidth=1.2, label='Current (C-rate) - same both cycles')[0])
+    else:
+        lines.append(ax2.plot(x, current1, '--', color=CURRENT_SPLIT_COLORS[0], linewidth=1.2, label='Current (C-rate) - cycle 1')[0])
+        lines.append(ax2.plot(x, current2, '--', color=CURRENT_SPLIT_COLORS[1], linewidth=1.2, label=f'Current (C-rate) - cycle {last_cycle_number}')[0])
+    ax2.set_ylabel('Current (C-rate)', color=CURRENT_COLOR, fontsize=12)
+    ax2.tick_params('y', colors=CURRENT_COLOR)
     set_ax_linewidth(ax2)
     set_ax_font_size(ax2, fontsize=10)
 
-    lines = [l1, l2, l3]
     ax.legend(lines, [l.get_label() for l in lines], fontsize=9, frameon=False, loc='best')
+    return current_matches
 
 
 def find_usable_file(dataset, requested_file_name):
@@ -168,13 +185,12 @@ def main():
 
     first_cycle = curves[0]
     last_cycle = curves[-1]
+    last_cycle_number = curves.shape[0]
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.2))
-    plot_cycle(axes[0], first_cycle, 'Cycle 1 (first)')
-    plot_cycle(axes[1], last_cycle, f'Cycle {curves.shape[0]} (last, end of early-cycle window)')
-
-    fig.suptitle(f'{file_name}  |  source dataset: {source_dataset}  |  label (cycle life): {eol}', fontsize=12)
-    fig.tight_layout(rect=[0, 0, 1, 0.92])
+    fig, ax = plt.subplots(1, 1, figsize=(7.5, 5.2))
+    current_matches = plot_combined(ax, first_cycle, last_cycle, last_cycle_number)
+    ax.set_title(f'{file_name}  |  source: {source_dataset}  |  label (cycle life): {eol}', fontsize=12)
+    fig.tight_layout()
 
     safe_name = file_name.replace('.pkl', '').replace('/', '_')
     out_jpg = os.path.join(args.out_dir, f'{safe_name}_first_last_cycle.jpg')
@@ -183,6 +199,7 @@ def main():
     plt.savefig(out_pdf)
 
     print(f'File: {file_name} | Source dataset: {source_dataset} | Label (cycle life, cycles): {eol}')
+    print(f'Current identical across cycle 1 and cycle {last_cycle_number}: {current_matches}')
     print(f'Saved: {out_jpg}')
     print(f'Saved: {out_pdf}')
 
