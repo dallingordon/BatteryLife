@@ -245,3 +245,23 @@ i definitely want to learn an initial state.  oooh did that work?
 
 python plot_scripts/plot_cycle_length_histogram.py --csv cycle_length_stats.csv --out figures/cycle_length_histogram.png
 
+so, fine tune on the 100 lenght ones? how do i combat the wack ass imbalance in long and short. 
+
+weight the long tails? 
+
+weight the loss by the size? i want the loss to be max at 100? 
+
+w(i) = exp(−(i − 100)² / (2σ²))
+pass in the length of the input in num cycles, so you have the highest weight at 100 (where you validate at?)
+
+so yeah, does showing the model the "capacity knee" improve it?"
+does that data (and there is a whole shit ton) beyond the 100 cycle cut off improve it? 
+how do you encode it? they get an embedding for each cycle and then those go to the transformer (the first is just linear i believe?)
+some linear layers. 
+
+so, for state spaces.  we do the same? linear and then the mamba replacement.  
+use mamba to encode the individual cycles and a different mamba on top of that? (i want to train that initial hidden, or sequence of tokens, bla bla)
+
+I want my special tokens. 
+
+I want to find some model to start with, idk some time series model maybe?
