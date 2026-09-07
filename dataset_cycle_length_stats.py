@@ -19,6 +19,12 @@ Known simplification vs. the full loader: a couple of dataset-specific filename 
 up as "no eol found." The script prints the match rate so you can tell whether that's
 negligible or worth chasing down.
 
+Note on runtime: each pkl stores the FULL un-resampled per-cycle time series (every
+voltage/current/capacity/time sample ever recorded for that cell), not the compact
+resampled curves the model trains on - so pickle.load() has to deserialize all of that
+just to read len(cycle_data). That's why this can take a while on the larger sources
+(ISU-ILCC, Stanford_2, MATR, ...); the progress bar below is there so it doesn't look hung.
+
 Usage:
     cd BatteryLife
     python dataset_cycle_length_stats.py [--dataset-root ./dataset] [--out cycle_length_stats.csv]
@@ -29,8 +35,15 @@ import json
 import os
 import pickle
 import sys
+import time
 
 import pandas as pd
+
+try:
+    from tqdm import tqdm
+    HAVE_TQDM = True
+except ImportError:
+    HAVE_TQDM = False
 
 SKIP_DIRS = {'Life labels', 'READMEs', 'seen_unseen_labels'}
 
@@ -61,6 +74,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dataset-root', default='./dataset')
     ap.add_argument('--out', default='cycle_length_stats.csv')
+    ap.add_argument('--progress-every', type=int, default=25,
+                     help='when tqdm is unavailable, print a line every N files')
     args = ap.parse_args()
 
     life_labels, per_file_counts = load_all_life_labels(args.dataset_root)
@@ -68,33 +83,58 @@ def main():
     for fname, n in sorted(per_file_counts.items()):
         print(f'  {fname}: {n}')
 
-    rows = []
     source_dirs = sorted(
         d for d in os.listdir(args.dataset_root)
         if os.path.isdir(os.path.join(args.dataset_root, d)) and d not in SKIP_DIRS
     )
+
+    # Collect (source_dir, pkl_path) pairs up front so we know the total for a progress bar.
+    all_files = []
     for source_dir in source_dirs:
         pkl_files = sorted(glob.glob(os.path.join(args.dataset_root, source_dir, '*.pkl')))
-        for pkl_path in pkl_files:
-            file_name = os.path.basename(pkl_path)
-            try:
-                with open(pkl_path, 'rb') as f:
-                    data = pickle.load(f)
-                valid_cycle_number = len(data['cycle_data'])
-            except Exception as e:
-                print(f'  [WARN] could not read {pkl_path}: {e}', file=sys.stderr)
-                continue
+        print(f'  found {len(pkl_files):4d} .pkl files in {source_dir}/')
+        all_files.extend((source_dir, p) for p in pkl_files)
 
-            key = eol_lookup_key(source_dir, file_name)
-            eol = life_labels.get(key)
+    print(f'\nReading {len(all_files)} cell files (this is the slow part - each pkl holds '
+          f'full raw per-cycle data, not the resampled curves)...\n')
 
-            rows.append({
-                'source': source_dir,
-                'file_name': file_name,
-                'eol': eol,
-                'valid_cycle_number': valid_cycle_number,
-                'usable_length': min(eol, valid_cycle_number) if eol is not None else None,
-            })
+    rows = []
+    iterator = tqdm(all_files, unit='file') if HAVE_TQDM else all_files
+    start = time.time()
+    last_source = None
+    for i, (source_dir, pkl_path) in enumerate(iterator):
+        file_name = os.path.basename(pkl_path)
+
+        if HAVE_TQDM:
+            if source_dir != last_source:
+                iterator.set_description(source_dir)
+                last_source = source_dir
+        else:
+            if source_dir != last_source:
+                print(f'-- starting {source_dir} --')
+                last_source = source_dir
+            if i % args.progress_every == 0:
+                elapsed = time.time() - start
+                print(f'  [{i}/{len(all_files)}] elapsed={elapsed:.0f}s  now on {source_dir}/{file_name}')
+
+        try:
+            with open(pkl_path, 'rb') as f:
+                data = pickle.load(f)
+            valid_cycle_number = len(data['cycle_data'])
+        except Exception as e:
+            print(f'  [WARN] could not read {pkl_path}: {e}', file=sys.stderr)
+            continue
+
+        key = eol_lookup_key(source_dir, file_name)
+        eol = life_labels.get(key)
+
+        rows.append({
+            'source': source_dir,
+            'file_name': file_name,
+            'eol': eol,
+            'valid_cycle_number': valid_cycle_number,
+            'usable_length': min(eol, valid_cycle_number) if eol is not None else None,
+        })
 
     df = pd.DataFrame(rows)
     df.to_csv(args.out, index=False)
