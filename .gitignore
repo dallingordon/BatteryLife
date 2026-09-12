@@ -18,3 +18,8 @@ dataset/
 /tmp*
 
 plot_scripts/venv/
+checkpoints/
+.triton_cache/
+scc/*.log
+results_logs/
+venv_train_p100/
