@@ -77,3 +77,51 @@
      on PyPI under the pinned name - cloned to repo-root/batteryml/ (already gitignored).
    - Usage: source plot_scripts/venv/bin/activate; python plot_dataloader_cycles.py --dataset
      <NAME> [--file_name X.pkl]. No GPU needed for any of this.
+
+
+metrics.  
+
+MAPE is mean average percentage error.  norm of the difference of the label and prediction, divide by the label.  average over the samples. 
+
+alpha accuracy.  in this case 15% if that percent difference is less than 15%, you count it as 1, otherwise 0.  cool. 
+
+thoughts.  
+
+classification works better than linear for generation.  i wonder if that holds? i wonder if you made it so your multiplied by fixed numbers, and have it predict one?
+make it predict so that it can get one that is within 15%? thats a thought.  like, higher numbers can be farther apart yes? 
+
+
+for mamba.  def want to make it one big sequence.  then i want to add tokens between.  
+
+interested in trying initial tokens, like a soft prompt.  would be interested in doing that as a conditional thing.  
+what I really want to do is learn the initial hidden, but i think that is a different paper.  a long soft prompt does that, but still lets the ssm parameters be affected.  
+
+bla bla.  
+
+so yeah.  a [next-cycle] token as well as a [classification] token. that will occupy the same place, just put next-cycle between cycles and then put [classification] after the final cycle
+
+i am also interested in predicting at every time step, with some weight.  like, at the end i want the highest weight right, "by the end of all the seen data, be the most confident"
+BUT, the earlier the better.  so like, have it learn some points for predicting correctly earlier?
+
+ooooh, train 2 classifiers.  one that is a "strong" classifier.  sits on the top of it and predicts everywhere (except out of the classification token)
+(another one for the [next-cycle] one? and the one i actually care about is the [classification] token.  )
+
+so, does that make things more stable?
+
+next.  pre-trained weights.  yeesh.  
+
+what do they do. 
+nothing pre-trained.  okay.  that makes the masking, early predicting like, mandatory. 
+
+synthetic data? i feel like i could simulate this.  
+ooooh there is lots. 
+
+okay so, maybe we start with that transformer model they have and pre-train on synthetic then finetune on this shit?
+
+A synthetic data generation method and evolutionary transformer model for
+degradation trajectory prediction in lithium-ion batteries
+
+so these look to be generating the degradation curve with is Qi over time.  those are my labels.  i want to say here is my label, synthesize a curve, show me those sunthetic cycles.  
+can i do that if i give it the current? just use currents from the training data?
+
+remaining useful life (RUL)

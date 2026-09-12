@@ -1,0 +1,186 @@
+9/8 session summary - synthetic data detour, cycle-length audit, SSM pretraining direction
+
+1. Revisited arXiv 2503.13552 ("Fast Data Augmentation for Battery Degradation Prediction")
+   - Confirmed via full-PDF fetch (not just abstract): operates ONLY on scalar capacity-fade
+     curves (capacity(cycle), one number per cycle). 3-parameter affine transform: offset
+     (vertical shift, cell-to-cell variability), slope (linear fade-rate modulation), elongation
+     (cycle-axis rescale). Params sampled from pairwise statistics of seed cells (RWTH n=48,
+     Stanford n=45); sparse datasets (<=8 cells) fall back to a +-25% elongation range from
+     sensitivity analysis. No electrochemical model - closed-form curve warping only. Validated
+     on CNN/GPR EOL + knee-point prediction, 5 datasets, up to 50% of real training curves
+     swappable for synthetic without hurting accuracy.
+   - Verdict unchanged from 9/4 notes: too abstracted for this project's needs. It never touches
+     voltage or current - can't help synthesize the per-cycle V/I/Q curves Dataset_original
+     actually trains on, only bulk-augments a scalar life-prediction target series.
+
+2. Explored (and ruled out) a hybrid "donor curve + rescale" synthesis heuristic
+   - Idea: pair a real cell's measured current (and/or voltage) trace with a target capacity
+     value from the paper's affine transform, to manufacture a full synthetic (V,I,Q) cycle.
+   - Math check: Q(t) = Q0 + integral(I dt) (coulomb counting - matches how charge/discharge
+     _capacity_in_Ah are actually recorded). So fixing a real current trace already determines
+     Q(t); hitting an arbitrary target capacity requires time-warping or rescaling that current,
+     not "fixing" it as claimed.
+   - Bigger problem: V is NOT a function of (I, Q) alone. V_cell(Q) = OCV_pos(z_pos(Q)) -
+     OCV_neg(z_neg(Q)) - I*R(state) - depends on electrode stoichiometry state (LLI/LAM_PE/
+     LAM_NE), which the affine-transform paper's synthetic capacity value carries zero
+     information about. Reusing a donor's V(Q) shape and stretching it to a new target capacity
+     is a heuristic with no physical-consistency guarantee - same objection already logged
+     against the GAN literature in notes_synthesis.txt.
+   - DMA remains the only physically-grounded option for actual V(Q) synthesis; still blocked on
+     needing electrode reference OCV curves per chemistry (59 chemical systems in BatteryLife).
+
+3. Reframe: the real goal was volume for PRETRAINING a transformer, not supervised augmentation
+   - Self-supervised pretraining doesn't need labels (eol) at all, just real (V,I,Q) sequences -
+     sidesteps every physical-consistency problem above, since nothing is synthesized.
+   - Question became: is there already enough real, unlabeled-for-this-purpose cycle data lying
+     around unused? Answer: yes, and by a lot - see the audit below.
+
+4. Cycle-length audit - built dataset_cycle_length_stats.py (repo root)
+   - For every cell across all 18 downloaded dataset sources, replicates Dataset_original's
+     eol / valid_cycle_number logic without instantiating the full Dataset class:
+       eol = life label (Life labels/<X>_labels.json, merged across all 19 label files)
+       valid_cycle_number = len(data['cycle_data'])  (cycles actually recorded in the raw pkl)
+       usable_length = min(eol, valid_cycle_number)  <- real ceiling on subsequence length,
+         since read_samples_from_one_cell never samples i >= eol anyway.
+   - Added a tqdm progress bar after the first run looked hung for ~9 min with no output -
+     turned out to be expected: raw pkls store full un-resampled per-cycle time series (every
+     voltage/current/capacity/time sample, not the compact resampled curves), so pickle.load has
+     to deserialize everything just to read len(cycle_data). No way around this with plain
+     pickle.
+   - Ran on SCC (venv: plot_scripts/venv, no GPU needed - script only touches pickle/json/
+     pandas). Results (cycle_length_stats.csv, repo root on SCC):
+       1234 life labels loaded from 19 label files; 1194 .pkl files found across 18 sources;
+       1084/1194 matched a label (90.8%). Two separate gaps, not to be conflated:
+         - 40 labeled cells have no corresponding pkl (not downloaded / not present)
+         - 110 pkl files have no matching label - mostly a MICH_EXP naming quirk (18 found vs
+           12 labels - the SMICH->MICH_EXP rename in read_cell_data_according_to_prefix isn't
+           replicated in the stats script) plus BIT2, not chased down yet.
+       usable_length distribution (n=1084): min=1, max=3842, mean=673.8, median=544, std=590.5
+       percentiles: 5%=100, 10%=130, 25%=296, 50%=544, 75%=810, 90%=1465, 95%=1970, 99%=2980
+       Per-source spread is huge - CALB median~99 (short-life chemistry) vs HUST mean~1898.
+       142 files have valid_cycle_number < eol (recording stopped short of the label - NOT
+       extra/thrown-away data, the opposite: mostly HUST cells short by a handful of cycles,
+       plus some CALB cells where recording capped near 99-100 despite a much larger label).
+   - Headline finding: current pipeline's early_cycle_threshold=100 means ~95% of cells (those
+     with usable_length > 100, i.e. essentially all but the 5th percentile) only ever expose
+     their first 100 cycles to the model. Rough estimate from the aggregate stats: on average
+     ~85% of each cell's real, physically measured cycle history sits past cycle 100 and is
+     NEVER loaded by Dataset_original (early_charge_discharge_curves_data = curves[:100] is an
+     unconditional truncation before any sample is built). HUST is the starkest case - mean
+     usable_length ~1898, so a HUST cell gives the model ~5% of what it actually has.
+   - This is the real "big data for pretraining" argument: not synthesizing more, just stopping
+     throwing away what's already there past cycle 100.
+
+5. Visualization iteration (plot_scripts/plot_cycle_length_histogram.py)
+   - v1: log-scale histogram of usable_length with a vertical dashed line at the 100-cycle
+     cutoff. REJECTED by inspection - misleading, reads as "cells past 100 aren't in the
+     dataset," when they are, just partially unused.
+   - v2 (kept): sorted bar chart instead. x = cells sorted ascending by usable_length, y =
+     usable_length: each cell's FULL bar is drawn (proves the data exists), split into a blue
+     segment (<=100, used by training) and a red segment stacked on top (>100, real but never
+     used), with a horizontal dashed line at y=100. Annotated with the two headline numbers
+     (% of cells exceeding the cutoff, % of total real cycle-volume never used) computed
+     directly from the CSV. This is the version that actually makes the point without the "data
+     doesn't exist" misread.
+   - Followed the dataviz skill's reference palette throughout (sequential blue #2a78d6 for
+     "used," status critical red #d03b3b for "unused/thrown away," light-mode chrome).
+
+6. Clarified exactly what "area under 100" does and doesn't represent
+   - Red area (sum of max(usable_length-100, 0) across cells) = exactly right, no caveats: real
+     recorded cycle data that never enters the model in any form, for any sample, for any cell.
+   - Blue area (sum of min(usable_length,100)) ~= total training-sample count from the growing-
+     window/causal-mask loop (read_samples_from_one_cell generates one sample per i in
+     [seq_len, min(100, eol-1, valid_cycle_number)], same eol label each time) - BUT not exactly
+     equal: any cell whose eol <= 100 is dropped ENTIRELY by the code (zero samples, not a
+     partial contribution) - this is the flat, no-red-on-top left tail of the sorted chart
+     (~5% of cells). So blue-area slightly overstates the true sample count; exact number would
+     need the eol<=100 exclusion replicated in the stats script (not yet done - could check
+     against the paper's own quoted 99,000-sample figure as a sanity check).
+
+7. Research direction being considered: SSM (Mamba) trained on FULL real per-cell history,
+   evaluated ONLY on the existing 100-cycle protocol
+   - Motivation: Transformer attention is O(n^2) over cycle-tokens, which is very likely WHY
+     early_cycle_threshold=100 exists as a hard cutoff in the first place. An SSM's near-linear
+     scaling removes that constraint - could train on each cell's real usable_length instead of
+     truncating.
+   - Judged this a compelling, well-scoped hypothesis specifically BECAUSE eval stays pinned to
+     the existing 100-cycle protocol - keeps results directly comparable to published CyclePatch/
+     BatteryLife baseline numbers; isolates "did more real training context help" as a clean,
+     single-variable ablation (same architecture, only training-data length exposure differs)
+     rather than conflating an architecture change with a data change.
+   - Key risk identified: sample count scales with cell length, so naively extending i from
+     1..100 to 1..usable_length would make long-lived cells (HUST ~1900 samples vs ~100 for a
+     short cell) dominate the gradient signal, potentially hurting the very <=100 regime being
+     evaluated. Two mitigations discussed:
+       (a) loss-reweight by a function of observed length i peaking at i=100, decaying away from
+           it - Gaussian bump w(i) = exp(-(i-100)^2 / (2*sigma^2)), optionally asymmetric
+           (sigma_below large/flat since 1-100 is the actually-evaluated range per
+           evaluate_model.py's per-cycle-count breakdown, sigma_above small to suppress the
+           long unevaluated tail without fully zeroing it - plus an epsilon floor so nothing goes
+           to literally zero weight). Plotted at sigma=[20,50,100,200,400,800]; even sigma=800
+           is down to ~0.14 by the real max usable_length of 3842, so protecting the peak and
+           not fully discarding the longest tails is a real tension, not a free lunch.
+       (b) two-stage: self-supervised pretrain on full real sequences (no labels needed) ->
+           fine-tune restricted to i<=100 (matches eval distribution exactly, avoids the
+           imbalance problem structurally rather than via a reweighting hack). Leaning toward
+           this as the more principled default.
+     Noted this i-based reweighting is orthogonal to the existing DenseWeight label-rarity
+     reweighting already imported in data_loader.py (different axis - input length vs. label
+     value) - would just multiply together if both are used.
+
+8. CyclePatch (CPTransformer) architecture, confirmed against models/CPTransformer.py
+   - Intra-cycle encoder is linear-embed-then-MLP-stack, not a bare linear layer: intra_embed =
+     1 nn.Linear(charge_discharge_length*3 -> d_model), followed by e_layers stacked MLPBlocks,
+     each MLPBlock itself containing 2 linear layers (d_model->d_ff, d_ff->d_model) with
+     relu/dropout/layernorm'd residual. Total linear layers in the intra-cycle encoder = 1 + 2*
+     e_layers (13 for e_layers=6, CPTransformer's own tuned harness value) - not "2" as a quick
+     recollection suggested.
+   - Positional embedding added per cycle-token, then fed into inter_TransformerEncoder (standard
+     bidirectional multi-head self-attention, NOT causal). curve_attn_mask is expanded to a full
+     [B,1,L,L] boolean mask (True = masked) and passed as attn_mask - implements the growing-
+     observation-window masking as a bidirectional attention mask over the visible prefix, not a
+     GPT-style lower-triangular causal mask.
+   - Output is flattened across all early_cycle_threshold positions and projected via a linear
+     layer sized specifically to early_cycle_threshold*d_model -> output_num - hard-wired to the
+     100-cycle window, can't accept a longer sequence without resizing that layer. Reinforces why
+     the SSM direction (no fixed-length projection needed, gather-index readout instead) is the
+     right architectural fit for using full-length real sequences.
+
+Open threads for next session:
+  - Fix the MICH_EXP/SMICH and BIT2 label-matching gaps in dataset_cycle_length_stats.py to
+    recover the 110 unmatched files.
+  - Compute the EXACT training-sample count (replicating the eol<=100 exclusion) vs the naive
+    blue-area approximation, and sanity-check against the paper's quoted 99,000 samples.
+  - Decide sigma_below/sigma_above for the loss-reweight (or commit to the two-stage pretrain/
+    fine-tune plan instead) before implementing the SSM training loop.
+  - Mamba architectural plan itself is still the one sketched in notes_9_4.txt point 4 (batch
+    size 1, per-cell token stream, causal by construction, length used as a gather index rather
+    than an attention mask) - today's work is about what data/objective to feed it, not the
+    architecture.
+
+
+9/12
+to validate tomorrow:
+
+python3 compare_results.py results_logs/CPMLP_CALB*.log --model CPMLP --dataset_family CALB
+python3 compare_results.py results_logs/CPTransformer_CALB*.log --model CPTransformer --dataset_family CALB
+
+claude notes: Spent the session getting GPU training actually working on the SCC, not just planned. Fixed a
+ chain of real infra issues along the way: shared-GPU quota was maxed by unrelated coursework
+ jobs (killed one to free a P100); train_eval_scripts assumed 2 GPUs (rewrote for single-GPU
+ accelerate launch); deepspeed's checkpoint-save path needs CUDA_HOME set (module load
+ cuda/12.2); Triton's autotune cache needs to be off NFS home; wandb needs WANDB_MODE=offline
+ to avoid an interactive login prompt mid-run.
+
+ Bigger finding: CPMLP.sh/CPTransformer.sh's DEFAULT hyperparameters are not what the paper
+ actually used - assets/Selected_hyperparameters.md has the real per-seed tuned configs (CALB
+ is oddly tuned per-seed, unlike the other datasets, which reuse one config across seeds).
+ Debug runs with the corrected hyperparameters on CALB landed near (CPMLP) or beat
+ (CPTransformer: 0.108 vs published 0.149 MAPE) the paper's numbers on a single seed - the
+ earlier gap was a hyperparameter mismatch, not a training/pipeline problem.
+
+ Submitted proper 3-seed qsub batch jobs for both CPMLP and CPTransformer on CALB (seeds
+ 2021/42/2024, per-seed tuned hyperparams from the table, batch size doubled vs the table to
+ compensate for single-GPU instead of the paper's 2-GPU setup) to run unattended overnight.
+ Wrote compare_results.py to parse the resulting logs and auto-compute mean+/-std against the
+ published benchmark table - run it tomorrow (commands above) once qstat shows both jobs done.
