@@ -40,7 +40,7 @@ class Model(nn.Module):
 
         self.inter_flatten = nn.Sequential(nn.Flatten(start_dim=1), nn.Linear(self.early_cycle_threshold*self.d_model, self.d_model))
         self.inter_MLP = nn.ModuleList([MLPBlock(self.d_model, self.d_ff, self.d_model, self.drop_rate) for _ in range(configs.d_layers)])
-        self.head_output = nn.Linear(self.d_model, 1)
+        self.head_output = nn.Linear(self.d_model, configs.output_num)
         # self.flatten_head = nn.Sequential(nn.Linear(self.early_cycle_threshold*self.d_model, self.d_ff), nn.ReLU(),
         #                                  nn.Dropout(self.drop_rate), nn.Linear(self.d_ff, 1))
 
