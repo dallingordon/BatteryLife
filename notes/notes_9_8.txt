@@ -184,3 +184,65 @@ claude notes: Spent the session getting GPU training actually working on the SCC
  compensate for single-GPU instead of the paper's 2-GPU setup) to run unattended overnight.
  Wrote compare_results.py to parse the resulting logs and auto-compute mean+/-std against the
  published benchmark table - run it tomorrow (commands above) once qstat shows both jobs done.
+
+later that night...
+claude notes: Reformulated the regression head as classification over geometric bins - each bin
+ sized so getting it right is (approximately) landing within the paper's own 15%-accuracy
+ tolerance (ratio=1.353, 28 bins over the [1, 3842] range from the cycle-length histogram
+ audit). Fully additive: --prediction_mode geo_bins, off by default, everything else byte-
+ identical. One-line change to CPMLP's output head (was hardcoded to 1 output); CPTransformer
+ needed zero changes, its projection layer was already parameterized by output_num. New
+ utils/geo_bins.py holds the bin math (edges/centers, value<->bin), decode is just argmax ->
+ bin center, reusing the existing label-unscaling logic so nothing else in the training loop
+ or checkpoint format changed.
+
+ CALB 3-seed results (both regression re-run and geo_bins, tuned hyperparams from
+ Selected_hyperparameters.md, batch doubled for single GPU): geo_bins beats both the published
+ paper numbers AND our own regression re-run, on both architectures:
+   CPMLP:         regression 0.134+/-0.048 MAPE / 69.4%+/-13.0 15%-acc
+                  geo_bins   0.094+/-0.030 MAPE / 91.6%+/-11.7 15%-acc
+                  published  0.140+/-0.009 MAPE / 70.4%+/-5.3  15%-acc
+   CPTransformer: regression 0.168+/-0.055 MAPE / 60.1%+/-14.0 15%-acc
+                  geo_bins   0.130+/-0.033 MAPE / 83.3%+/-11.9 15%-acc
+                  published  0.149+/-0.005 MAPE / 67.2%+/-10.7 15%-acc
+ Not just an artifact of the 15%-acc metric being partly tautological with the bin width -
+ MAE/RMSE dropped too, and seed-to-seed std shrank in every case. CALB42 (seed 42) is the weak
+ point across every configuration tried so far, unexplained.
+
+ Naming/framing: the construction is the same trick as mu-law companding in generative audio
+ (WaveNet et al.) - a fixed number of bins that are constant width in *relative* terms rather
+ than absolute, just derived from the eval metric's tolerance instead of perceptual loudness.
+ Candidate names for the write-up: tolerance-aligned classification / relative-error binning /
+ "15%-band" classification (informal). Not settled yet.
+
+ Made figures/geo_bins_diagram.png: the y=x identity line cut into the 28 bins with a dot at
+ each bin's emitted (center) value, plus a zoomed 0-100 inset since bins 1-15 are too tight to
+ see at full scale. Surfaced a real quirk while building it: the last bin's center comes out to
+ ~4075, past range_max (3842), because the center formula uses the raw geometric edge rather
+ than clipping to range_max - not necessarily wrong (still monotonic, still "everything >=3504")
+ but a reviewer would ask about it.
+
+ Extended to the other three chemistries to actually test generalization, since that's the real
+ question for whether this is a publishable finding vs. a CALB-only fluke. Wrote and submitted
+ 3-seed regression+geo_bins qsub jobs (both CPMLP and CPTransformer) for:
+   - Li-ion (dataset=MIX_large, same hyperparams across all 3 seeds per the paper's own
+     protocol - tuned once on seed 2021, reused for 42/2024)
+   - Zn-ion (ZN-coin/ZN-coin42/ZN-coin2024)
+   - Na-ion (NAion/NAion42/NAion2024)
+ All hyperparams pulled from assets/Selected_hyperparameters.md, batch sizes doubled for
+ single-GPU as before. As of tonight: CALB done (above), Li-ion/Zn-ion/Na-ion submitted and
+ pending - check qstat and rerun compare_results.py per dataset_family once they land.
+
+ Discussed with Claude what "publishable" actually needs beyond the chemistry sweep: also
+ ablate the bin tolerance itself (does targeting 10%-acc or 5%-acc with correspondingly narrower
+ bins actually move THAT metric, not just 15%) and ideally explain *why* it helps rather than
+ just that it does. Working hypothesis: cycle-life labels are heavily right-skewed, and MSE's
+ squared-error gradient is dominated by the long-tail high-cycle-life cells, while a bounded
+ per-sample classification loss is naturally more robust to that skew - same reason mu-law
+ helps in audio. Next real step once the chemistry sweep is back: check whether MSE's errors
+ actually concentrate on the long-tail cells relative to geo_bins' (should be checkable from
+ existing checkpoints/logs, no new training needed).
+
+ Also: hit a stale .git/index.lock from an earlier git op run through the device bridge (which
+ can't delete files by default) blocking a local commit - fixed by removing it directly in a
+ real terminal, not a bug in the geo_bins work itself.

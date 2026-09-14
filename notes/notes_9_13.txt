@@ -1,0 +1,188 @@
+9/13 session - validating the CALB + chemistry-sweep geo_bins jobs submitted 9/12
+
+Carried over from notes_9_8.txt "Open threads for next session":
+  - Fix MICH_EXP/SMICH and BIT2 label-matching gaps in dataset_cycle_length_stats.py (110
+    unmatched pkl files).
+  - Compute exact training-sample count (replicate eol<=100 exclusion) vs naive blue-area
+    approximation; sanity-check against paper's quoted 99,000 samples.
+  - Decide sigma_below/sigma_above for loss-reweight, or commit to two-stage pretrain/fine-tune,
+    before implementing the SSM training loop.
+
+Status as of end of 9/12 (see notes_9_8.txt "9/12" section + project doc
+claude/geo_bins_results_9_12.md):
+  - CALB, 3 seeds (2021/42/2024), CPMLP + CPTransformer, regression + geo_bins: DONE, validated
+    with compare_results.py. geo_bins beat both published numbers and our own regression re-run
+    on both architectures. CALB42 (seed 42) is the weak point across every config - unexplained.
+  - Li-ion (MIX_large), Zn-ion (ZN-coin/ZN-coin42/ZN-coin2024), Na-ion (NAion/NAion42/NAion2024):
+    3-seed regression + geo_bins qsub jobs submitted overnight for both CPMLP and CPTransformer.
+    Not yet checked.
+
+To validate today - needs to happen on the SCC (this session has no SSH/SCC access from the
+cloud sandbox or the local device bridge - no ssh config found on this machine's connected
+environment, so this has to be run from an actual terminal with SCC access):
+  1. qstat -u <username> - confirm all 12 chemistry-sweep qsub jobs (3 chemistries x 2 modes
+     [regression/geo_bins] x 2 models [CPMLP/CPTransformer]) finished, none still running/queued.
+  2. Check each job's .qlog / results_logs/*.log for errors (OOM, crashed run, wandb prompt
+     hang, etc.) before trusting any parsed numbers - don't just grep for "Best model
+     performance" and assume silence elsewhere means success.
+  3. Run compare_results.py per model x dataset_family (paths are guesses pending confirming the
+     actual log names the chemistry-sweep qsub scripts used - CALB's convention was
+     CPMLP_<dataset>_seed<seed>.log with no mode suffix, so the geo_bins scripts must have added
+     one, e.g. _regression_/_geobins_, to avoid collisions):
+       python3 compare_results.py "results_logs/CPMLP_MIX_large*seed*.log"  --model CPMLP --dataset_family Li-ion
+       python3 compare_results.py "results_logs/CPTransformer_MIX_large*seed*.log" --model CPTransformer --dataset_family Li-ion
+       python3 compare_results.py "results_logs/CPMLP_ZN-coin*seed*.log" --model CPMLP --dataset_family Zn-ion
+       python3 compare_results.py "results_logs/CPTransformer_ZN-coin*seed*.log" --model CPTransformer --dataset_family Zn-ion
+       python3 compare_results.py "results_logs/CPMLP_NAion*seed*.log" --model CPMLP --dataset_family Na-ion
+       python3 compare_results.py "results_logs/CPTransformer_NAion*seed*.log" --model CPTransformer --dataset_family Na-ion
+     Run once for the regression logs and once for the geo_bins logs per line above (separate
+     glob per mode) so regression and geo_bins numbers aren't averaged together.
+  4. Once numbers are in hand, update claude/geo_bins_results_9_12.md (or a new dated doc) with
+     the three new chemistries alongside CALB, and check the "Next steps" it already lists:
+     generality across chemistries, and the CALB42 anomaly.
+  5. If the sweep confirms geo_bins generalizes: move on to the two follow-up analyses discussed
+     9/12 - ablate the bin tolerance itself (10%-acc / 5%-acc with narrower bins, does the
+     targeted metric actually move), and check whether MSE's errors concentrate on long-tail
+     high-cycle-life cells relative to geo_bins' (checkable from existing checkpoints/logs, no
+     new training needed).
+
+--- Validation results (compare_results.py, all 4 chemistries) ---
+
+CALB: already validated 9/12, see geo_bins_results_9_12.md. Not re-run today.
+
+Li-ion (MIX_large) - ALL 4 combos (CPMLP/CPTransformer x regression/geo_bins) FAILED, same
+root cause: FileNotFoundError './dataset/MATR/MATR_b4c42.pkl' in
+data_loader.read_cell_data_according_to_prefix. MATR_b4c42 has a life label but no downloaded
+pkl - this is the flip side of the 9/8 audit's "40 labeled cells have no corresponding pkl"
+finding (that audit flagged the gap but this is the first time it's actually crashed a training
+run). Loader has zero defensive handling - one missing file kills the whole job. Not a geo_bins
+or training bug. Zero results to report for Li-ion until fixed.
+  Fix options:
+    (a) find/download the actual MATR_b4c42.pkl (check scc/downlaod_data.sh)
+    (b) make read_cell_data_according_to_prefix / read_samples_from_one_cell catch
+        FileNotFoundError and skip the cell with a warning instead of crashing - more robust,
+        also finally closes the "40 unmatched" gap from 9/8 for good instead of one filename at
+        a time
+  Before re-running: check how many OTHER missing files MIX_large's cell list would hit (cross-
+  reference cycle_length_stats.csv's "labeled but no pkl" cells against MIX_large's cell list)
+  so this doesn't die again on the second missing file.
+
+Zn-ion (ZN-coin/42/2024): regression re-run is WAY off published for both models (CPMLP MAPE
+1.037+/-0.212 vs published 0.558+/-0.034; CPTransformer 0.663+/-0.130 vs published 0.515+/-
+0.067) - much bigger gap than CALB's regression re-run ever showed, and our seed-to-seed std is
+~4-6x the paper's. geo_bins on the same data lands at/above published (CPMLP 0.559 vs 0.558;
+CPTransformer 0.428 vs 0.515, beating it) - but don't trust that comparison yet, since "geo_bins
+beats a broken regression baseline" != "geo_bins beats a working one."
+  Working hypothesis: Zn-ion is the smallest/hardest chemistry in the paper (published std
+  already the widest of the four) and batch-size-doubling for single-GPU (used successfully on
+  CALB) roughly halves optimizer steps/epoch - could hurt convergence more on a data-starved set
+  within the fixed epoch/patience budget than it did on CALB. Proposed fix to test: rerun one
+  Zn-ion seed with --accumulation_steps 2 at the ORIGINAL (non-doubled) batch_size instead of
+  doubling batch_size - same effective batch size and same optimizer-step count per epoch as the
+  paper's 2-GPU DDP setup, cleaner reproduction than batch doubling.
+  TODO: confirm printed args dict in results_logs/CPMLP_Znion_seed2021.log actually matches
+  Selected_hyperparameters.md's Zn-ion row exactly (sanity check, not yet done).
+
+Na-ion (NAion/42/2024): CPTransformer geo_bins is a legitimate modest win, ~matches published
+(0.265 vs 0.255 MAPE; 0.396 vs 0.406 acc). CPMLP geo_bins does NOT help (MAPE ~equal to
+regression: 0.322 vs 0.321; 15%-acc worse: 0.199 vs 0.289) - driven by seed2021 showing 0.00%
+test 15%-accuracy. Checked the log: NOT a bug - wandb history shows vali_acc1 staying high
+(~100%) through training while test_acc1 does the opposite, ending at 0 on the selected "best"
+epoch. Test MAPE (0.396) isn't wildly worse than the other 2 Na-ion geo_bins seeds (0.293,
+0.277), just enough that the hard 15%-threshold metric craters to 0% rather than degrading
+gracefully. Same flavor as CALB42 being "the weak point across every config tried" - looks like
+the same underlying phenomenon (some seed/split combos generalize validation->test poorly),
+worth folding into whatever investigation eventually explains CALB42.
+
+Bottom line: NOT ready to write up chemistry-sweep generalization results yet. Li-ion needs a
+data fix + rerun. Zn-ion's regression baseline needs the accumulation_steps experiment before
+trusting the geo_bins-vs-regression delta there. Na-ion CPTransformer looks like a real if modest
+win; Na-ion CPMLP does not show a win and its bad seed should get folded into the CALB42-style
+seed-instability investigation rather than treated as disqualifying on its own.
+
+--- Zn-ion regression gap: root-cause analysis (no GPU needed) ---
+Checked cycle_length_stats.csv (9/8 audit) for per-source eol distribution stats:
+  ZN-coin  n=121  mean=332.6  std=379.3  cv=1.14  min=12   median=168   max=1621
+  CALB     n=27   mean=878.9  std=496.9  cv=0.57  min=104  median=1171  max=1411
+  NA-ion   n=34   mean=180.5  std=52.6   cv=0.29  min=102  median=177   max=307
+
+cv (std/mean) tracks the regression-reproduction gap almost perfectly: ZN-coin (most skewed,
+cv=1.14) had the worst regression mismatch vs published (MAPE ~0.9-1.3 vs 0.558); NA-ion (least
+skewed, cv=0.29) had the smallest mismatch (0.32 vs 0.27); CALB (cv=0.57) reproduced cleanly.
+
+Checked data_loader.py / run_main.py: regression's MSE loss trains on labels passed through a
+per-dataset StandardScaler (mean/std) fit on that dataset's own unique_labels. geo_bins NEVER
+uses that scaler for its target - it converts back to raw value (labels*std+mean_value) and
+bins against one FIXED GLOBAL range [1, 3842] with log-spaced edges (see utils/geo_bins.py) -
+structurally immune to a bad per-dataset scaler fit. A StandardScaler fit on Zn-ion's skewed
+121-cell distribution (a few huge-life outliers vs a low median) is a poor normalizer, and MSE
+regression's gradient is known to be outlier-dominated - exactly the mechanism already floated
+as a working hypothesis in the 9/8 notes ("cycle-life labels are heavily right-skewed... MSE's
+squared-error gradient is dominated by the long-tail... geo_bins naturally more robust").
+
+Conclusion: Zn-ion's regression re-run is probably NOT a reproduction bug - it's exposing a
+real weakness of vanilla MSE regression on a skewed small dataset, which is the actual
+mechanism behind geo_bins' advantage. Reframes the earlier "fix the regression baseline" framing
+- deprioritized the accumulation_steps batch-size test (train_eval_scripts/
+CPMLP_znion_accumtest_qsub.sh, CPTransformer_znion_accumtest_qsub.sh - written but not yet run,
+kept as a cheap rule-out if we want to be thorough) since it targets the wrong mechanism.
+
+Possible cheap confirmation (no new full training needed): try log-transforming the label before
+StandardScaler.fit instead of raw eol, see if that alone closes the regression gap on Zn-ion.
+Also: redo this same cv check for MATR/Li-ion once the missing-pkl issue is fixed, to see if cv
+predicts that gap too - would make this a 3-for-3 pattern instead of 2-for-2.
+
+--- Li-ion data gap: RESOLVED, real root cause (not a missing-data problem) ---
+Correction to the earlier "MATR_b4c42.pkl missing" diagnosis: it wasn't actually missing from
+the public release. Root cause was unzip's zip-bomb false-positive heuristic ("invalid zip file
+with overlapped components (possible zip bomb)") truncating extraction partway through large
+archives during the original scc/downlaod_data.sh run. This is why the failed zips weren't
+deleted (download script only rm's on unzip success) - dgordon found download.log already had
+"FAILED to unzip ... — keeping zip for retry" for 3 of the 19 archives:
+  MATR.zip       - truncated at MATR_b4c33.pkl, missing the last 17 files (5 in TEST split,
+                   2 in VAL split, 10 in TRAIN split - this was checked BEFORE re-extracting,
+                   since silently training/evaling on a different test set than the paper would
+                   have been a real apples-to-oranges problem, not a minor completeness hit)
+  ISU_ILCC.zip   - same failure mode
+  Stanford_2.zip - same failure mode (not used by any of CALB/Li-ion/Zn-ion/Na-ion though, so
+                   wasn't actually blocking anything - fixed anyway since it was cheap)
+
+Fix: re-run unzip with UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE (documented Info-ZIP escape hatch,
+safe here since this is a legit large Zenodo scientific archive, not an untrusted file):
+  MATR: 152 -> 169/169 files (all 17 confirmed present, matches aging_conditions.py's hardcoded
+        MIX_large split exactly - verified via unzip -l against the zip's file listing BEFORE
+        re-extracting, so we know for certain these are the real cells, not substitutes)
+  ISU_ILCC: -> 240 files
+  Stanford_2: -> 181 files
+No actual data was ever unrecoverable - this was purely an extraction bug, not an upstream
+Zenodo/dataset gap. MIX_large (Li-ion) now has complete, paper-matching data - same train/val/
+test cells as the published benchmark, nothing skipped, nothing silently degraded.
+
+data_loader.py's skip-on-FileNotFoundError patch (from earlier today) is NOT what fixed this -
+that patch is still in place as a backstop for the actual "40 labeled cells with no pkl at all"
+gap identified in the 9/8 audit (a real, separate, much smaller gap, not yet quantified for
+impact on any of the 4 current chemistries - TODO if it ever actually trips for one of them).
+
+Next: re-submit the original 4 Li-ion qsub jobs (cpmlp_liion_3seeds, cpmlp_liion_3seeds_geobins,
+cptransformer_liion_3seeds, cptransformer_liion_3seeds_geobins) now that MIX_large's data is
+complete. Then compare_results.py on the Liion logs same as the other 3 chemistries.
+
+--- Checked whether Zn-ion/Na-ion have a Li-ion-style data bug: NO ---
+Prompted by finding the Li-ion zip-truncation bug, went back and checked whether Zn-ion/Na-ion's
+issues are also data/setup problems rather than the skew/seed-instability stories above. Ruled
+out two candidate bugs:
+  1. Dataset-dispatch mismatch: log filenames use "Znion"/"Naion" (no hyphen) which don't match
+     data_loader.py's elif chain (which only recognizes 'ZN-coin'/'ZN-coin42'/'ZN-coin2024' and
+     'NAion'/'NAion42'/'NAion2024') - worried this meant train_files/val_files/test_files never
+     got assigned. Checked the actual printed args dict in results_logs/CPMLP_Znion_seed2021.log
+     and results_logs/CPMLP_Naion_seed2021.log: both show the CORRECT --dataset value ('ZN-coin'
+     and 'NAion' respectively) was actually passed - the log FILENAME convention just doesn't
+     match the --dataset argument value 1:1, unlike CALB/MIX_large where they happened to match.
+     Not a bug.
+  2. Hyperparameter transcription: printed args for both match Selected_hyperparameters.md's
+     Zn-ion and Na-ion rows exactly (batch_size correctly doubled for single-GPU, everything else
+     identical). Not a bug.
+Neither Zn-ion nor Na-ion has a Li-ion-style data/extraction/dispatch/hyperparameter bug. Their
+issues (Zn-ion's bad regression reproduction; Na-ion's CPMLP+geo_bins seed2021 anomaly) remain
+open scientific questions (skew hypothesis; seed-instability pattern shared with CALB42),
+not engineering fixes. Don't re-check dispatch/hyperparams for these two again.

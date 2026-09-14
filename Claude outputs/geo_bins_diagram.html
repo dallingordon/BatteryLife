@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geo Bins Diagram</title>
+<style>
+  .gb-wrap {
+    color-scheme: light;
+    --surface-1:   #fcfcfb;
+    --page:        #f9f9f7;
+    --ink-1:       #0b0b0b;
+    --ink-2:       #52514e;
+    --ink-muted:   #898781;
+    --axis:        #c3c2b7;
+    --series-1:    #2a78d6;
+    --sep:         #9d9c96;
+    --clip-fill:   #ddb63a33;
+    --zoom-tint:   #2a78d614;
+    --box-border:  rgba(11,11,11,0.10);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--ink-1);
+    padding: 24px 16px 32px;
+    box-sizing: border-box;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .gb-wrap {
+      color-scheme: dark;
+      --surface-1:  #1a1a19;
+      --page:       #0d0d0d;
+      --ink-1:      #ffffff;
+      --ink-2:      #c3c2b7;
+      --ink-muted:  #898781;
+      --axis:       #383835;
+      --series-1:   #3987e5;
+      --sep:        #6b6a64;
+      --clip-fill:  #ddb63a2b;
+      --zoom-tint:  #3987e51c;
+      --box-border: rgba(255,255,255,0.10);
+    }
+  }
+  [data-theme="dark"] .gb-wrap {
+    color-scheme: dark;
+    --surface-1:  #1a1a19;
+    --page:       #0d0d0d;
+    --ink-1:      #ffffff;
+    --ink-2:      #c3c2b7;
+    --ink-muted:  #898781;
+    --axis:       #383835;
+    --series-1:   #3987e5;
+    --sep:        #6b6a64;
+    --clip-fill:  #ddb63a2b;
+    --zoom-tint:  #3987e51c;
+    --box-border: rgba(255,255,255,0.10);
+  }
+  .gb-wrap h1 { font-size: 19px; font-weight: 650; margin: 0 0 4px; }
+  .gb-wrap .sub { color: var(--ink-2); font-size: 13.5px; margin: 0 0 22px; max-width: 720px; line-height: 1.5; }
+  .panels { display: flex; gap: 36px; flex-wrap: wrap; align-items: flex-start; }
+  .panel-card {
+    background: var(--surface-1);
+    border: 1px solid var(--box-border);
+    border-radius: 10px;
+    padding: 14px 10px 6px;
+  }
+  .panel-title { font-size: 13px; font-weight: 600; color: var(--ink-1); margin: 0 0 2px 14px; }
+  .panel-note { font-size: 11.5px; color: var(--ink-muted); margin: 0 0 8px 14px; }
+  svg { display: block; max-width: 100%; height: auto; }
+  .plot-bg { fill: var(--surface-1); }
+  .clip-hatch { fill: var(--clip-fill); }
+  .zoom-tint { fill: var(--zoom-tint); }
+  .axis-line { stroke: var(--axis); stroke-width: 1.4; }
+  .tick-mark { stroke: var(--axis); stroke-width: 1.2; }
+  .bin-sep { stroke: var(--sep); stroke-width: 1; }
+  .identity-line { stroke: var(--series-1); stroke-width: 2.5; fill: none; }
+  .identity-line-dashed { stroke: var(--series-1); stroke-width: 2; stroke-dasharray: 5 4; fill: none; opacity: 0.75; }
+  .emit-dot { fill: var(--series-1); stroke: var(--surface-1); stroke-width: 2; }
+  .zoom-bracket { stroke: var(--ink-muted); stroke-width: 1.2; }
+  .tick-label { font-size: 11px; fill: var(--ink-muted); }
+  .axis-title { font-size: 12.5px; fill: var(--ink-2); font-weight: 500; }
+  .leader { stroke: var(--ink-muted); stroke-width: 1; }
+  .annot { font-size: 11px; fill: var(--ink-2); }
+  .facts { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--box-border); }
+  .fact { min-width: 150px; }
+  .fact .num { font-size: 20px; font-weight: 650; color: var(--ink-1); }
+  .fact .lbl { font-size: 11.5px; color: var(--ink-muted); margin-top: 2px; }
+</style>
+</head>
+<body style="margin:0;">
+<div class="gb-wrap">
+  <h1>Geometric ("15%-band") bins along the identity line</h1>
+  <p class="sub">Each bin is sized so that classifying it correctly is (approximately) the same as landing within the paper's own ±15% accuracy tolerance. Bin width is constant in <em>relative</em> terms, so it grows geometrically in absolute cycles as the true value increases — the dots are the only 28 values the model can ever emit. The only vertical lines in each chart are the 28 bin edges; there's exactly one between each pair of adjacent dots.</p>
+
+  <div class="panels">
+    <div class="panel-card">
+      <div class="panel-title">Full range: 1 - 3,842 cycles</div>
+      <div class="panel-note">shaded band on the left = the zoomed region shown at right</div>
+      <svg viewBox="0 0 670 689" width="670" height="689">
+        <rect x="70" y="34" width="560" height="560" class="plot-bg" />
+<rect x="70.00" y="34" width="0.13" height="560" class="clip-hatch" />
+<rect x="70.00" y="580.67" width="13.33" height="13.33" class="zoom-tint" />
+<line x1="70.00" y1="594" x2="70.00" y2="599" class="tick-mark" />
+<line x1="65" y1="594.00" x2="70" y2="594.00" class="tick-mark" />
+<text x="70.00" y="612" class="tick-label" text-anchor="middle">0</text>
+<text x="60" y="598.00" class="tick-label" text-anchor="end">0</text>
+<line x1="203.33" y1="594" x2="203.33" y2="599" class="tick-mark" />
+<line x1="65" y1="460.67" x2="70" y2="460.67" class="tick-mark" />
+<text x="203.33" y="612" class="tick-label" text-anchor="middle">1000</text>
+<text x="60" y="464.67" class="tick-label" text-anchor="end">1000</text>
+<line x1="336.67" y1="594" x2="336.67" y2="599" class="tick-mark" />
+<line x1="65" y1="327.33" x2="70" y2="327.33" class="tick-mark" />
+<text x="336.67" y="612" class="tick-label" text-anchor="middle">2000</text>
+<text x="60" y="331.33" class="tick-label" text-anchor="end">2000</text>
+<line x1="470.00" y1="594" x2="470.00" y2="599" class="tick-mark" />
+<line x1="65" y1="194.00" x2="70" y2="194.00" class="tick-mark" />
+<text x="470.00" y="612" class="tick-label" text-anchor="middle">3000</text>
+<text x="60" y="198.00" class="tick-label" text-anchor="end">3000</text>
+<line x1="603.33" y1="594" x2="603.33" y2="599" class="tick-mark" />
+<line x1="65" y1="60.67" x2="70" y2="60.67" class="tick-mark" />
+<text x="603.33" y="612" class="tick-label" text-anchor="middle">4000</text>
+<text x="60" y="64.67" class="tick-label" text-anchor="end">4000</text>
+<line x1="70.13" y1="34" x2="70.13" y2="594" class="bin-sep" />
+<line x1="70.18" y1="34" x2="70.18" y2="594" class="bin-sep" />
+<line x1="70.24" y1="34" x2="70.24" y2="594" class="bin-sep" />
+<line x1="70.33" y1="34" x2="70.33" y2="594" class="bin-sep" />
+<line x1="70.45" y1="34" x2="70.45" y2="594" class="bin-sep" />
+<line x1="70.60" y1="34" x2="70.60" y2="594" class="bin-sep" />
+<line x1="70.82" y1="34" x2="70.82" y2="594" class="bin-sep" />
+<line x1="71.11" y1="34" x2="71.11" y2="594" class="bin-sep" />
+<line x1="71.50" y1="34" x2="71.50" y2="594" class="bin-sep" />
+<line x1="72.03" y1="34" x2="72.03" y2="594" class="bin-sep" />
+<line x1="72.74" y1="34" x2="72.74" y2="594" class="bin-sep" />
+<line x1="73.71" y1="34" x2="73.71" y2="594" class="bin-sep" />
+<line x1="75.02" y1="34" x2="75.02" y2="594" class="bin-sep" />
+<line x1="76.79" y1="34" x2="76.79" y2="594" class="bin-sep" />
+<line x1="79.18" y1="34" x2="79.18" y2="594" class="bin-sep" />
+<line x1="82.42" y1="34" x2="82.42" y2="594" class="bin-sep" />
+<line x1="86.80" y1="34" x2="86.80" y2="594" class="bin-sep" />
+<line x1="92.73" y1="34" x2="92.73" y2="594" class="bin-sep" />
+<line x1="100.76" y1="34" x2="100.76" y2="594" class="bin-sep" />
+<line x1="111.61" y1="34" x2="111.61" y2="594" class="bin-sep" />
+<line x1="126.30" y1="34" x2="126.30" y2="594" class="bin-sep" />
+<line x1="146.17" y1="34" x2="146.17" y2="594" class="bin-sep" />
+<line x1="173.06" y1="34" x2="173.06" y2="594" class="bin-sep" />
+<line x1="209.43" y1="34" x2="209.43" y2="594" class="bin-sep" />
+<line x1="258.64" y1="34" x2="258.64" y2="594" class="bin-sep" />
+<line x1="325.22" y1="34" x2="325.22" y2="594" class="bin-sep" />
+<line x1="415.30" y1="34" x2="415.30" y2="594" class="bin-sep" />
+<line x1="537.16" y1="34" x2="537.16" y2="594" class="bin-sep" />
+<line x1="582.27" y1="34" x2="582.27" y2="594" class="bin-sep" />
+<line x1="70.13" y1="593.87" x2="582.27" y2="81.73" class="identity-line" />
+<line x1="582.27" y1="81.73" x2="613.39" y2="50.61" class="identity-line-dashed" />
+<line x1="70.00" y1="624" x2="83.33" y2="624" class="zoom-bracket" />
+<line x1="70.00" y1="620" x2="70.00" y2="628" class="zoom-bracket" />
+<line x1="83.33" y1="620" x2="83.33" y2="628" class="zoom-bracket" />
+<text x="76.67" y="640" class="annot" text-anchor="middle">zoomed at right</text>
+<circle cx="70.16" cy="593.84" r="6" class="emit-dot"><title>Bin 1 of 28 — emits 1.2 cycles (covers 1.0-1.4 cycles)</title></circle>
+<circle cx="70.21" cy="593.79" r="6" class="emit-dot"><title>Bin 2 of 28 — emits 1.6 cycles (covers 1.4-1.8 cycles)</title></circle>
+<circle cx="70.28" cy="593.72" r="6" class="emit-dot"><title>Bin 3 of 28 — emits 2.1 cycles (covers 1.8-2.5 cycles)</title></circle>
+<circle cx="70.38" cy="593.62" r="6" class="emit-dot"><title>Bin 4 of 28 — emits 2.9 cycles (covers 2.5-3.4 cycles)</title></circle>
+<circle cx="70.52" cy="593.48" r="6" class="emit-dot"><title>Bin 5 of 28 — emits 3.9 cycles (covers 3.4-4.5 cycles)</title></circle>
+<circle cx="70.70" cy="593.30" r="6" class="emit-dot"><title>Bin 6 of 28 — emits 5.3 cycles (covers 4.5-6.1 cycles)</title></circle>
+<circle cx="70.95" cy="593.05" r="6" class="emit-dot"><title>Bin 7 of 28 — emits 7.1 cycles (covers 6.1-8.3 cycles)</title></circle>
+<circle cx="71.29" cy="592.71" r="6" class="emit-dot"><title>Bin 8 of 28 — emits 9.7 cycles (covers 8.3-11.2 cycles)</title></circle>
+<circle cx="71.74" cy="592.26" r="6" class="emit-dot"><title>Bin 9 of 28 — emits 13.1 cycles (covers 11.2-15.2 cycles)</title></circle>
+<circle cx="72.36" cy="591.64" r="6" class="emit-dot"><title>Bin 10 of 28 — emits 17.7 cycles (covers 15.2-20.5 cycles)</title></circle>
+<circle cx="73.19" cy="590.81" r="6" class="emit-dot"><title>Bin 11 of 28 — emits 23.9 cycles (covers 20.5-27.8 cycles)</title></circle>
+<circle cx="74.31" cy="589.69" r="6" class="emit-dot"><title>Bin 12 of 28 — emits 32.3 cycles (covers 27.8-37.6 cycles)</title></circle>
+<circle cx="75.83" cy="588.17" r="6" class="emit-dot"><title>Bin 13 of 28 — emits 43.8 cycles (covers 37.6-50.9 cycles)</title></circle>
+<circle cx="77.89" cy="586.11" r="6" class="emit-dot"><title>Bin 14 of 28 — emits 59.2 cycles (covers 50.9-68.9 cycles)</title></circle>
+<circle cx="80.68" cy="583.32" r="6" class="emit-dot"><title>Bin 15 of 28 — emits 80.1 cycles (covers 68.9-93.2 cycles)</title></circle>
+<circle cx="84.45" cy="579.55" r="6" class="emit-dot"><title>Bin 16 of 28 — emits 108.3 cycles (covers 93.2-126.0 cycles)</title></circle>
+<circle cx="89.55" cy="574.45" r="6" class="emit-dot"><title>Bin 17 of 28 — emits 146.6 cycles (covers 126.0-170.5 cycles)</title></circle>
+<circle cx="96.44" cy="567.56" r="6" class="emit-dot"><title>Bin 18 of 28 — emits 198.3 cycles (covers 170.5-230.7 cycles)</title></circle>
+<circle cx="105.78" cy="558.22" r="6" class="emit-dot"><title>Bin 19 of 28 — emits 268.3 cycles (covers 230.7-312.1 cycles)</title></circle>
+<circle cx="118.40" cy="545.60" r="6" class="emit-dot"><title>Bin 20 of 28 — emits 363.0 cycles (covers 312.1-422.3 cycles)</title></circle>
+<circle cx="135.49" cy="528.51" r="6" class="emit-dot"><title>Bin 21 of 28 — emits 491.2 cycles (covers 422.3-571.3 cycles)</title></circle>
+<circle cx="158.60" cy="505.40" r="6" class="emit-dot"><title>Bin 22 of 28 — emits 664.5 cycles (covers 571.3-772.9 cycles)</title></circle>
+<circle cx="189.87" cy="474.13" r="6" class="emit-dot"><title>Bin 23 of 28 — emits 899.0 cycles (covers 772.9-1045.7 cycles)</title></circle>
+<circle cx="232.18" cy="431.82" r="6" class="emit-dot"><title>Bin 24 of 28 — emits 1216.3 cycles (covers 1045.7-1414.8 cycles)</title></circle>
+<circle cx="289.42" cy="374.58" r="6" class="emit-dot"><title>Bin 25 of 28 — emits 1645.6 cycles (covers 1414.8-1914.1 cycles)</title></circle>
+<circle cx="366.86" cy="297.14" r="6" class="emit-dot"><title>Bin 26 of 28 — emits 2226.4 cycles (covers 1914.1-2589.7 cycles)</title></circle>
+<circle cx="471.63" cy="192.37" r="6" class="emit-dot"><title>Bin 27 of 28 — emits 3012.3 cycles (covers 2589.7-3503.7 cycles)</title></circle>
+<circle cx="613.39" cy="50.61" r="6" class="emit-dot"><title>Bin 28 of 28 — emits 4075.4 cycles (covers 3503.7-3842.0 cycles)</title></circle>
+<line x1="70" y1="594" x2="630" y2="594" class="axis-line" />
+<line x1="70" y1="34" x2="70" y2="594" class="axis-line" />
+<line x1="70.1" y1="524.0" x2="70.1" y2="594.0" class="leader" />
+<text x="78.1" y="520.0" class="annot">no data below 1 cycle</text>
+<text x="78.1" y="534.0" class="annot">(clipped, not a bin)</text>
+<line x1="559.3" y1="104.7" x2="399.3" y2="64.7" class="leader" />
+<text x="239.3" y="58.7" class="annot">bin 28 alone spans 338 cycles</text>
+<text x="239.3" y="72.7" class="annot">(3504-3842)</text>
+<line x1="613.4" y1="50.6" x2="603.4" y2="90.6" class="leader" />
+<text x="423.4" y="106.6" class="annot">last bin emits 4075 -</text>
+<text x="423.4" y="120.6" class="annot">past range_max (3842)</text>
+        
+<text x="350.0" y="658" class="axis-title" text-anchor="middle">True cycle life (cycles)</text>
+<text x="24" y="314.0" class="axis-title" text-anchor="middle" transform="rotate(-90 24 314.0)">Emitted value = bin center (cycles)</text>
+
+      </svg>
+    </div>
+    <div class="panel-card">
+      <div class="panel-title">Zoom: 0 - 100 cycles (bins 1-15)</div>
+      <div class="panel-note">same construction, stretched out</div>
+      <svg viewBox="0 0 406 420" width="406" height="420">
+        <rect x="56" y="30" width="320" height="320" class="plot-bg" />
+<rect x="56.00" y="30" width="3.20" height="320" class="clip-hatch" />
+<line x1="56.00" y1="350" x2="56.00" y2="355" class="tick-mark" />
+<line x1="51" y1="350.00" x2="56" y2="350.00" class="tick-mark" />
+<text x="56.00" y="368" class="tick-label" text-anchor="middle">0</text>
+<text x="46" y="354.00" class="tick-label" text-anchor="end">0</text>
+<line x1="120.00" y1="350" x2="120.00" y2="355" class="tick-mark" />
+<line x1="51" y1="286.00" x2="56" y2="286.00" class="tick-mark" />
+<text x="120.00" y="368" class="tick-label" text-anchor="middle">20</text>
+<text x="46" y="290.00" class="tick-label" text-anchor="end">20</text>
+<line x1="184.00" y1="350" x2="184.00" y2="355" class="tick-mark" />
+<line x1="51" y1="222.00" x2="56" y2="222.00" class="tick-mark" />
+<text x="184.00" y="368" class="tick-label" text-anchor="middle">40</text>
+<text x="46" y="226.00" class="tick-label" text-anchor="end">40</text>
+<line x1="248.00" y1="350" x2="248.00" y2="355" class="tick-mark" />
+<line x1="51" y1="158.00" x2="56" y2="158.00" class="tick-mark" />
+<text x="248.00" y="368" class="tick-label" text-anchor="middle">60</text>
+<text x="46" y="162.00" class="tick-label" text-anchor="end">60</text>
+<line x1="312.00" y1="350" x2="312.00" y2="355" class="tick-mark" />
+<line x1="51" y1="94.00" x2="56" y2="94.00" class="tick-mark" />
+<text x="312.00" y="368" class="tick-label" text-anchor="middle">80</text>
+<text x="46" y="98.00" class="tick-label" text-anchor="end">80</text>
+<line x1="376.00" y1="350" x2="376.00" y2="355" class="tick-mark" />
+<line x1="51" y1="30.00" x2="56" y2="30.00" class="tick-mark" />
+<text x="376.00" y="368" class="tick-label" text-anchor="middle">100</text>
+<text x="46" y="34.00" class="tick-label" text-anchor="end">100</text>
+<line x1="59.20" y1="30" x2="59.20" y2="350" class="bin-sep" />
+<line x1="60.33" y1="30" x2="60.33" y2="350" class="bin-sep" />
+<line x1="61.86" y1="30" x2="61.86" y2="350" class="bin-sep" />
+<line x1="63.92" y1="30" x2="63.92" y2="350" class="bin-sep" />
+<line x1="66.72" y1="30" x2="66.72" y2="350" class="bin-sep" />
+<line x1="70.51" y1="30" x2="70.51" y2="350" class="bin-sep" />
+<line x1="75.63" y1="30" x2="75.63" y2="350" class="bin-sep" />
+<line x1="82.55" y1="30" x2="82.55" y2="350" class="bin-sep" />
+<line x1="91.92" y1="30" x2="91.92" y2="350" class="bin-sep" />
+<line x1="104.60" y1="30" x2="104.60" y2="350" class="bin-sep" />
+<line x1="121.76" y1="30" x2="121.76" y2="350" class="bin-sep" />
+<line x1="144.96" y1="30" x2="144.96" y2="350" class="bin-sep" />
+<line x1="176.36" y1="30" x2="176.36" y2="350" class="bin-sep" />
+<line x1="218.85" y1="30" x2="218.85" y2="350" class="bin-sep" />
+<line x1="276.32" y1="30" x2="276.32" y2="350" class="bin-sep" />
+<line x1="354.08" y1="30" x2="354.08" y2="350" class="bin-sep" />
+<line x1="59.20" y1="346.80" x2="376.00" y2="30.00" class="identity-line" />
+<circle cx="59.72" cy="346.28" r="6" class="emit-dot"><title>Bin 1 of 28 — emits 1.2 cycles (covers 1.0-1.4 cycles)</title></circle>
+<circle cx="61.04" cy="344.96" r="6" class="emit-dot"><title>Bin 2 of 28 — emits 1.6 cycles (covers 1.4-1.8 cycles)</title></circle>
+<circle cx="62.81" cy="343.19" r="6" class="emit-dot"><title>Bin 3 of 28 — emits 2.1 cycles (covers 1.8-2.5 cycles)</title></circle>
+<circle cx="65.22" cy="340.78" r="6" class="emit-dot"><title>Bin 4 of 28 — emits 2.9 cycles (covers 2.5-3.4 cycles)</title></circle>
+<circle cx="68.47" cy="337.53" r="6" class="emit-dot"><title>Bin 5 of 28 — emits 3.9 cycles (covers 3.4-4.5 cycles)</title></circle>
+<circle cx="72.87" cy="333.13" r="6" class="emit-dot"><title>Bin 6 of 28 — emits 5.3 cycles (covers 4.5-6.1 cycles)</title></circle>
+<circle cx="78.83" cy="327.17" r="6" class="emit-dot"><title>Bin 7 of 28 — emits 7.1 cycles (covers 6.1-8.3 cycles)</title></circle>
+<circle cx="86.88" cy="319.12" r="6" class="emit-dot"><title>Bin 8 of 28 — emits 9.7 cycles (covers 8.3-11.2 cycles)</title></circle>
+<circle cx="97.79" cy="308.21" r="6" class="emit-dot"><title>Bin 9 of 28 — emits 13.1 cycles (covers 11.2-15.2 cycles)</title></circle>
+<circle cx="112.53" cy="293.47" r="6" class="emit-dot"><title>Bin 10 of 28 — emits 17.7 cycles (covers 15.2-20.5 cycles)</title></circle>
+<circle cx="132.49" cy="273.51" r="6" class="emit-dot"><title>Bin 11 of 28 — emits 23.9 cycles (covers 20.5-27.8 cycles)</title></circle>
+<circle cx="159.48" cy="246.52" r="6" class="emit-dot"><title>Bin 12 of 28 — emits 32.3 cycles (covers 27.8-37.6 cycles)</title></circle>
+<circle cx="196.00" cy="210.00" r="6" class="emit-dot"><title>Bin 13 of 28 — emits 43.8 cycles (covers 37.6-50.9 cycles)</title></circle>
+<circle cx="245.42" cy="160.58" r="6" class="emit-dot"><title>Bin 14 of 28 — emits 59.2 cycles (covers 50.9-68.9 cycles)</title></circle>
+<circle cx="312.27" cy="93.73" r="6" class="emit-dot"><title>Bin 15 of 28 — emits 80.1 cycles (covers 68.9-93.2 cycles)</title></circle>
+<line x1="56" y1="350" x2="376" y2="350" class="axis-line" />
+<line x1="56" y1="30" x2="56" y2="350" class="axis-line" />
+<line x1="57.6" y1="304.0" x2="57.6" y2="350.0" class="leader" />
+<text x="63.6" y="300.0" class="annot">clipped &lt;1 cycle</text>
+        
+<text x="216.0" y="392" class="axis-title" text-anchor="middle">True cycle life (cycles)</text>
+
+      </svg>
+    </div>
+  </div>
+
+  <div class="facts">
+    <div class="fact"><div class="num">28</div><div class="lbl">bins covering 1-3,842 cycles</div></div>
+    <div class="fact"><div class="num">1.353x</div><div class="lbl">edge ratio (from ±15% tol)</div></div>
+    <div class="fact"><div class="num">0.35 -&gt; 338</div><div class="lbl">bin width, cycles (smallest -&gt; largest)</div></div>
+    <div class="fact"><div class="num">4,075</div><div class="lbl">last bin's emitted value - past range_max (3,842)</div></div>
+  </div>
+</div>
+</body>
+</html>

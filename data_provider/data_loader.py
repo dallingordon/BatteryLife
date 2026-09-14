@@ -377,42 +377,50 @@ class Dataset_original(Dataset):
         The dataset is indicated by the prefix of the file_name
         '''
         prefix = file_name.split('_')[0]
-        if prefix.startswith('MATR'):
-            data =  pickle.load(open(f'{self.root_path}/MATR/{file_name}', 'rb'))
-        elif prefix.startswith('HUST'):
-            data =  pickle.load(open(f'{self.root_path}/HUST/{file_name}', 'rb'))
-        elif prefix.startswith('SNL'):
-            data =  pickle.load(open(f'{self.root_path}/SNL/{file_name}', 'rb'))
-        elif prefix.startswith('CALCE'):
-            data =  pickle.load(open(f'{self.root_path}/CALCE/{file_name}', 'rb'))
-        elif prefix.startswith('HNEI'):
-            data =  pickle.load(open(f'{self.root_path}/HNEI/{file_name}', 'rb'))
-        elif prefix.startswith('MICH'):
-            if not os.path.isdir(f'{self.root_path}/total_MICH/'):
-                self.merge_MICH(f'{self.root_path}/total_MICH/')
-            data =  pickle.load(open(f'{self.root_path}/total_MICH/{file_name}', 'rb'))
-        elif prefix.startswith('RWTH'):
-            data =  pickle.load(open(f'{self.root_path}/RWTH/{file_name}', 'rb'))  
-        elif prefix.startswith('UL-PUR'):
-            data =  pickle.load(open(f'{self.root_path}/UL_PUR/{file_name}', 'rb'))  
-        elif prefix.startswith('SMICH'):
-            data =  pickle.load(open(f'{self.root_path}/MICH_EXP/{file_name[1:]}', 'rb')) 
-        elif prefix.startswith('BIT2'):
-            data =  pickle.load(open(f'{self.root_path}/BIT2/{file_name}', 'rb')) 
-        elif prefix.startswith('Tongji'):
-            data =  pickle.load(open(f'{self.root_path}/Tongji/{file_name}', 'rb'))
-        elif prefix.startswith('Stanford'):
-            data =  pickle.load(open(f'{self.root_path}/Stanford/{file_name}', 'rb'))
-        elif prefix.startswith('ISU-ILCC'):
-            data =  pickle.load(open(f'{self.root_path}/ISU_ILCC/{file_name}', 'rb'))
-        elif prefix.startswith('XJTU'):
-            data =  pickle.load(open(f'{self.root_path}/XJTU/{file_name}', 'rb'))
-        elif prefix.startswith('ZN-coin'):
-            data =  pickle.load(open(f'{self.root_path}/ZN-coin/{file_name}', 'rb'))
-        elif prefix.startswith('CALB'):
-            data =  pickle.load(open(f'{self.root_path}/CALB/{file_name}', 'rb'))
-        elif prefix.startswith('NA-ion'):
-            data =  pickle.load(open(f'{self.root_path}/NA-ion/{file_name}', 'rb'))
+        try:
+            if prefix.startswith('MATR'):
+                data =  pickle.load(open(f'{self.root_path}/MATR/{file_name}', 'rb'))
+            elif prefix.startswith('HUST'):
+                data =  pickle.load(open(f'{self.root_path}/HUST/{file_name}', 'rb'))
+            elif prefix.startswith('SNL'):
+                data =  pickle.load(open(f'{self.root_path}/SNL/{file_name}', 'rb'))
+            elif prefix.startswith('CALCE'):
+                data =  pickle.load(open(f'{self.root_path}/CALCE/{file_name}', 'rb'))
+            elif prefix.startswith('HNEI'):
+                data =  pickle.load(open(f'{self.root_path}/HNEI/{file_name}', 'rb'))
+            elif prefix.startswith('MICH'):
+                if not os.path.isdir(f'{self.root_path}/total_MICH/'):
+                    self.merge_MICH(f'{self.root_path}/total_MICH/')
+                data =  pickle.load(open(f'{self.root_path}/total_MICH/{file_name}', 'rb'))
+            elif prefix.startswith('RWTH'):
+                data =  pickle.load(open(f'{self.root_path}/RWTH/{file_name}', 'rb'))  
+            elif prefix.startswith('UL-PUR'):
+                data =  pickle.load(open(f'{self.root_path}/UL_PUR/{file_name}', 'rb'))  
+            elif prefix.startswith('SMICH'):
+                data =  pickle.load(open(f'{self.root_path}/MICH_EXP/{file_name[1:]}', 'rb')) 
+            elif prefix.startswith('BIT2'):
+                data =  pickle.load(open(f'{self.root_path}/BIT2/{file_name}', 'rb')) 
+            elif prefix.startswith('Tongji'):
+                data =  pickle.load(open(f'{self.root_path}/Tongji/{file_name}', 'rb'))
+            elif prefix.startswith('Stanford'):
+                data =  pickle.load(open(f'{self.root_path}/Stanford/{file_name}', 'rb'))
+            elif prefix.startswith('ISU-ILCC'):
+                data =  pickle.load(open(f'{self.root_path}/ISU_ILCC/{file_name}', 'rb'))
+            elif prefix.startswith('XJTU'):
+                data =  pickle.load(open(f'{self.root_path}/XJTU/{file_name}', 'rb'))
+            elif prefix.startswith('ZN-coin'):
+                data =  pickle.load(open(f'{self.root_path}/ZN-coin/{file_name}', 'rb'))
+            elif prefix.startswith('CALB'):
+                data =  pickle.load(open(f'{self.root_path}/CALB/{file_name}', 'rb'))
+            elif prefix.startswith('NA-ion'):
+                data =  pickle.load(open(f'{self.root_path}/NA-ion/{file_name}', 'rb'))
+        except FileNotFoundError:
+            # Cell has a life label / is in a split's file list, but the raw pkl was never
+            # downloaded (known gap - see notes/notes_9_8.txt cycle-length audit and
+            # notes/notes_9_13.txt MATR batch-4 gap). Skip this cell rather than crashing the
+            # whole run, same as the existing "no matching label" -> eol=None handling below.
+            print(f'WARNING: pkl file not found for {file_name} (root_path={self.root_path}) - skipping this cell')
+            return None, None
         
         if prefix == 'MICH':
             with open(f'{self.root_path}/Life labels/total_MICH_labels.json') as f:
