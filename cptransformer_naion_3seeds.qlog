@@ -1,0 +1,1450 @@
+=== CPTransformer | dataset=NAion seed=2021 ===
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+{'task_name': 'classification', 'is_training': 1, 'model_id': 'CPTransformer', 'model_comment': 'CPTransformer_Naion_s2021', 'model': 'CPTransformer', 'seed': 2021, 'charge_discharge_length': 300, 'dataset': 'NAion', 'data': 'Dataset_original', 'root_path': './dataset', 'data_path': 'ETTh1.csv', 'features': 'MS', 'target': 'OT', 'loader': 'modal', 'freq': 'h', 'checkpoints': '/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2021', 'early_cycle_threshold': 100, 'seq_len': 1, 'pred_len': 5, 'label_len': 50, 'seasonal_patterns': 'Monthly', 'enc_in': 3, 'dec_in': 1, 'c_out': 1, 'd_model': 128, 'n_heads': 4, 'lstm_layers': 6, 'e_layers': 4, 'd_layers': 9, 'd_ff': 128, 'moving_avg': 25, 'factor': 3, 'dropout': 0.1, 'embed': 'timeF', 'activation': 'relu', 'output_attention': False, 'patch_len': 10, 'stride': 10, 'patch_len2': 10, 'stride2': 10, 'prompt_domain': 0, 'output_num': 1, 'class_num': 8, 'prediction_mode': 'regression', 'geo_bin_tol': 0.15, 'geo_bin_min': 1.0, 'geo_bin_max': 3842.0, 'weighted_loss': False, 'weighted_sampling': False, 'num_workers': 4, 'itr': 1, 'train_epochs': 100, 'least_epochs': 5, 'batch_size': 32, 'patience': 5, 'learning_rate': 5e-05, 'wd': 0.0, 'des': 'Exp', 'loss': 'MSE', 'lradj': 'constant', 'pct_start': 0.2, 'use_amp': False, 'percent': 100, 'accumulation_steps': 1, 'mlp': 0, 'alpha1': 0.15, 'alpha2': 0.1}
+Loading training samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:10,  1.80it/s] 10%|█         | 2/20 [00:01<00:09,  1.80it/s] 15%|█▌        | 3/20 [00:01<00:09,  1.82it/s] 20%|██        | 4/20 [00:02<00:08,  1.83it/s] 25%|██▌       | 5/20 [00:02<00:08,  1.75it/s] 30%|███       | 6/20 [00:03<00:08,  1.69it/s] 35%|███▌      | 7/20 [00:03<00:07,  1.73it/s] 40%|████      | 8/20 [00:04<00:06,  1.80it/s] 45%|████▌     | 9/20 [00:05<00:06,  1.80it/s] 50%|█████     | 10/20 [00:05<00:05,  1.84it/s] 55%|█████▌    | 11/20 [00:06<00:04,  1.86it/s] 60%|██████    | 12/20 [00:06<00:04,  1.87it/s] 65%|██████▌   | 13/20 [00:07<00:03,  1.86it/s] 70%|███████   | 14/20 [00:07<00:03,  1.87it/s] 75%|███████▌  | 15/20 [00:08<00:02,  1.84it/s] 80%|████████  | 16/20 [00:08<00:02,  1.88it/s] 85%|████████▌ | 17/20 [00:09<00:01,  1.66it/s] 90%|█████████ | 18/20 [00:10<00:01,  1.64it/s] 95%|█████████▌| 19/20 [00:10<00:00,  1.71it/s]100%|██████████| 20/20 [00:11<00:00,  1.78it/s]100%|██████████| 20/20 [00:11<00:00,  1.79it/s]
+Loading vali samples......
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:02,  1.86it/s] 33%|███▎      | 2/6 [00:01<00:02,  1.85it/s] 50%|█████     | 3/6 [00:01<00:01,  1.89it/s] 67%|██████▋   | 4/6 [00:02<00:01,  1.91it/s] 83%|████████▎ | 5/6 [00:02<00:00,  1.91it/s]100%|██████████| 6/6 [00:03<00:00,  1.89it/s]100%|██████████| 6/6 [00:03<00:00,  1.89it/s]
+Loading test samples......
+  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [00:00<00:02,  1.87it/s] 40%|████      | 2/5 [00:01<00:01,  1.91it/s] 60%|██████    | 3/5 [00:01<00:01,  1.92it/s] 80%|████████  | 4/5 [00:02<00:00,  1.87it/s]100%|██████████| 5/5 [00:02<00:00,  1.86it/s]100%|██████████| 5/5 [00:02<00:00,  1.87it/s]
+wandb: Tracking run with wandb version 0.30.0
+wandb: W&B syncing is set to `offline` in this directory. Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
+wandb: Run data is saved locally in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_055844-8g3gkj4b
+wandb: View this run in the terminal with `wandb leet`
+{'Total': 1157505, 'Trainable': 1157505, 'Percent': 1.0}
+intra_flatten  :  Flatten(start_dim=2, end_dim=-1)
+intra_embed  :  Linear(in_features=900, out_features=128, bias=True)
+intra_MLP  :  ModuleList(
+  (0-3): 4 x MLPBlock(
+    (in_linear): Linear(in_features=128, out_features=128, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (out_linear): Linear(in_features=128, out_features=128, bias=True)
+    (ln): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+  )
+)
+pe  :  PositionalEmbedding()
+inter_TransformerEncoder  :  Encoder(
+  (attn_layers): ModuleList(
+    (0-8): 9 x EncoderLayer(
+      (attention): AttentionLayer(
+        (inner_attention): FullAttention(
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (query_projection): Linear(in_features=128, out_features=128, bias=True)
+        (key_projection): Linear(in_features=128, out_features=128, bias=True)
+        (value_projection): Linear(in_features=128, out_features=128, bias=True)
+        (out_projection): Linear(in_features=128, out_features=128, bias=True)
+      )
+      (conv1): Conv1d(128, 128, kernel_size=(1,), stride=(1,))
+      (conv2): Conv1d(128, 128, kernel_size=(1,), stride=(1,))
+      (norm1): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+      (norm2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+      (dropout): Dropout(p=0.1, inplace=False)
+    )
+  )
+)
+dropout  :  Dropout(p=0.1, inplace=False)
+inter_flatten  :  Flatten(start_dim=1, end_dim=-1)
+projection  :  Linear(in_features=12800, out_features=1, bias=True)
+Trainable parameters are: ['intra_embed.weight', 'intra_embed.bias', 'intra_MLP.0.in_linear.weight', 'intra_MLP.0.in_linear.bias', 'intra_MLP.0.out_linear.weight', 'intra_MLP.0.out_linear.bias', 'intra_MLP.0.ln.weight', 'intra_MLP.0.ln.bias', 'intra_MLP.1.in_linear.weight', 'intra_MLP.1.in_linear.bias', 'intra_MLP.1.out_linear.weight', 'intra_MLP.1.out_linear.bias', 'intra_MLP.1.ln.weight', 'intra_MLP.1.ln.bias', 'intra_MLP.2.in_linear.weight', 'intra_MLP.2.in_linear.bias', 'intra_MLP.2.out_linear.weight', 'intra_MLP.2.out_linear.bias', 'intra_MLP.2.ln.weight', 'intra_MLP.2.ln.bias', 'intra_MLP.3.in_linear.weight', 'intra_MLP.3.in_linear.bias', 'intra_MLP.3.out_linear.weight', 'intra_MLP.3.out_linear.bias', 'intra_MLP.3.ln.weight', 'intra_MLP.3.ln.bias', 'inter_TransformerEncoder.attn_layers.0.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.0.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.0.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.0.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.0.conv1.weight', 'inter_TransformerEncoder.attn_layers.0.conv1.bias', 'inter_TransformerEncoder.attn_layers.0.conv2.weight', 'inter_TransformerEncoder.attn_layers.0.conv2.bias', 'inter_TransformerEncoder.attn_layers.0.norm1.weight', 'inter_TransformerEncoder.attn_layers.0.norm1.bias', 'inter_TransformerEncoder.attn_layers.0.norm2.weight', 'inter_TransformerEncoder.attn_layers.0.norm2.bias', 'inter_TransformerEncoder.attn_layers.1.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.1.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.1.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.1.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.1.conv1.weight', 'inter_TransformerEncoder.attn_layers.1.conv1.bias', 'inter_TransformerEncoder.attn_layers.1.conv2.weight', 'inter_TransformerEncoder.attn_layers.1.conv2.bias', 'inter_TransformerEncoder.attn_layers.1.norm1.weight', 'inter_TransformerEncoder.attn_layers.1.norm1.bias', 'inter_TransformerEncoder.attn_layers.1.norm2.weight', 'inter_TransformerEncoder.attn_layers.1.norm2.bias', 'inter_TransformerEncoder.attn_layers.2.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.2.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.2.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.2.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.2.conv1.weight', 'inter_TransformerEncoder.attn_layers.2.conv1.bias', 'inter_TransformerEncoder.attn_layers.2.conv2.weight', 'inter_TransformerEncoder.attn_layers.2.conv2.bias', 'inter_TransformerEncoder.attn_layers.2.norm1.weight', 'inter_TransformerEncoder.attn_layers.2.norm1.bias', 'inter_TransformerEncoder.attn_layers.2.norm2.weight', 'inter_TransformerEncoder.attn_layers.2.norm2.bias', 'inter_TransformerEncoder.attn_layers.3.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.3.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.3.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.3.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.3.conv1.weight', 'inter_TransformerEncoder.attn_layers.3.conv1.bias', 'inter_TransformerEncoder.attn_layers.3.conv2.weight', 'inter_TransformerEncoder.attn_layers.3.conv2.bias', 'inter_TransformerEncoder.attn_layers.3.norm1.weight', 'inter_TransformerEncoder.attn_layers.3.norm1.bias', 'inter_TransformerEncoder.attn_layers.3.norm2.weight', 'inter_TransformerEncoder.attn_layers.3.norm2.bias', 'inter_TransformerEncoder.attn_layers.4.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.4.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.4.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.4.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.4.conv1.weight', 'inter_TransformerEncoder.attn_layers.4.conv1.bias', 'inter_TransformerEncoder.attn_layers.4.conv2.weight', 'inter_TransformerEncoder.attn_layers.4.conv2.bias', 'inter_TransformerEncoder.attn_layers.4.norm1.weight', 'inter_TransformerEncoder.attn_layers.4.norm1.bias', 'inter_TransformerEncoder.attn_layers.4.norm2.weight', 'inter_TransformerEncoder.attn_layers.4.norm2.bias', 'inter_TransformerEncoder.attn_layers.5.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.5.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.5.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.5.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.5.conv1.weight', 'inter_TransformerEncoder.attn_layers.5.conv1.bias', 'inter_TransformerEncoder.attn_layers.5.conv2.weight', 'inter_TransformerEncoder.attn_layers.5.conv2.bias', 'inter_TransformerEncoder.attn_layers.5.norm1.weight', 'inter_TransformerEncoder.attn_layers.5.norm1.bias', 'inter_TransformerEncoder.attn_layers.5.norm2.weight', 'inter_TransformerEncoder.attn_layers.5.norm2.bias', 'inter_TransformerEncoder.attn_layers.6.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.6.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.6.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.6.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.6.conv1.weight', 'inter_TransformerEncoder.attn_layers.6.conv1.bias', 'inter_TransformerEncoder.attn_layers.6.conv2.weight', 'inter_TransformerEncoder.attn_layers.6.conv2.bias', 'inter_TransformerEncoder.attn_layers.6.norm1.weight', 'inter_TransformerEncoder.attn_layers.6.norm1.bias', 'inter_TransformerEncoder.attn_layers.6.norm2.weight', 'inter_TransformerEncoder.attn_layers.6.norm2.bias', 'inter_TransformerEncoder.attn_layers.7.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.7.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.7.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.7.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.7.conv1.weight', 'inter_TransformerEncoder.attn_layers.7.conv1.bias', 'inter_TransformerEncoder.attn_layers.7.conv2.weight', 'inter_TransformerEncoder.attn_layers.7.conv2.bias', 'inter_TransformerEncoder.attn_layers.7.norm1.weight', 'inter_TransformerEncoder.attn_layers.7.norm1.bias', 'inter_TransformerEncoder.attn_layers.7.norm2.weight', 'inter_TransformerEncoder.attn_layers.7.norm2.bias', 'inter_TransformerEncoder.attn_layers.8.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.8.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.8.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.8.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.8.conv1.weight', 'inter_TransformerEncoder.attn_layers.8.conv1.bias', 'inter_TransformerEncoder.attn_layers.8.conv2.weight', 'inter_TransformerEncoder.attn_layers.8.conv2.bias', 'inter_TransformerEncoder.attn_layers.8.norm1.weight', 'inter_TransformerEncoder.attn_layers.8.norm1.bias', 'inter_TransformerEncoder.attn_layers.8.norm2.weight', 'inter_TransformerEncoder.attn_layers.8.norm2.bias', 'projection.weight', 'projection.bias']
+	iteras: 5, epoch: 1 | loss:0.9259772 | label_loss: 0.9259772 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2203s/iter; left time: 1365.2016s
+	iteras: 10, epoch: 1 | loss:1.2169032 | label_loss: 1.2169032 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0552s/iter; left time: 341.7810s
+	iteras: 15, epoch: 1 | loss:1.0327911 | label_loss: 1.0327911 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0557s/iter; left time: 344.7942s
+	iteras: 20, epoch: 1 | loss:1.5153768 | label_loss: 1.5153768 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 347.4431s
+	iteras: 25, epoch: 1 | loss:0.7618799 | label_loss: 0.7618799 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0556s/iter; left time: 343.6163s
+	iteras: 30, epoch: 1 | loss:0.9778475 | label_loss: 0.9778475 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0556s/iter; left time: 343.2149s
+	iteras: 35, epoch: 1 | loss:0.9152216 | label_loss: 0.9152216 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0557s/iter; left time: 343.4789s
+	iteras: 40, epoch: 1 | loss:0.8699058 | label_loss: 0.8699058 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 343.7615s
+	iteras: 45, epoch: 1 | loss:1.3760333 | label_loss: 1.3760333 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 344.2954s
+	iteras: 50, epoch: 1 | loss:0.5902491 | label_loss: 0.5902491 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0557s/iter; left time: 342.8874s
+	iteras: 55, epoch: 1 | loss:1.0732589 | label_loss: 1.0732589 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0550s/iter; left time: 337.7834s
+	iteras: 60, epoch: 1 | loss:0.6235930 | label_loss: 0.6235930 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0533s/iter; left time: 327.2108s
+Epoch: 1 cost time: 3.8344199657440186
+0it [00:00, ?it/s]1it [00:00,  7.15it/s]7it [00:00, 31.32it/s]13it [00:00, 40.55it/s]19it [00:00, 43.78it/s]19it [00:00, 38.34it/s]
+0it [00:00, ?it/s]1it [00:00,  7.59it/s]7it [00:00, 31.72it/s]13it [00:00, 41.62it/s]16it [00:00, 37.03it/s]
+Epoch: 1 | Train Loss: 1.02936| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 56.0323207 | Train MAPE: 0.2629102 | Vali RMSE: 20.5042223| Vali MAE: 17.7180458| Vali MAPE: 0.0959585| Test RMSE: 68.0383784| Test MAE: 61.9724179 | Test MAPE: 0.3609809
+[2026-09-13 05:58:51,476] [INFO] [real_accelerator.py:203:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Warning: The default cache directory for DeepSpeed Triton autotune, /usr4/dl523/dgordon/.triton/autotune, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path.
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2021/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion_lossMSE_wd0.0_wlFalse_bs32_s2021-CPTransformer_Naion_s2021!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 2 | loss:0.6880652 | label_loss: 0.6880652 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.8817s/iter; left time: 5408.5186s
+	iteras: 10, epoch: 2 | loss:0.7417910 | label_loss: 0.7417910 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0553s/iter; left time: 338.6511s
+	iteras: 15, epoch: 2 | loss:0.7590714 | label_loss: 0.7590714 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 341.4830s
+	iteras: 20, epoch: 2 | loss:0.7523183 | label_loss: 0.7523183 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 342.2100s
+	iteras: 25, epoch: 2 | loss:0.9064719 | label_loss: 0.9064719 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 342.9061s
+	iteras: 30, epoch: 2 | loss:0.8893041 | label_loss: 0.8893041 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 341.6641s
+	iteras: 35, epoch: 2 | loss:0.9220090 | label_loss: 0.9220090 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 341.4086s
+	iteras: 40, epoch: 2 | loss:1.1532073 | label_loss: 1.1532073 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 341.7923s
+	iteras: 45, epoch: 2 | loss:1.8033123 | label_loss: 1.8033123 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 341.4790s
+	iteras: 50, epoch: 2 | loss:1.0609982 | label_loss: 1.0609982 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 340.6428s
+	iteras: 55, epoch: 2 | loss:1.4198266 | label_loss: 1.4198266 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0554s/iter; left time: 337.0826s
+	iteras: 60, epoch: 2 | loss:0.7904392 | label_loss: 0.7904392 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0538s/iter; left time: 327.3320s
+Epoch: 2 cost time: 3.600872755050659
+0it [00:00, ?it/s]1it [00:00,  7.12it/s]7it [00:00, 31.23it/s]13it [00:00, 40.76it/s]18it [00:00, 41.97it/s]19it [00:00, 36.22it/s]
+0it [00:00, ?it/s]1it [00:00,  7.01it/s]5it [00:00, 23.46it/s]10it [00:00, 32.95it/s]15it [00:00, 37.49it/s]16it [00:00, 31.53it/s]
+Epoch: 2 | Train Loss: 0.96983| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 54.3877628 | Train MAPE: 0.2549000 | Vali RMSE: 23.9342924| Vali MAE: 18.3383171| Vali MAPE: 0.1110085| Test RMSE: 64.9693166| Test MAE: 56.7013079 | Test MAPE: 0.3980046
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 3 | loss:1.1652794 | label_loss: 1.1652794 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3239s/iter; left time: 1966.6758s
+	iteras: 10, epoch: 3 | loss:0.9583653 | label_loss: 0.9583653 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0606s/iter; left time: 367.4287s
+	iteras: 15, epoch: 3 | loss:0.7337159 | label_loss: 0.7337159 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0618s/iter; left time: 374.8921s
+	iteras: 20, epoch: 3 | loss:0.7524468 | label_loss: 0.7524468 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0619s/iter; left time: 374.9387s
+	iteras: 25, epoch: 3 | loss:0.4554819 | label_loss: 0.4554819 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0616s/iter; left time: 372.7167s
+	iteras: 30, epoch: 3 | loss:0.6957435 | label_loss: 0.6957435 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0618s/iter; left time: 373.8303s
+	iteras: 35, epoch: 3 | loss:0.8761650 | label_loss: 0.8761650 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0622s/iter; left time: 376.0004s
+	iteras: 40, epoch: 3 | loss:0.7283970 | label_loss: 0.7283970 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0618s/iter; left time: 373.0567s
+	iteras: 45, epoch: 3 | loss:0.8185446 | label_loss: 0.8185446 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0623s/iter; left time: 375.6496s
+	iteras: 50, epoch: 3 | loss:0.9647724 | label_loss: 0.9647724 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0601s/iter; left time: 362.2056s
+	iteras: 55, epoch: 3 | loss:0.9868470 | label_loss: 0.9868470 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 335.7408s
+	iteras: 60, epoch: 3 | loss:0.8931667 | label_loss: 0.8931667 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0544s/iter; left time: 327.3653s
+Epoch: 3 cost time: 3.884997844696045
+0it [00:00, ?it/s]1it [00:00,  6.81it/s]5it [00:00, 22.98it/s]10it [00:00, 30.91it/s]15it [00:00, 35.76it/s]19it [00:00, 36.25it/s]19it [00:00, 31.78it/s]
+0it [00:00, ?it/s]1it [00:00,  6.54it/s]6it [00:00, 25.01it/s]11it [00:00, 32.53it/s]16it [00:00, 35.13it/s]16it [00:00, 30.72it/s]
+Epoch: 3 | Train Loss: 0.85423| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 51.0436210 | Train MAPE: 0.2413208 | Vali RMSE: 18.3373582| Vali MAE: 16.3045005| Vali MAPE: 0.0940425| Test RMSE: 63.1024954| Test MAE: 53.8570356 | Test MAPE: 0.3455152
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2021/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion_lossMSE_wd0.0_wlFalse_bs32_s2021-CPTransformer_Naion_s2021!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 4 | loss:0.5016730 | label_loss: 0.5016730 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3509s/iter; left time: 2108.9404s
+	iteras: 10, epoch: 4 | loss:0.6894400 | label_loss: 0.6894400 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 337.8640s
+	iteras: 15, epoch: 4 | loss:0.5714954 | label_loss: 0.5714954 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 338.1022s
+	iteras: 20, epoch: 4 | loss:0.7770017 | label_loss: 0.7770017 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 337.3362s
+	iteras: 25, epoch: 4 | loss:1.0791396 | label_loss: 1.0791396 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 336.4608s
+	iteras: 30, epoch: 4 | loss:0.8987088 | label_loss: 0.8987088 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 338.0210s
+	iteras: 35, epoch: 4 | loss:0.5973023 | label_loss: 0.5973023 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 335.7987s
+	iteras: 40, epoch: 4 | loss:0.8050248 | label_loss: 0.8050248 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 337.2226s
+	iteras: 45, epoch: 4 | loss:0.8270619 | label_loss: 0.8270619 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 339.0395s
+	iteras: 50, epoch: 4 | loss:0.5411325 | label_loss: 0.5411325 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 335.9528s
+	iteras: 55, epoch: 4 | loss:0.9887749 | label_loss: 0.9887749 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0554s/iter; left time: 330.2107s
+	iteras: 60, epoch: 4 | loss:0.6236004 | label_loss: 0.6236004 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0539s/iter; left time: 321.1480s
+Epoch: 4 cost time: 3.6224465370178223
+0it [00:00, ?it/s]1it [00:00,  6.84it/s]7it [00:00, 30.69it/s]13it [00:00, 39.99it/s]19it [00:00, 43.47it/s]19it [00:00, 37.84it/s]
+0it [00:00, ?it/s]1it [00:00,  7.11it/s]6it [00:00, 28.42it/s]12it [00:00, 40.23it/s]16it [00:00, 36.22it/s]
+Epoch: 4 | Train Loss: 0.78259| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 48.8564208 | Train MAPE: 0.2330399 | Vali RMSE: 28.5888233| Vali MAE: 22.5199001| Vali MAPE: 0.1167152| Test RMSE: 67.7712507| Test MAE: 53.9028487 | Test MAPE: 0.2827896
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 5 | loss:0.7688397 | label_loss: 0.7688397 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3023s/iter; left time: 1797.7949s
+	iteras: 10, epoch: 5 | loss:0.9588898 | label_loss: 0.9588898 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0548s/iter; left time: 325.8512s
+	iteras: 15, epoch: 5 | loss:0.8064700 | label_loss: 0.8064700 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 331.1250s
+	iteras: 20, epoch: 5 | loss:0.9794141 | label_loss: 0.9794141 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 331.4420s
+	iteras: 25, epoch: 5 | loss:0.8991232 | label_loss: 0.8991232 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 330.5569s
+	iteras: 30, epoch: 5 | loss:0.9525844 | label_loss: 0.9525844 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 332.3590s
+	iteras: 35, epoch: 5 | loss:0.7281936 | label_loss: 0.7281936 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 330.1113s
+	iteras: 40, epoch: 5 | loss:0.6886333 | label_loss: 0.6886333 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0557s/iter; left time: 329.5129s
+	iteras: 45, epoch: 5 | loss:0.8137488 | label_loss: 0.8137488 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 330.5753s
+	iteras: 50, epoch: 5 | loss:0.5588698 | label_loss: 0.5588698 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0557s/iter; left time: 328.5149s
+	iteras: 55, epoch: 5 | loss:0.4075245 | label_loss: 0.4075245 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0552s/iter; left time: 325.3725s
+	iteras: 60, epoch: 5 | loss:0.6544673 | label_loss: 0.6544673 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0534s/iter; left time: 314.4866s
+Epoch: 5 cost time: 3.591057777404785
+0it [00:00, ?it/s]1it [00:00,  7.16it/s]7it [00:00, 30.80it/s]13it [00:00, 39.87it/s]19it [00:00, 43.14it/s]19it [00:00, 37.80it/s]
+0it [00:00, ?it/s]1it [00:00,  7.04it/s]6it [00:00, 28.52it/s]12it [00:00, 39.69it/s]16it [00:00, 35.97it/s]
+Epoch: 5 | Train Loss: 0.75106| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 47.8619178 | Train MAPE: 0.2239662 | Vali RMSE: 26.9574731| Vali MAE: 21.5729816| Vali MAPE: 0.1124875| Test RMSE: 63.7761908| Test MAE: 52.5635174 | Test MAPE: 0.2981635
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 6 | loss:0.6164449 | label_loss: 0.6164449 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3033s/iter; left time: 1785.1463s
+	iteras: 10, epoch: 6 | loss:0.5364293 | label_loss: 0.5364293 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0553s/iter; left time: 325.3822s
+	iteras: 15, epoch: 6 | loss:0.4484308 | label_loss: 0.4484308 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 330.5589s
+	iteras: 20, epoch: 6 | loss:0.7520964 | label_loss: 0.7520964 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 330.3277s
+	iteras: 25, epoch: 6 | loss:0.4647671 | label_loss: 0.4647671 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 330.0000s
+	iteras: 30, epoch: 6 | loss:0.7825408 | label_loss: 0.7825408 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 332.3676s
+	iteras: 35, epoch: 6 | loss:0.4907058 | label_loss: 0.4907058 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 329.1805s
+	iteras: 40, epoch: 6 | loss:0.6770260 | label_loss: 0.6770260 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 328.7588s
+	iteras: 45, epoch: 6 | loss:0.5629155 | label_loss: 0.5629155 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 329.1505s
+	iteras: 50, epoch: 6 | loss:0.4842205 | label_loss: 0.4842205 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 329.0359s
+	iteras: 55, epoch: 6 | loss:0.4496558 | label_loss: 0.4496558 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0554s/iter; left time: 323.4763s
+	iteras: 60, epoch: 6 | loss:0.8922159 | label_loss: 0.8922159 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0544s/iter; left time: 317.4275s
+Epoch: 6 cost time: 3.6220433712005615
+0it [00:00, ?it/s]1it [00:00,  7.09it/s]7it [00:00, 30.93it/s]13it [00:00, 40.22it/s]19it [00:00, 43.51it/s]19it [00:00, 38.06it/s]
+0it [00:00, ?it/s]1it [00:00,  7.33it/s]6it [00:00, 29.01it/s]12it [00:00, 40.04it/s]16it [00:00, 36.36it/s]
+Epoch: 6 | Train Loss: 0.64869| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 44.4808026 | Train MAPE: 0.2011790 | Vali RMSE: 35.7732928| Vali MAE: 30.4577447| Vali MAPE: 0.1618459| Test RMSE: 63.5981328| Test MAE: 51.5130048 | Test MAPE: 0.2943827
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 7 | loss:0.6975595 | label_loss: 0.6975595 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3007s/iter; left time: 1751.1893s
+	iteras: 10, epoch: 7 | loss:0.4413816 | label_loss: 0.4413816 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0550s/iter; left time: 320.3154s
+	iteras: 15, epoch: 7 | loss:1.0204113 | label_loss: 1.0204113 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 327.0422s
+	iteras: 20, epoch: 7 | loss:0.6430601 | label_loss: 0.6430601 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 327.2105s
+	iteras: 25, epoch: 7 | loss:0.7065861 | label_loss: 0.7065861 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 326.1789s
+	iteras: 30, epoch: 7 | loss:0.4475076 | label_loss: 0.4475076 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 327.0537s
+	iteras: 35, epoch: 7 | loss:0.4774345 | label_loss: 0.4774345 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 326.6980s
+	iteras: 40, epoch: 7 | loss:0.8381102 | label_loss: 0.8381102 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 325.7450s
+	iteras: 45, epoch: 7 | loss:0.5616014 | label_loss: 0.5616014 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 328.1593s
+	iteras: 50, epoch: 7 | loss:0.7798319 | label_loss: 0.7798319 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 324.0387s
+	iteras: 55, epoch: 7 | loss:0.6050744 | label_loss: 0.6050744 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0555s/iter; left time: 320.3110s
+	iteras: 60, epoch: 7 | loss:0.5603718 | label_loss: 0.5603718 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0537s/iter; left time: 309.8471s
+Epoch: 7 cost time: 3.6109790802001953
+0it [00:00, ?it/s]1it [00:00,  7.29it/s]6it [00:00, 29.04it/s]12it [00:00, 39.45it/s]18it [00:00, 45.77it/s]19it [00:00, 38.17it/s]
+0it [00:00, ?it/s]1it [00:00,  6.92it/s]7it [00:00, 30.87it/s]13it [00:00, 40.72it/s]16it [00:00, 36.09it/s]
+Epoch: 7 | Train Loss: 0.72273| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 46.9507111 | Train MAPE: 0.2116021 | Vali RMSE: 31.8492046| Vali MAE: 26.7213195| Vali MAPE: 0.1408219| Test RMSE: 63.0004306| Test MAE: 46.6126871 | Test MAPE: 0.2651272
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 8 | loss:0.6107498 | label_loss: 0.6107498 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2997s/iter; left time: 1726.9641s
+	iteras: 10, epoch: 8 | loss:0.6756649 | label_loss: 0.6756649 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0552s/iter; left time: 317.9347s
+	iteras: 15, epoch: 8 | loss:0.2735973 | label_loss: 0.2735973 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 321.2875s
+	iteras: 20, epoch: 8 | loss:0.6670854 | label_loss: 0.6670854 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 321.8292s
+	iteras: 25, epoch: 8 | loss:0.5765856 | label_loss: 0.5765856 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 321.0022s
+	iteras: 30, epoch: 8 | loss:0.4612037 | label_loss: 0.4612037 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 320.7090s
+	iteras: 35, epoch: 8 | loss:0.7199266 | label_loss: 0.7199266 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 319.6956s
+	iteras: 40, epoch: 8 | loss:1.0973389 | label_loss: 1.0973389 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 320.7155s
+	iteras: 45, epoch: 8 | loss:0.6321502 | label_loss: 0.6321502 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 319.3597s
+	iteras: 50, epoch: 8 | loss:0.6014870 | label_loss: 0.6014870 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 320.2956s
+	iteras: 55, epoch: 8 | loss:0.6720224 | label_loss: 0.6720224 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0552s/iter; left time: 315.3155s
+	iteras: 60, epoch: 8 | loss:0.5671034 | label_loss: 0.5671034 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0535s/iter; left time: 305.0681s
+Epoch: 8 cost time: 3.5879366397857666
+0it [00:00, ?it/s]1it [00:00,  6.95it/s]6it [00:00, 28.17it/s]12it [00:00, 38.90it/s]18it [00:00, 45.22it/s]19it [00:00, 37.53it/s]
+0it [00:00, ?it/s]1it [00:00,  7.19it/s]7it [00:00, 30.85it/s]13it [00:00, 41.06it/s]16it [00:00, 36.36it/s]
+Epoch: 8 | Train Loss: 0.63109| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 43.8732809 | Train MAPE: 0.1946805 | Vali RMSE: 30.2069754| Vali MAE: 25.6279387| Vali MAPE: 0.1355464| Test RMSE: 60.6505828| Test MAE: 44.4548167 | Test MAPE: 0.2678681
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 9 | loss:0.8682621 | label_loss: 0.8682621 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3052s/iter; left time: 1739.7417s
+	iteras: 10, epoch: 9 | loss:0.6698676 | label_loss: 0.6698676 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0611s/iter; left time: 347.8081s
+	iteras: 15, epoch: 9 | loss:0.5392437 | label_loss: 0.5392437 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0622s/iter; left time: 353.7431s
+	iteras: 20, epoch: 9 | loss:0.6532435 | label_loss: 0.6532435 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0624s/iter; left time: 354.8611s
+	iteras: 25, epoch: 9 | loss:0.8933573 | label_loss: 0.8933573 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0629s/iter; left time: 357.0495s
+	iteras: 30, epoch: 9 | loss:0.7861447 | label_loss: 0.7861447 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0624s/iter; left time: 353.8963s
+	iteras: 35, epoch: 9 | loss:0.5473304 | label_loss: 0.5473304 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0622s/iter; left time: 352.4013s
+	iteras: 40, epoch: 9 | loss:0.7513196 | label_loss: 0.7513196 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0624s/iter; left time: 353.7324s
+	iteras: 45, epoch: 9 | loss:0.3404045 | label_loss: 0.3404045 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0622s/iter; left time: 351.9072s
+	iteras: 50, epoch: 9 | loss:0.5482229 | label_loss: 0.5482229 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0626s/iter; left time: 353.8538s
+	iteras: 55, epoch: 9 | loss:0.8082223 | label_loss: 0.8082223 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0614s/iter; left time: 346.8356s
+	iteras: 60, epoch: 9 | loss:0.5076500 | label_loss: 0.5076500 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0595s/iter; left time: 335.6001s
+Epoch: 9 cost time: 3.9706084728240967
+0it [00:00, ?it/s]1it [00:00,  7.01it/s]7it [00:00, 30.49it/s]13it [00:00, 39.98it/s]19it [00:00, 43.41it/s]19it [00:00, 37.86it/s]
+0it [00:00, ?it/s]1it [00:00,  7.15it/s]7it [00:00, 30.91it/s]13it [00:00, 41.48it/s]16it [00:00, 36.66it/s]
+Epoch: 9 | Train Loss: 0.67486| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 45.3692140 | Train MAPE: 0.1965220 | Vali RMSE: 28.7038724| Vali MAE: 25.2694972| Vali MAPE: 0.1335872| Test RMSE: 66.5957557| Test MAE: 61.6313577 | Test MAPE: 0.3589707
+EarlyStopping counter: 4 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 10 | loss:0.7952843 | label_loss: 0.7952843 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3028s/iter; left time: 1707.0656s
+	iteras: 10, epoch: 10 | loss:0.7200933 | label_loss: 0.7200933 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 314.8651s
+	iteras: 15, epoch: 10 | loss:0.8311789 | label_loss: 0.8311789 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 317.7330s
+	iteras: 20, epoch: 10 | loss:1.0581232 | label_loss: 1.0581232 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 315.9570s
+	iteras: 25, epoch: 10 | loss:0.8222941 | label_loss: 0.8222941 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 316.9324s
+	iteras: 30, epoch: 10 | loss:1.2314417 | label_loss: 1.2314417 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 314.8180s
+	iteras: 35, epoch: 10 | loss:0.7781165 | label_loss: 0.7781165 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 314.9454s
+	iteras: 40, epoch: 10 | loss:1.2432108 | label_loss: 1.2432108 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 316.5548s
+	iteras: 45, epoch: 10 | loss:0.6375362 | label_loss: 0.6375362 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 314.4970s
+	iteras: 50, epoch: 10 | loss:0.6498048 | label_loss: 0.6498048 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 314.2462s
+	iteras: 55, epoch: 10 | loss:0.5444006 | label_loss: 0.5444006 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0554s/iter; left time: 309.7657s
+	iteras: 60, epoch: 10 | loss:0.5687627 | label_loss: 0.5687627 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0538s/iter; left time: 300.1932s
+Epoch: 10 cost time: 3.6159818172454834
+0it [00:00, ?it/s]1it [00:00,  6.90it/s]7it [00:00, 30.96it/s]13it [00:00, 40.34it/s]19it [00:00, 43.64it/s]19it [00:00, 38.06it/s]
+0it [00:00, ?it/s]1it [00:00,  7.39it/s]6it [00:00, 28.95it/s]12it [00:00, 40.02it/s]16it [00:00, 36.29it/s]
+wandb: 
+wandb: Run history:
+wandb:      epoch ▁▂▂▃▄▅▅▆▇▇█
+wandb:  test_MAPE ▆█▆▃▃▃▂▂▆▁▆
+wandb:  test_RMSE █▅▃█▄▄▃▁▇▄▃
+wandb:  test_acc1 ▁██▄▇███▁██
+wandb:  test_acc2 ▁▆▇▁▃▃██▁█▇
+wandb: train_loss █▇▅▄▃▁▃▁▂▃▃
+wandb:  vali_MAPE ▁▃▁▃▃█▆▅▅▆▁
+wandb:  vali_RMSE ▂▃▁▅▄█▆▆▅▇▁
+wandb:  vali_acc1 █▆▇▅▅▂▃▄▅▁▇
+wandb:  vali_acc2 ▅▇█▇█▃▂▂▁▂█
+wandb: 
+wandb: Run summary:
+wandb:      epoch 10
+wandb:  test_MAPE 0.34552
+wandb:  test_RMSE 63.1025
+wandb:  test_acc1 40
+wandb:  test_acc2 33.6
+wandb: train_loss 0.72881
+wandb:  vali_MAPE 0.09404
+wandb:  vali_RMSE 18.33736
+wandb:  vali_acc1 78.5
+wandb:  vali_acc2 62
+wandb: 
+wandb: You can sync this run to the cloud by running:
+wandb: wandb sync /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_055844-8g3gkj4b
+wandb: Find logs at: ./wandb/offline-run-20260913_055844-8g3gkj4b/logs
+Epoch: 10 | Train Loss: 0.72881| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 47.1477442 | Train MAPE: 0.2117086 | Vali RMSE: 33.7643965| Vali MAE: 27.6931441| Vali MAPE: 0.1446539| Test RMSE: 63.3474976| Test MAE: 45.2312462 | Test MAPE: 0.2503750
+EarlyStopping counter: 5 out of 5
+Early stopping
+Best model performance: Test MAE: 53.8570 | Test RMSE: 63.1025 | Test MAPE: 0.3455 | Test 15%-accuracy: 40.0000 | Test 10%-accuracy: 33.6000 | Val MAE: 16.3045 | Val RMSE: 18.3374 | Val MAPE: 0.0940 | Val 15%-accuracy: 78.5000 | Val 10%-accuracy: 62.0000 
+Best model performance: Test Seen MAPE: 0.2806 | Test Unseen MAPE: 0.4430
+Best model performance: Test Seen 15%-accuracy: 66.6667 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 56.0000 | Test Unseen 10%-accuracy: 0.0000
+/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2021/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion_lossMSE_wd0.0_wlFalse_bs32_s2021-CPTransformer_Naion_s2021
+=== CPTransformer | dataset=NAion42 seed=42 ===
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+{'task_name': 'classification', 'is_training': 1, 'model_id': 'CPTransformer', 'model_comment': 'CPTransformer_Naion_s42', 'model': 'CPTransformer', 'seed': 42, 'charge_discharge_length': 300, 'dataset': 'NAion42', 'data': 'Dataset_original', 'root_path': './dataset', 'data_path': 'ETTh1.csv', 'features': 'MS', 'target': 'OT', 'loader': 'modal', 'freq': 'h', 'checkpoints': '/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed42', 'early_cycle_threshold': 100, 'seq_len': 1, 'pred_len': 5, 'label_len': 50, 'seasonal_patterns': 'Monthly', 'enc_in': 3, 'dec_in': 1, 'c_out': 1, 'd_model': 128, 'n_heads': 4, 'lstm_layers': 6, 'e_layers': 4, 'd_layers': 9, 'd_ff': 128, 'moving_avg': 25, 'factor': 3, 'dropout': 0.1, 'embed': 'timeF', 'activation': 'relu', 'output_attention': False, 'patch_len': 10, 'stride': 10, 'patch_len2': 10, 'stride2': 10, 'prompt_domain': 0, 'output_num': 1, 'class_num': 8, 'prediction_mode': 'regression', 'geo_bin_tol': 0.15, 'geo_bin_min': 1.0, 'geo_bin_max': 3842.0, 'weighted_loss': False, 'weighted_sampling': False, 'num_workers': 4, 'itr': 1, 'train_epochs': 100, 'least_epochs': 5, 'batch_size': 32, 'patience': 5, 'learning_rate': 5e-05, 'wd': 0.0, 'des': 'Exp', 'loss': 'MSE', 'lradj': 'constant', 'pct_start': 0.2, 'use_amp': False, 'percent': 100, 'accumulation_steps': 1, 'mlp': 0, 'alpha1': 0.15, 'alpha2': 0.1}
+Loading training samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:10,  1.78it/s] 10%|█         | 2/20 [00:01<00:09,  1.82it/s] 15%|█▌        | 3/20 [00:01<00:09,  1.71it/s] 20%|██        | 4/20 [00:02<00:09,  1.75it/s] 25%|██▌       | 5/20 [00:02<00:08,  1.78it/s] 30%|███       | 6/20 [00:03<00:07,  1.81it/s] 35%|███▌      | 7/20 [00:03<00:07,  1.83it/s] 40%|████      | 8/20 [00:04<00:06,  1.85it/s] 45%|████▌     | 9/20 [00:04<00:05,  1.86it/s] 50%|█████     | 10/20 [00:05<00:05,  1.88it/s] 55%|█████▌    | 11/20 [00:06<00:04,  1.87it/s] 60%|██████    | 12/20 [00:06<00:04,  1.85it/s] 65%|██████▌   | 13/20 [00:07<00:03,  1.83it/s] 70%|███████   | 14/20 [00:07<00:03,  1.84it/s] 75%|███████▌  | 15/20 [00:08<00:02,  1.85it/s] 80%|████████  | 16/20 [00:08<00:02,  1.65it/s] 85%|████████▌ | 17/20 [00:09<00:01,  1.70it/s] 90%|█████████ | 18/20 [00:10<00:01,  1.72it/s] 95%|█████████▌| 19/20 [00:10<00:00,  1.77it/s]100%|██████████| 20/20 [00:11<00:00,  1.81it/s]100%|██████████| 20/20 [00:11<00:00,  1.80it/s]
+Loading vali samples......
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:02,  1.90it/s] 33%|███▎      | 2/6 [00:01<00:02,  1.89it/s] 50%|█████     | 3/6 [00:01<00:01,  1.84it/s] 67%|██████▋   | 4/6 [00:02<00:01,  1.84it/s] 83%|████████▎ | 5/6 [00:02<00:00,  1.87it/s]100%|██████████| 6/6 [00:03<00:00,  1.88it/s]100%|██████████| 6/6 [00:03<00:00,  1.87it/s]
+Loading test samples......
+  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [00:00<00:02,  1.63it/s] 40%|████      | 2/5 [00:01<00:01,  1.74it/s] 60%|██████    | 3/5 [00:01<00:01,  1.77it/s] 80%|████████  | 4/5 [00:02<00:00,  1.71it/s]100%|██████████| 5/5 [00:02<00:00,  1.77it/s]100%|██████████| 5/5 [00:02<00:00,  1.75it/s]
+wandb: Tracking run with wandb version 0.30.0
+wandb: W&B syncing is set to `offline` in this directory. Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
+wandb: Run data is saved locally in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_060007-xlg62ot8
+wandb: View this run in the terminal with `wandb leet`
+{'Total': 1157505, 'Trainable': 1157505, 'Percent': 1.0}
+intra_flatten  :  Flatten(start_dim=2, end_dim=-1)
+intra_embed  :  Linear(in_features=900, out_features=128, bias=True)
+intra_MLP  :  ModuleList(
+  (0-3): 4 x MLPBlock(
+    (in_linear): Linear(in_features=128, out_features=128, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (out_linear): Linear(in_features=128, out_features=128, bias=True)
+    (ln): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+  )
+)
+pe  :  PositionalEmbedding()
+inter_TransformerEncoder  :  Encoder(
+  (attn_layers): ModuleList(
+    (0-8): 9 x EncoderLayer(
+      (attention): AttentionLayer(
+        (inner_attention): FullAttention(
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (query_projection): Linear(in_features=128, out_features=128, bias=True)
+        (key_projection): Linear(in_features=128, out_features=128, bias=True)
+        (value_projection): Linear(in_features=128, out_features=128, bias=True)
+        (out_projection): Linear(in_features=128, out_features=128, bias=True)
+      )
+      (conv1): Conv1d(128, 128, kernel_size=(1,), stride=(1,))
+      (conv2): Conv1d(128, 128, kernel_size=(1,), stride=(1,))
+      (norm1): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+      (norm2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+      (dropout): Dropout(p=0.1, inplace=False)
+    )
+  )
+)
+dropout  :  Dropout(p=0.1, inplace=False)
+inter_flatten  :  Flatten(start_dim=1, end_dim=-1)
+projection  :  Linear(in_features=12800, out_features=1, bias=True)
+Trainable parameters are: ['intra_embed.weight', 'intra_embed.bias', 'intra_MLP.0.in_linear.weight', 'intra_MLP.0.in_linear.bias', 'intra_MLP.0.out_linear.weight', 'intra_MLP.0.out_linear.bias', 'intra_MLP.0.ln.weight', 'intra_MLP.0.ln.bias', 'intra_MLP.1.in_linear.weight', 'intra_MLP.1.in_linear.bias', 'intra_MLP.1.out_linear.weight', 'intra_MLP.1.out_linear.bias', 'intra_MLP.1.ln.weight', 'intra_MLP.1.ln.bias', 'intra_MLP.2.in_linear.weight', 'intra_MLP.2.in_linear.bias', 'intra_MLP.2.out_linear.weight', 'intra_MLP.2.out_linear.bias', 'intra_MLP.2.ln.weight', 'intra_MLP.2.ln.bias', 'intra_MLP.3.in_linear.weight', 'intra_MLP.3.in_linear.bias', 'intra_MLP.3.out_linear.weight', 'intra_MLP.3.out_linear.bias', 'intra_MLP.3.ln.weight', 'intra_MLP.3.ln.bias', 'inter_TransformerEncoder.attn_layers.0.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.0.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.0.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.0.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.0.conv1.weight', 'inter_TransformerEncoder.attn_layers.0.conv1.bias', 'inter_TransformerEncoder.attn_layers.0.conv2.weight', 'inter_TransformerEncoder.attn_layers.0.conv2.bias', 'inter_TransformerEncoder.attn_layers.0.norm1.weight', 'inter_TransformerEncoder.attn_layers.0.norm1.bias', 'inter_TransformerEncoder.attn_layers.0.norm2.weight', 'inter_TransformerEncoder.attn_layers.0.norm2.bias', 'inter_TransformerEncoder.attn_layers.1.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.1.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.1.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.1.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.1.conv1.weight', 'inter_TransformerEncoder.attn_layers.1.conv1.bias', 'inter_TransformerEncoder.attn_layers.1.conv2.weight', 'inter_TransformerEncoder.attn_layers.1.conv2.bias', 'inter_TransformerEncoder.attn_layers.1.norm1.weight', 'inter_TransformerEncoder.attn_layers.1.norm1.bias', 'inter_TransformerEncoder.attn_layers.1.norm2.weight', 'inter_TransformerEncoder.attn_layers.1.norm2.bias', 'inter_TransformerEncoder.attn_layers.2.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.2.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.2.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.2.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.2.conv1.weight', 'inter_TransformerEncoder.attn_layers.2.conv1.bias', 'inter_TransformerEncoder.attn_layers.2.conv2.weight', 'inter_TransformerEncoder.attn_layers.2.conv2.bias', 'inter_TransformerEncoder.attn_layers.2.norm1.weight', 'inter_TransformerEncoder.attn_layers.2.norm1.bias', 'inter_TransformerEncoder.attn_layers.2.norm2.weight', 'inter_TransformerEncoder.attn_layers.2.norm2.bias', 'inter_TransformerEncoder.attn_layers.3.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.3.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.3.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.3.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.3.conv1.weight', 'inter_TransformerEncoder.attn_layers.3.conv1.bias', 'inter_TransformerEncoder.attn_layers.3.conv2.weight', 'inter_TransformerEncoder.attn_layers.3.conv2.bias', 'inter_TransformerEncoder.attn_layers.3.norm1.weight', 'inter_TransformerEncoder.attn_layers.3.norm1.bias', 'inter_TransformerEncoder.attn_layers.3.norm2.weight', 'inter_TransformerEncoder.attn_layers.3.norm2.bias', 'inter_TransformerEncoder.attn_layers.4.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.4.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.4.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.4.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.4.conv1.weight', 'inter_TransformerEncoder.attn_layers.4.conv1.bias', 'inter_TransformerEncoder.attn_layers.4.conv2.weight', 'inter_TransformerEncoder.attn_layers.4.conv2.bias', 'inter_TransformerEncoder.attn_layers.4.norm1.weight', 'inter_TransformerEncoder.attn_layers.4.norm1.bias', 'inter_TransformerEncoder.attn_layers.4.norm2.weight', 'inter_TransformerEncoder.attn_layers.4.norm2.bias', 'inter_TransformerEncoder.attn_layers.5.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.5.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.5.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.5.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.5.conv1.weight', 'inter_TransformerEncoder.attn_layers.5.conv1.bias', 'inter_TransformerEncoder.attn_layers.5.conv2.weight', 'inter_TransformerEncoder.attn_layers.5.conv2.bias', 'inter_TransformerEncoder.attn_layers.5.norm1.weight', 'inter_TransformerEncoder.attn_layers.5.norm1.bias', 'inter_TransformerEncoder.attn_layers.5.norm2.weight', 'inter_TransformerEncoder.attn_layers.5.norm2.bias', 'inter_TransformerEncoder.attn_layers.6.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.6.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.6.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.6.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.6.conv1.weight', 'inter_TransformerEncoder.attn_layers.6.conv1.bias', 'inter_TransformerEncoder.attn_layers.6.conv2.weight', 'inter_TransformerEncoder.attn_layers.6.conv2.bias', 'inter_TransformerEncoder.attn_layers.6.norm1.weight', 'inter_TransformerEncoder.attn_layers.6.norm1.bias', 'inter_TransformerEncoder.attn_layers.6.norm2.weight', 'inter_TransformerEncoder.attn_layers.6.norm2.bias', 'inter_TransformerEncoder.attn_layers.7.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.7.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.7.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.7.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.7.conv1.weight', 'inter_TransformerEncoder.attn_layers.7.conv1.bias', 'inter_TransformerEncoder.attn_layers.7.conv2.weight', 'inter_TransformerEncoder.attn_layers.7.conv2.bias', 'inter_TransformerEncoder.attn_layers.7.norm1.weight', 'inter_TransformerEncoder.attn_layers.7.norm1.bias', 'inter_TransformerEncoder.attn_layers.7.norm2.weight', 'inter_TransformerEncoder.attn_layers.7.norm2.bias', 'inter_TransformerEncoder.attn_layers.8.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.8.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.8.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.8.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.8.conv1.weight', 'inter_TransformerEncoder.attn_layers.8.conv1.bias', 'inter_TransformerEncoder.attn_layers.8.conv2.weight', 'inter_TransformerEncoder.attn_layers.8.conv2.bias', 'inter_TransformerEncoder.attn_layers.8.norm1.weight', 'inter_TransformerEncoder.attn_layers.8.norm1.bias', 'inter_TransformerEncoder.attn_layers.8.norm2.weight', 'inter_TransformerEncoder.attn_layers.8.norm2.bias', 'projection.weight', 'projection.bias']
+	iteras: 5, epoch: 1 | loss:1.2334621 | label_loss: 1.2334621 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.1821s/iter; left time: 1128.0908s
+	iteras: 10, epoch: 1 | loss:1.2887733 | label_loss: 1.2887733 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0556s/iter; left time: 344.2738s
+	iteras: 15, epoch: 1 | loss:1.2155149 | label_loss: 1.2155149 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 347.0077s
+	iteras: 20, epoch: 1 | loss:1.0180719 | label_loss: 1.0180719 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 348.2312s
+	iteras: 25, epoch: 1 | loss:1.0032098 | label_loss: 1.0032098 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 347.3482s
+	iteras: 30, epoch: 1 | loss:0.9995967 | label_loss: 0.9995967 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 347.4006s
+	iteras: 35, epoch: 1 | loss:1.1952322 | label_loss: 1.1952322 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 345.4303s
+	iteras: 40, epoch: 1 | loss:1.5736852 | label_loss: 1.5736852 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 346.0653s
+	iteras: 45, epoch: 1 | loss:1.4642122 | label_loss: 1.4642122 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 348.3448s
+	iteras: 50, epoch: 1 | loss:1.0625453 | label_loss: 1.0625453 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 347.7776s
+	iteras: 55, epoch: 1 | loss:0.7713708 | label_loss: 0.7713708 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 343.7258s
+	iteras: 60, epoch: 1 | loss:1.1312087 | label_loss: 1.1312087 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0540s/iter; left time: 331.8313s
+Epoch: 1 cost time: 3.8727030754089355
+0it [00:00, ?it/s]1it [00:00,  7.26it/s]6it [00:00, 28.91it/s]11it [00:00, 37.55it/s]17it [00:00, 44.52it/s]19it [00:00, 37.70it/s]
+0it [00:00, ?it/s]1it [00:00,  7.29it/s]6it [00:00, 29.06it/s]12it [00:00, 40.54it/s]16it [00:00, 36.55it/s]
+Epoch: 1 | Train Loss: 1.13830| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 46.5206247 | Train MAPE: 0.2247029 | Vali RMSE: 73.9922358| Vali MAE: 61.7815354| Vali MAPE: 0.3050885| Test RMSE: 58.9621925| Test MAE: 51.7459691 | Test MAPE: 0.3201419
+[2026-09-13 06:00:12,605] [INFO] [real_accelerator.py:203:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Warning: The default cache directory for DeepSpeed Triton autotune, /usr4/dl523/dgordon/.triton/autotune, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path.
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed42/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs32_s42-CPTransformer_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 2 | loss:1.1199358 | label_loss: 1.1199358 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.5955s/iter; left time: 3653.0064s
+	iteras: 10, epoch: 2 | loss:1.0385323 | label_loss: 1.0385323 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0553s/iter; left time: 339.1353s
+	iteras: 15, epoch: 2 | loss:1.1952707 | label_loss: 1.1952707 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 345.8410s
+	iteras: 20, epoch: 2 | loss:0.8844773 | label_loss: 0.8844773 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 345.0527s
+	iteras: 25, epoch: 2 | loss:1.2636535 | label_loss: 1.2636535 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 345.3096s
+	iteras: 30, epoch: 2 | loss:1.0417725 | label_loss: 1.0417725 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 344.6403s
+	iteras: 35, epoch: 2 | loss:0.7894202 | label_loss: 0.7894202 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 343.8675s
+	iteras: 40, epoch: 2 | loss:0.7807719 | label_loss: 0.7807719 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 343.9802s
+	iteras: 45, epoch: 2 | loss:0.8267679 | label_loss: 0.8267679 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 343.3817s
+	iteras: 50, epoch: 2 | loss:1.1574591 | label_loss: 1.1574591 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 343.0739s
+	iteras: 55, epoch: 2 | loss:0.8227935 | label_loss: 0.8227935 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 339.8484s
+	iteras: 60, epoch: 2 | loss:0.7461140 | label_loss: 0.7461140 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0541s/iter; left time: 328.7988s
+Epoch: 2 cost time: 3.6242222785949707
+0it [00:00, ?it/s]1it [00:00,  6.77it/s]6it [00:00, 27.79it/s]11it [00:00, 36.89it/s]17it [00:00, 43.62it/s]19it [00:00, 36.71it/s]
+0it [00:00, ?it/s]1it [00:00,  7.03it/s]6it [00:00, 28.40it/s]12it [00:00, 39.09it/s]16it [00:00, 35.50it/s]
+Epoch: 2 | Train Loss: 1.00424| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 43.6953926 | Train MAPE: 0.2119991 | Vali RMSE: 72.0041069| Vali MAE: 59.2783563| Vali MAPE: 0.2821229| Test RMSE: 60.2700470| Test MAE: 46.9070082 | Test MAPE: 0.2527902
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed42/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs32_s42-CPTransformer_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 3 | loss:0.8496059 | label_loss: 0.8496059 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3208s/iter; left time: 1948.1343s
+	iteras: 10, epoch: 3 | loss:1.3897904 | label_loss: 1.3897904 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0557s/iter; left time: 337.9439s
+	iteras: 15, epoch: 3 | loss:0.8941166 | label_loss: 0.8941166 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 341.6720s
+	iteras: 20, epoch: 3 | loss:0.6756234 | label_loss: 0.6756234 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 341.4731s
+	iteras: 25, epoch: 3 | loss:0.7905004 | label_loss: 0.7905004 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 340.7693s
+	iteras: 30, epoch: 3 | loss:1.0585568 | label_loss: 1.0585568 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 340.0694s
+	iteras: 35, epoch: 3 | loss:0.6405014 | label_loss: 0.6405014 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 340.4286s
+	iteras: 40, epoch: 3 | loss:0.6950287 | label_loss: 0.6950287 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 340.0441s
+	iteras: 45, epoch: 3 | loss:0.9464356 | label_loss: 0.9464356 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 340.6378s
+	iteras: 50, epoch: 3 | loss:1.1120818 | label_loss: 1.1120818 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 343.2483s
+	iteras: 55, epoch: 3 | loss:1.2178295 | label_loss: 1.2178295 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0555s/iter; left time: 334.4383s
+	iteras: 60, epoch: 3 | loss:0.9518853 | label_loss: 0.9518853 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0540s/iter; left time: 324.9705s
+Epoch: 3 cost time: 3.6281754970550537
+0it [00:00, ?it/s]1it [00:00,  7.19it/s]6it [00:00, 28.72it/s]11it [00:00, 37.57it/s]17it [00:00, 44.26it/s]19it [00:00, 37.40it/s]
+0it [00:00, ?it/s]1it [00:00,  6.90it/s]6it [00:00, 27.84it/s]12it [00:00, 39.26it/s]16it [00:00, 35.31it/s]
+Epoch: 3 | Train Loss: 0.94514| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 42.3901471 | Train MAPE: 0.2095644 | Vali RMSE: 64.3451483| Vali MAE: 52.5027588| Vali MAPE: 0.2570174| Test RMSE: 59.2831321| Test MAE: 45.1205314 | Test MAPE: 0.2435813
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed42/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs32_s42-CPTransformer_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 4 | loss:0.7813908 | label_loss: 0.7813908 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3211s/iter; left time: 1929.7557s
+	iteras: 10, epoch: 4 | loss:0.8491820 | label_loss: 0.8491820 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 335.3333s
+	iteras: 15, epoch: 4 | loss:1.3424718 | label_loss: 1.3424718 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 341.3836s
+	iteras: 20, epoch: 4 | loss:0.7934991 | label_loss: 0.7934991 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 341.1488s
+	iteras: 25, epoch: 4 | loss:0.9039409 | label_loss: 0.9039409 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 338.8843s
+	iteras: 30, epoch: 4 | loss:0.6685820 | label_loss: 0.6685820 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 337.4802s
+	iteras: 35, epoch: 4 | loss:0.4447445 | label_loss: 0.4447445 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 337.3436s
+	iteras: 40, epoch: 4 | loss:1.0106965 | label_loss: 1.0106965 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 337.3388s
+	iteras: 45, epoch: 4 | loss:0.7199962 | label_loss: 0.7199962 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 336.5319s
+	iteras: 50, epoch: 4 | loss:0.5846240 | label_loss: 0.5846240 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 336.1141s
+	iteras: 55, epoch: 4 | loss:0.7276578 | label_loss: 0.7276578 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0556s/iter; left time: 331.6333s
+	iteras: 60, epoch: 4 | loss:0.4296344 | label_loss: 0.4296344 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0538s/iter; left time: 320.6233s
+Epoch: 4 cost time: 3.6359896659851074
+0it [00:00, ?it/s]1it [00:00,  7.03it/s]6it [00:00, 28.16it/s]11it [00:00, 37.08it/s]17it [00:00, 43.86it/s]19it [00:00, 37.01it/s]
+0it [00:00, ?it/s]1it [00:00,  6.94it/s]6it [00:00, 28.06it/s]12it [00:00, 39.55it/s]16it [00:00, 35.44it/s]
+Epoch: 4 | Train Loss: 0.84442| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 40.0678767 | Train MAPE: 0.1967078 | Vali RMSE: 60.5243321| Vali MAE: 46.7849147| Vali MAPE: 0.2061824| Test RMSE: 73.6567943| Test MAE: 53.0167311 | Test MAPE: 0.2597506
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed42/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs32_s42-CPTransformer_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 5 | loss:0.8219351 | label_loss: 0.8219351 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3201s/iter; left time: 1904.0695s
+	iteras: 10, epoch: 5 | loss:0.4230195 | label_loss: 0.4230195 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 331.3454s
+	iteras: 15, epoch: 5 | loss:0.6918822 | label_loss: 0.6918822 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 336.0271s
+	iteras: 20, epoch: 5 | loss:0.5878676 | label_loss: 0.5878676 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 337.2294s
+	iteras: 25, epoch: 5 | loss:0.5358515 | label_loss: 0.5358515 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 336.1277s
+	iteras: 30, epoch: 5 | loss:0.5177073 | label_loss: 0.5177073 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 335.9465s
+	iteras: 35, epoch: 5 | loss:0.6487868 | label_loss: 0.6487868 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 336.8486s
+	iteras: 40, epoch: 5 | loss:0.5402944 | label_loss: 0.5402944 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 336.0512s
+	iteras: 45, epoch: 5 | loss:1.4202230 | label_loss: 1.4202230 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 334.7241s
+	iteras: 50, epoch: 5 | loss:0.9861152 | label_loss: 0.9861152 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 335.3429s
+	iteras: 55, epoch: 5 | loss:0.4700078 | label_loss: 0.4700078 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 329.8481s
+	iteras: 60, epoch: 5 | loss:0.9014504 | label_loss: 0.9014504 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0542s/iter; left time: 319.3494s
+Epoch: 5 cost time: 3.6458499431610107
+0it [00:00, ?it/s]1it [00:00,  7.20it/s]6it [00:00, 28.64it/s]11it [00:00, 37.24it/s]17it [00:00, 43.85it/s]19it [00:00, 37.16it/s]
+0it [00:00, ?it/s]1it [00:00,  7.14it/s]6it [00:00, 28.38it/s]12it [00:00, 40.12it/s]16it [00:00, 36.09it/s]
+Epoch: 5 | Train Loss: 0.73248| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 37.3176229 | Train MAPE: 0.1781774 | Vali RMSE: 52.3619314| Vali MAE: 47.4836155| Vali MAPE: 0.2514429| Test RMSE: 58.6333746| Test MAE: 40.6547574 | Test MAPE: 0.2244657
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 6 | loss:0.7108967 | label_loss: 0.7108967 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3046s/iter; left time: 1792.8038s
+	iteras: 10, epoch: 6 | loss:0.4743791 | label_loss: 0.4743791 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 329.1952s
+	iteras: 15, epoch: 6 | loss:0.5061080 | label_loss: 0.5061080 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 333.4754s
+	iteras: 20, epoch: 6 | loss:0.4355592 | label_loss: 0.4355592 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 333.3308s
+	iteras: 25, epoch: 6 | loss:0.7097690 | label_loss: 0.7097690 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 333.4158s
+	iteras: 30, epoch: 6 | loss:0.5593322 | label_loss: 0.5593322 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 335.4244s
+	iteras: 35, epoch: 6 | loss:0.7130229 | label_loss: 0.7130229 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 332.5503s
+	iteras: 40, epoch: 6 | loss:0.7744037 | label_loss: 0.7744037 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 332.0513s
+	iteras: 45, epoch: 6 | loss:0.6047442 | label_loss: 0.6047442 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 331.0230s
+	iteras: 50, epoch: 6 | loss:1.1020061 | label_loss: 1.1020061 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 330.8117s
+	iteras: 55, epoch: 6 | loss:0.8168963 | label_loss: 0.8168963 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 326.8708s
+	iteras: 60, epoch: 6 | loss:0.6298630 | label_loss: 0.6298630 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0541s/iter; left time: 315.3239s
+Epoch: 6 cost time: 3.64325213432312
+0it [00:00, ?it/s]1it [00:00,  7.18it/s]6it [00:00, 28.12it/s]11it [00:00, 37.12it/s]17it [00:00, 43.79it/s]19it [00:00, 37.05it/s]
+0it [00:00, ?it/s]1it [00:00,  6.89it/s]6it [00:00, 28.20it/s]11it [00:00, 35.49it/s]16it [00:00, 36.18it/s]16it [00:00, 32.35it/s]
+Epoch: 6 | Train Loss: 0.66755| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 35.6254418 | Train MAPE: 0.1682889 | Vali RMSE: 52.6151701| Vali MAE: 48.0704603| Vali MAPE: 0.2638752| Test RMSE: 58.2676159| Test MAE: 45.9561947 | Test MAPE: 0.2879644
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 7 | loss:0.6908669 | label_loss: 0.6908669 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3155s/iter; left time: 1837.3144s
+	iteras: 10, epoch: 7 | loss:0.7138906 | label_loss: 0.7138906 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0557s/iter; left time: 323.8678s
+	iteras: 15, epoch: 7 | loss:0.6332549 | label_loss: 0.6332549 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 330.1220s
+	iteras: 20, epoch: 7 | loss:0.6843198 | label_loss: 0.6843198 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 328.8980s
+	iteras: 25, epoch: 7 | loss:0.4460575 | label_loss: 0.4460575 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 329.1977s
+	iteras: 30, epoch: 7 | loss:0.6701626 | label_loss: 0.6701626 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 329.1038s
+	iteras: 35, epoch: 7 | loss:0.4811416 | label_loss: 0.4811416 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 327.8818s
+	iteras: 40, epoch: 7 | loss:0.6249521 | label_loss: 0.6249521 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 328.3478s
+	iteras: 45, epoch: 7 | loss:0.2835218 | label_loss: 0.2835218 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 331.2362s
+	iteras: 50, epoch: 7 | loss:0.5688115 | label_loss: 0.5688115 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 327.8371s
+	iteras: 55, epoch: 7 | loss:0.6574716 | label_loss: 0.6574716 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 324.8128s
+	iteras: 60, epoch: 7 | loss:0.5593239 | label_loss: 0.5593239 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0543s/iter; left time: 312.9960s
+Epoch: 7 cost time: 3.645505666732788
+0it [00:00, ?it/s]1it [00:00,  6.81it/s]7it [00:00, 30.53it/s]13it [00:00, 39.82it/s]18it [00:00, 40.98it/s]19it [00:00, 35.21it/s]
+0it [00:00, ?it/s]1it [00:00,  6.66it/s]5it [00:00, 22.28it/s]10it [00:00, 31.73it/s]15it [00:00, 36.17it/s]16it [00:00, 30.34it/s]
+Epoch: 7 | Train Loss: 0.57013| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 32.9232527 | Train MAPE: 0.1539817 | Vali RMSE: 63.6780187| Vali MAE: 50.8346621| Vali MAPE: 0.2411485| Test RMSE: 63.7526693| Test MAE: 51.5205152 | Test MAPE: 0.2865139
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 8 | loss:0.4787069 | label_loss: 0.4787069 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3283s/iter; left time: 1891.8000s
+	iteras: 10, epoch: 8 | loss:0.6243926 | label_loss: 0.6243926 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 326.8001s
+	iteras: 15, epoch: 8 | loss:0.4152098 | label_loss: 0.4152098 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0576s/iter; left time: 331.3825s
+	iteras: 20, epoch: 8 | loss:0.4672001 | label_loss: 0.4672001 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0576s/iter; left time: 330.9122s
+	iteras: 25, epoch: 8 | loss:0.4658350 | label_loss: 0.4658350 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 327.9244s
+	iteras: 30, epoch: 8 | loss:0.4072113 | label_loss: 0.4072113 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0575s/iter; left time: 329.6022s
+	iteras: 35, epoch: 8 | loss:0.4913293 | label_loss: 0.4913293 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 325.7825s
+	iteras: 40, epoch: 8 | loss:0.3787259 | label_loss: 0.3787259 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 328.7726s
+	iteras: 45, epoch: 8 | loss:0.2741480 | label_loss: 0.2741480 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 326.1751s
+	iteras: 50, epoch: 8 | loss:0.4583158 | label_loss: 0.4583158 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 324.8656s
+	iteras: 55, epoch: 8 | loss:0.3891505 | label_loss: 0.3891505 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 320.5646s
+	iteras: 60, epoch: 8 | loss:0.6117688 | label_loss: 0.6117688 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0543s/iter; left time: 309.8372s
+Epoch: 8 cost time: 3.6737825870513916
+0it [00:00, ?it/s]1it [00:00,  7.00it/s]6it [00:00, 28.14it/s]11it [00:00, 36.90it/s]17it [00:00, 43.29it/s]19it [00:00, 36.67it/s]
+0it [00:00, ?it/s]1it [00:00,  7.22it/s]7it [00:00, 31.47it/s]12it [00:00, 36.40it/s]16it [00:00, 36.21it/s]16it [00:00, 32.97it/s]
+Epoch: 8 | Train Loss: 0.50074| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 30.8548879 | Train MAPE: 0.1451400 | Vali RMSE: 70.7729118| Vali MAE: 56.4302383| Vali MAPE: 0.2554677| Test RMSE: 66.6185713| Test MAE: 51.7670603 | Test MAPE: 0.2757078
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 9 | loss:0.6765375 | label_loss: 0.6765375 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3169s/iter; left time: 1806.1890s
+	iteras: 10, epoch: 9 | loss:0.9501706 | label_loss: 0.9501706 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0625s/iter; left time: 355.6858s
+	iteras: 15, epoch: 9 | loss:0.9280509 | label_loss: 0.9280509 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0629s/iter; left time: 357.7348s
+	iteras: 20, epoch: 9 | loss:1.0323348 | label_loss: 1.0323348 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0627s/iter; left time: 356.6327s
+	iteras: 25, epoch: 9 | loss:0.7709622 | label_loss: 0.7709622 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0629s/iter; left time: 357.2410s
+	iteras: 30, epoch: 9 | loss:0.4846056 | label_loss: 0.4846056 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0627s/iter; left time: 356.0741s
+	iteras: 35, epoch: 9 | loss:0.8987211 | label_loss: 0.8987211 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0632s/iter; left time: 358.0696s
+	iteras: 40, epoch: 9 | loss:0.8496993 | label_loss: 0.8496993 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0626s/iter; left time: 354.6722s
+	iteras: 45, epoch: 9 | loss:0.5688580 | label_loss: 0.5688580 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0629s/iter; left time: 356.1939s
+	iteras: 50, epoch: 9 | loss:0.5799714 | label_loss: 0.5799714 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0626s/iter; left time: 354.1637s
+	iteras: 55, epoch: 9 | loss:0.3432904 | label_loss: 0.3432904 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0619s/iter; left time: 349.6143s
+	iteras: 60, epoch: 9 | loss:0.6948822 | label_loss: 0.6948822 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0597s/iter; left time: 337.1974s
+Epoch: 9 cost time: 4.000663757324219
+0it [00:00, ?it/s]1it [00:00,  6.58it/s]7it [00:00, 30.29it/s]13it [00:00, 39.51it/s]19it [00:00, 40.04it/s]19it [00:00, 35.69it/s]
+0it [00:00, ?it/s]1it [00:00,  6.64it/s]6it [00:00, 27.19it/s]12it [00:00, 38.42it/s]16it [00:00, 34.65it/s]
+Epoch: 9 | Train Loss: 0.66237| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 35.4869737 | Train MAPE: 0.1639094 | Vali RMSE: 56.7594723| Vali MAE: 49.2498585| Vali MAPE: 0.2567189| Test RMSE: 59.5830804| Test MAE: 47.9755458 | Test MAPE: 0.2792229
+EarlyStopping counter: 4 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 10 | loss:0.4807670 | label_loss: 0.4807670 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3171s/iter; left time: 1787.5649s
+	iteras: 10, epoch: 10 | loss:0.3826267 | label_loss: 0.3826267 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0589s/iter; left time: 331.9281s
+	iteras: 15, epoch: 10 | loss:0.4096317 | label_loss: 0.4096317 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 322.8021s
+	iteras: 20, epoch: 10 | loss:0.4683381 | label_loss: 0.4683381 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 315.9758s
+	iteras: 25, epoch: 10 | loss:0.6208528 | label_loss: 0.6208528 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 317.7267s
+	iteras: 30, epoch: 10 | loss:0.7723188 | label_loss: 0.7723188 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 314.2785s
+	iteras: 35, epoch: 10 | loss:0.6334650 | label_loss: 0.6334650 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 315.9546s
+	iteras: 40, epoch: 10 | loss:0.4145083 | label_loss: 0.4145083 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0583s/iter; left time: 326.6147s
+	iteras: 45, epoch: 10 | loss:0.5041307 | label_loss: 0.5041307 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 316.5911s
+	iteras: 50, epoch: 10 | loss:0.3844324 | label_loss: 0.3844324 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0557s/iter; left time: 311.7996s
+	iteras: 55, epoch: 10 | loss:0.3352033 | label_loss: 0.3352033 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 311.7670s
+	iteras: 60, epoch: 10 | loss:0.5199017 | label_loss: 0.5199017 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0555s/iter; left time: 309.6322s
+Epoch: 10 cost time: 3.675070285797119
+0it [00:00, ?it/s]1it [00:00,  6.47it/s]6it [00:00, 26.92it/s]11it [00:00, 34.80it/s]16it [00:00, 38.00it/s]19it [00:00, 33.01it/s]
+0it [00:00, ?it/s]1it [00:00,  6.40it/s]6it [00:00, 26.76it/s]12it [00:00, 37.73it/s]16it [00:00, 33.80it/s]
+wandb: 
+wandb: Run history:
+wandb:      epoch ▁▂▂▃▄▅▅▆▇▇█
+wandb:  test_MAPE █▃▂▄▁▆▆▅▅█▄
+wandb:  test_RMSE ▁▂▁█▁▁▃▅▂▃█
+wandb:  test_acc1 ▁▂▅▆██▁▁▄▁▆
+wandb:  test_acc2 ▁▂▃▂█▃▃▃▃▃▂
+wandb: train_loss █▇▆▅▄▃▂▁▃▁▁
+wandb:  vali_MAPE █▆▅▁▄▅▃▄▅▅▁
+wandb:  vali_RMSE █▇▅▄▁▁▅▇▂▆▄
+wandb:  vali_acc1 ▄▅▅█▂▁█▅▃▅█
+wandb:  vali_acc2 ▁▁█▃▁▁▄▅▁▆▃
+wandb: 
+wandb: Run summary:
+wandb:      epoch 10
+wandb:  test_MAPE 0.25975
+wandb:  test_RMSE 73.65679
+wandb:  test_acc1 33
+wandb:  test_acc2 14.2
+wandb: train_loss 0.52971
+wandb:  vali_MAPE 0.20618
+wandb:  vali_RMSE 60.52433
+wandb:  vali_acc1 45.16667
+wandb:  vali_acc2 21
+wandb: 
+wandb: You can sync this run to the cloud by running:
+wandb: wandb sync /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_060007-xlg62ot8
+wandb: Find logs at: ./wandb/offline-run-20260913_060007-xlg62ot8/logs
+Epoch: 10 | Train Loss: 0.52971| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 31.7347057 | Train MAPE: 0.1482842 | Vali RMSE: 68.1550877| Vali MAE: 56.0365315| Vali MAPE: 0.2687325| Test RMSE: 63.2143058| Test MAE: 54.4959947 | Test MAPE: 0.3173790
+EarlyStopping counter: 5 out of 5
+Early stopping
+Best model performance: Test MAE: 53.0167 | Test RMSE: 73.6568 | Test MAPE: 0.2598 | Test 15%-accuracy: 33.0000 | Test 10%-accuracy: 14.2000 | Val MAE: 46.7849 | Val RMSE: 60.5243 | Val MAPE: 0.2062 | Val 15%-accuracy: 45.1667 | Val 10%-accuracy: 21.0000 
+Best model performance: Test Seen MAPE: 0.2143 | Test Unseen MAPE: 0.3280
+Best model performance: Test Seen 15%-accuracy: 23.3333 | Test Unseen 15%-accuracy: 47.5000
+Best model performance: Test Seen 10%-accuracy: 3.6667 | Test Unseen 10%-accuracy: 30.0000
+/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed42/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs32_s42-CPTransformer_Naion_s42
+=== CPTransformer | dataset=NAion2024 seed=2024 ===
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+{'task_name': 'classification', 'is_training': 1, 'model_id': 'CPTransformer', 'model_comment': 'CPTransformer_Naion_s2024', 'model': 'CPTransformer', 'seed': 2024, 'charge_discharge_length': 300, 'dataset': 'NAion2024', 'data': 'Dataset_original', 'root_path': './dataset', 'data_path': 'ETTh1.csv', 'features': 'MS', 'target': 'OT', 'loader': 'modal', 'freq': 'h', 'checkpoints': '/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2024', 'early_cycle_threshold': 100, 'seq_len': 1, 'pred_len': 5, 'label_len': 50, 'seasonal_patterns': 'Monthly', 'enc_in': 3, 'dec_in': 1, 'c_out': 1, 'd_model': 128, 'n_heads': 4, 'lstm_layers': 6, 'e_layers': 4, 'd_layers': 9, 'd_ff': 128, 'moving_avg': 25, 'factor': 3, 'dropout': 0.1, 'embed': 'timeF', 'activation': 'relu', 'output_attention': False, 'patch_len': 10, 'stride': 10, 'patch_len2': 10, 'stride2': 10, 'prompt_domain': 0, 'output_num': 1, 'class_num': 8, 'prediction_mode': 'regression', 'geo_bin_tol': 0.15, 'geo_bin_min': 1.0, 'geo_bin_max': 3842.0, 'weighted_loss': False, 'weighted_sampling': False, 'num_workers': 4, 'itr': 1, 'train_epochs': 100, 'least_epochs': 5, 'batch_size': 32, 'patience': 5, 'learning_rate': 5e-05, 'wd': 0.0, 'des': 'Exp', 'loss': 'MSE', 'lradj': 'constant', 'pct_start': 0.2, 'use_amp': False, 'percent': 100, 'accumulation_steps': 1, 'mlp': 0, 'alpha1': 0.15, 'alpha2': 0.1}
+Loading training samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:10,  1.87it/s] 10%|█         | 2/20 [00:01<00:09,  1.91it/s] 15%|█▌        | 3/20 [00:01<00:08,  1.93it/s] 20%|██        | 4/20 [00:02<00:08,  1.95it/s] 25%|██▌       | 5/20 [00:02<00:07,  1.95it/s] 30%|███       | 6/20 [00:03<00:07,  1.96it/s] 35%|███▌      | 7/20 [00:03<00:06,  1.86it/s] 40%|████      | 8/20 [00:04<00:06,  1.88it/s] 45%|████▌     | 9/20 [00:04<00:05,  1.92it/s] 50%|█████     | 10/20 [00:05<00:05,  1.84it/s] 55%|█████▌    | 11/20 [00:05<00:04,  1.89it/s] 60%|██████    | 12/20 [00:06<00:04,  1.91it/s] 65%|██████▌   | 13/20 [00:06<00:03,  1.93it/s] 70%|███████   | 14/20 [00:07<00:03,  1.92it/s] 75%|███████▌  | 15/20 [00:07<00:02,  1.93it/s] 80%|████████  | 16/20 [00:08<00:02,  1.96it/s] 85%|████████▌ | 17/20 [00:09<00:01,  1.70it/s] 90%|█████████ | 18/20 [00:09<00:01,  1.76it/s] 95%|█████████▌| 19/20 [00:10<00:00,  1.83it/s]100%|██████████| 20/20 [00:10<00:00,  1.87it/s]100%|██████████| 20/20 [00:10<00:00,  1.88it/s]
+Loading vali samples......
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:02,  2.02it/s] 33%|███▎      | 2/6 [00:00<00:01,  2.01it/s] 50%|█████     | 3/6 [00:01<00:01,  1.94it/s] 67%|██████▋   | 4/6 [00:02<00:01,  1.95it/s] 83%|████████▎ | 5/6 [00:02<00:00,  1.96it/s]100%|██████████| 6/6 [00:03<00:00,  1.95it/s]100%|██████████| 6/6 [00:03<00:00,  1.96it/s]
+Loading test samples......
+  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [00:00<00:02,  1.71it/s] 40%|████      | 2/5 [00:01<00:01,  1.86it/s] 60%|██████    | 3/5 [00:01<00:01,  1.92it/s] 80%|████████  | 4/5 [00:02<00:00,  1.91it/s]100%|██████████| 5/5 [00:02<00:00,  1.89it/s]100%|██████████| 5/5 [00:02<00:00,  1.88it/s]
+wandb: Tracking run with wandb version 0.30.0
+wandb: W&B syncing is set to `offline` in this directory. Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
+wandb: Run data is saved locally in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_060126-pdoflcfh
+wandb: View this run in the terminal with `wandb leet`
+{'Total': 1157505, 'Trainable': 1157505, 'Percent': 1.0}
+intra_flatten  :  Flatten(start_dim=2, end_dim=-1)
+intra_embed  :  Linear(in_features=900, out_features=128, bias=True)
+intra_MLP  :  ModuleList(
+  (0-3): 4 x MLPBlock(
+    (in_linear): Linear(in_features=128, out_features=128, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (out_linear): Linear(in_features=128, out_features=128, bias=True)
+    (ln): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+  )
+)
+pe  :  PositionalEmbedding()
+inter_TransformerEncoder  :  Encoder(
+  (attn_layers): ModuleList(
+    (0-8): 9 x EncoderLayer(
+      (attention): AttentionLayer(
+        (inner_attention): FullAttention(
+          (dropout): Dropout(p=0.1, inplace=False)
+        )
+        (query_projection): Linear(in_features=128, out_features=128, bias=True)
+        (key_projection): Linear(in_features=128, out_features=128, bias=True)
+        (value_projection): Linear(in_features=128, out_features=128, bias=True)
+        (out_projection): Linear(in_features=128, out_features=128, bias=True)
+      )
+      (conv1): Conv1d(128, 128, kernel_size=(1,), stride=(1,))
+      (conv2): Conv1d(128, 128, kernel_size=(1,), stride=(1,))
+      (norm1): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+      (norm2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+      (dropout): Dropout(p=0.1, inplace=False)
+    )
+  )
+)
+dropout  :  Dropout(p=0.1, inplace=False)
+inter_flatten  :  Flatten(start_dim=1, end_dim=-1)
+projection  :  Linear(in_features=12800, out_features=1, bias=True)
+Trainable parameters are: ['intra_embed.weight', 'intra_embed.bias', 'intra_MLP.0.in_linear.weight', 'intra_MLP.0.in_linear.bias', 'intra_MLP.0.out_linear.weight', 'intra_MLP.0.out_linear.bias', 'intra_MLP.0.ln.weight', 'intra_MLP.0.ln.bias', 'intra_MLP.1.in_linear.weight', 'intra_MLP.1.in_linear.bias', 'intra_MLP.1.out_linear.weight', 'intra_MLP.1.out_linear.bias', 'intra_MLP.1.ln.weight', 'intra_MLP.1.ln.bias', 'intra_MLP.2.in_linear.weight', 'intra_MLP.2.in_linear.bias', 'intra_MLP.2.out_linear.weight', 'intra_MLP.2.out_linear.bias', 'intra_MLP.2.ln.weight', 'intra_MLP.2.ln.bias', 'intra_MLP.3.in_linear.weight', 'intra_MLP.3.in_linear.bias', 'intra_MLP.3.out_linear.weight', 'intra_MLP.3.out_linear.bias', 'intra_MLP.3.ln.weight', 'intra_MLP.3.ln.bias', 'inter_TransformerEncoder.attn_layers.0.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.0.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.0.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.0.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.0.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.0.conv1.weight', 'inter_TransformerEncoder.attn_layers.0.conv1.bias', 'inter_TransformerEncoder.attn_layers.0.conv2.weight', 'inter_TransformerEncoder.attn_layers.0.conv2.bias', 'inter_TransformerEncoder.attn_layers.0.norm1.weight', 'inter_TransformerEncoder.attn_layers.0.norm1.bias', 'inter_TransformerEncoder.attn_layers.0.norm2.weight', 'inter_TransformerEncoder.attn_layers.0.norm2.bias', 'inter_TransformerEncoder.attn_layers.1.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.1.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.1.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.1.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.1.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.1.conv1.weight', 'inter_TransformerEncoder.attn_layers.1.conv1.bias', 'inter_TransformerEncoder.attn_layers.1.conv2.weight', 'inter_TransformerEncoder.attn_layers.1.conv2.bias', 'inter_TransformerEncoder.attn_layers.1.norm1.weight', 'inter_TransformerEncoder.attn_layers.1.norm1.bias', 'inter_TransformerEncoder.attn_layers.1.norm2.weight', 'inter_TransformerEncoder.attn_layers.1.norm2.bias', 'inter_TransformerEncoder.attn_layers.2.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.2.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.2.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.2.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.2.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.2.conv1.weight', 'inter_TransformerEncoder.attn_layers.2.conv1.bias', 'inter_TransformerEncoder.attn_layers.2.conv2.weight', 'inter_TransformerEncoder.attn_layers.2.conv2.bias', 'inter_TransformerEncoder.attn_layers.2.norm1.weight', 'inter_TransformerEncoder.attn_layers.2.norm1.bias', 'inter_TransformerEncoder.attn_layers.2.norm2.weight', 'inter_TransformerEncoder.attn_layers.2.norm2.bias', 'inter_TransformerEncoder.attn_layers.3.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.3.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.3.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.3.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.3.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.3.conv1.weight', 'inter_TransformerEncoder.attn_layers.3.conv1.bias', 'inter_TransformerEncoder.attn_layers.3.conv2.weight', 'inter_TransformerEncoder.attn_layers.3.conv2.bias', 'inter_TransformerEncoder.attn_layers.3.norm1.weight', 'inter_TransformerEncoder.attn_layers.3.norm1.bias', 'inter_TransformerEncoder.attn_layers.3.norm2.weight', 'inter_TransformerEncoder.attn_layers.3.norm2.bias', 'inter_TransformerEncoder.attn_layers.4.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.4.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.4.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.4.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.4.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.4.conv1.weight', 'inter_TransformerEncoder.attn_layers.4.conv1.bias', 'inter_TransformerEncoder.attn_layers.4.conv2.weight', 'inter_TransformerEncoder.attn_layers.4.conv2.bias', 'inter_TransformerEncoder.attn_layers.4.norm1.weight', 'inter_TransformerEncoder.attn_layers.4.norm1.bias', 'inter_TransformerEncoder.attn_layers.4.norm2.weight', 'inter_TransformerEncoder.attn_layers.4.norm2.bias', 'inter_TransformerEncoder.attn_layers.5.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.5.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.5.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.5.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.5.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.5.conv1.weight', 'inter_TransformerEncoder.attn_layers.5.conv1.bias', 'inter_TransformerEncoder.attn_layers.5.conv2.weight', 'inter_TransformerEncoder.attn_layers.5.conv2.bias', 'inter_TransformerEncoder.attn_layers.5.norm1.weight', 'inter_TransformerEncoder.attn_layers.5.norm1.bias', 'inter_TransformerEncoder.attn_layers.5.norm2.weight', 'inter_TransformerEncoder.attn_layers.5.norm2.bias', 'inter_TransformerEncoder.attn_layers.6.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.6.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.6.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.6.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.6.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.6.conv1.weight', 'inter_TransformerEncoder.attn_layers.6.conv1.bias', 'inter_TransformerEncoder.attn_layers.6.conv2.weight', 'inter_TransformerEncoder.attn_layers.6.conv2.bias', 'inter_TransformerEncoder.attn_layers.6.norm1.weight', 'inter_TransformerEncoder.attn_layers.6.norm1.bias', 'inter_TransformerEncoder.attn_layers.6.norm2.weight', 'inter_TransformerEncoder.attn_layers.6.norm2.bias', 'inter_TransformerEncoder.attn_layers.7.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.7.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.7.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.7.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.7.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.7.conv1.weight', 'inter_TransformerEncoder.attn_layers.7.conv1.bias', 'inter_TransformerEncoder.attn_layers.7.conv2.weight', 'inter_TransformerEncoder.attn_layers.7.conv2.bias', 'inter_TransformerEncoder.attn_layers.7.norm1.weight', 'inter_TransformerEncoder.attn_layers.7.norm1.bias', 'inter_TransformerEncoder.attn_layers.7.norm2.weight', 'inter_TransformerEncoder.attn_layers.7.norm2.bias', 'inter_TransformerEncoder.attn_layers.8.attention.query_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.query_projection.bias', 'inter_TransformerEncoder.attn_layers.8.attention.key_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.key_projection.bias', 'inter_TransformerEncoder.attn_layers.8.attention.value_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.value_projection.bias', 'inter_TransformerEncoder.attn_layers.8.attention.out_projection.weight', 'inter_TransformerEncoder.attn_layers.8.attention.out_projection.bias', 'inter_TransformerEncoder.attn_layers.8.conv1.weight', 'inter_TransformerEncoder.attn_layers.8.conv1.bias', 'inter_TransformerEncoder.attn_layers.8.conv2.weight', 'inter_TransformerEncoder.attn_layers.8.conv2.bias', 'inter_TransformerEncoder.attn_layers.8.norm1.weight', 'inter_TransformerEncoder.attn_layers.8.norm1.bias', 'inter_TransformerEncoder.attn_layers.8.norm2.weight', 'inter_TransformerEncoder.attn_layers.8.norm2.bias', 'projection.weight', 'projection.bias']
+	iteras: 5, epoch: 1 | loss:1.4715818 | label_loss: 1.4715818 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.1789s/iter; left time: 1108.3016s
+	iteras: 10, epoch: 1 | loss:1.0503800 | label_loss: 1.0503800 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 346.8064s
+	iteras: 15, epoch: 1 | loss:0.9979571 | label_loss: 0.9979571 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 347.7761s
+	iteras: 20, epoch: 1 | loss:0.8706909 | label_loss: 0.8706909 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 350.4379s
+	iteras: 25, epoch: 1 | loss:0.9958716 | label_loss: 0.9958716 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 351.8360s
+	iteras: 30, epoch: 1 | loss:0.9708211 | label_loss: 0.9708211 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 346.5276s
+	iteras: 35, epoch: 1 | loss:1.0376036 | label_loss: 1.0376036 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 348.8727s
+	iteras: 40, epoch: 1 | loss:0.8411464 | label_loss: 0.8411464 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 348.0995s
+	iteras: 45, epoch: 1 | loss:1.0212550 | label_loss: 1.0212550 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 345.9230s
+	iteras: 50, epoch: 1 | loss:0.8036600 | label_loss: 0.8036600 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 344.6604s
+	iteras: 55, epoch: 1 | loss:0.9073293 | label_loss: 0.9073293 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 342.8786s
+	iteras: 60, epoch: 1 | loss:0.6303942 | label_loss: 0.6303942 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0545s/iter; left time: 334.6904s
+Epoch: 1 cost time: 3.871053457260132
+0it [00:00, ?it/s]1it [00:00,  7.39it/s]6it [00:00, 29.22it/s]12it [00:00, 39.75it/s]18it [00:00, 45.71it/s]19it [00:00, 38.54it/s]
+0it [00:00, ?it/s]1it [00:00,  7.51it/s]7it [00:00, 31.84it/s]13it [00:00, 41.51it/s]16it [00:00, 37.20it/s]
+Epoch: 1 | Train Loss: 1.03426| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 54.5426222 | Train MAPE: 0.2577001 | Vali RMSE: 46.3957514| Vali MAE: 36.8842241| Vali MAPE: 0.2657422| Test RMSE: 62.2392753| Test MAE: 53.9467186 | Test MAPE: 0.3561755
+[2026-09-13 06:01:32,158] [INFO] [real_accelerator.py:203:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Warning: The default cache directory for DeepSpeed Triton autotune, /usr4/dl523/dgordon/.triton/autotune, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path.
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2024/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs32_s2024-CPTransformer_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 2 | loss:0.8511656 | label_loss: 0.8511656 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.5437s/iter; left time: 3334.9466s
+	iteras: 10, epoch: 2 | loss:1.5424919 | label_loss: 1.5424919 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 345.9782s
+	iteras: 15, epoch: 2 | loss:1.3219733 | label_loss: 1.3219733 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 348.0995s
+	iteras: 20, epoch: 2 | loss:0.7790505 | label_loss: 0.7790505 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0575s/iter; left time: 352.1216s
+	iteras: 25, epoch: 2 | loss:1.1310477 | label_loss: 1.1310477 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 346.6710s
+	iteras: 30, epoch: 2 | loss:0.7032042 | label_loss: 0.7032042 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 346.5579s
+	iteras: 35, epoch: 2 | loss:0.9302534 | label_loss: 0.9302534 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 346.1087s
+	iteras: 40, epoch: 2 | loss:0.7030401 | label_loss: 0.7030401 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 347.4933s
+	iteras: 45, epoch: 2 | loss:0.8236051 | label_loss: 0.8236051 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 346.1618s
+	iteras: 50, epoch: 2 | loss:0.9745452 | label_loss: 0.9745452 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 346.4532s
+	iteras: 55, epoch: 2 | loss:0.7906851 | label_loss: 0.7906851 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 340.6169s
+	iteras: 60, epoch: 2 | loss:1.0547512 | label_loss: 1.0547512 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0542s/iter; left time: 329.1892s
+Epoch: 2 cost time: 3.641115188598633
+0it [00:00, ?it/s]1it [00:00,  7.29it/s]7it [00:00, 31.54it/s]13it [00:00, 40.29it/s]19it [00:00, 43.44it/s]19it [00:00, 38.22it/s]
+0it [00:00, ?it/s]1it [00:00,  7.16it/s]7it [00:00, 31.10it/s]13it [00:00, 41.16it/s]16it [00:00, 36.69it/s]
+Epoch: 2 | Train Loss: 0.84113| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 49.1873292 | Train MAPE: 0.2274791 | Vali RMSE: 38.0576039| Vali MAE: 30.2503557| Vali MAPE: 0.2141707| Test RMSE: 62.8815642| Test MAE: 53.2230500 | Test MAPE: 0.3280087
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2024/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs32_s2024-CPTransformer_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 3 | loss:0.6015059 | label_loss: 0.6015059 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3111s/iter; left time: 1888.9538s
+	iteras: 10, epoch: 3 | loss:1.0037861 | label_loss: 1.0037861 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0558s/iter; left time: 338.3790s
+	iteras: 15, epoch: 3 | loss:0.6473536 | label_loss: 0.6473536 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 344.6178s
+	iteras: 20, epoch: 3 | loss:1.1984888 | label_loss: 1.1984888 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 344.1464s
+	iteras: 25, epoch: 3 | loss:0.6792079 | label_loss: 0.6792079 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 344.0505s
+	iteras: 30, epoch: 3 | loss:1.1273842 | label_loss: 1.1273842 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 343.6638s
+	iteras: 35, epoch: 3 | loss:0.8901724 | label_loss: 0.8901724 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 343.2019s
+	iteras: 40, epoch: 3 | loss:0.9724313 | label_loss: 0.9724313 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 343.4614s
+	iteras: 45, epoch: 3 | loss:0.7481858 | label_loss: 0.7481858 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 342.8398s
+	iteras: 50, epoch: 3 | loss:0.7373402 | label_loss: 0.7373402 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 343.2382s
+	iteras: 55, epoch: 3 | loss:0.6318921 | label_loss: 0.6318921 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 336.9167s
+	iteras: 60, epoch: 3 | loss:0.4080145 | label_loss: 0.4080145 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0543s/iter; left time: 326.4398s
+Epoch: 3 cost time: 3.6370019912719727
+0it [00:00, ?it/s]1it [00:00,  7.34it/s]6it [00:00, 29.15it/s]11it [00:00, 37.88it/s]17it [00:00, 44.87it/s]19it [00:00, 38.16it/s]
+0it [00:00, ?it/s]1it [00:00,  7.15it/s]7it [00:00, 31.08it/s]13it [00:00, 41.13it/s]16it [00:00, 36.60it/s]
+Epoch: 3 | Train Loss: 0.77702| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 47.2756060 | Train MAPE: 0.2166589 | Vali RMSE: 54.8361533| Vali MAE: 44.2979262| Vali MAPE: 0.3089330| Test RMSE: 67.6818447| Test MAE: 60.2272300 | Test MAPE: 0.3853518
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 4 | loss:1.0331342 | label_loss: 1.0331342 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2993s/iter; left time: 1798.5981s
+	iteras: 10, epoch: 4 | loss:1.0972893 | label_loss: 1.0972893 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0560s/iter; left time: 335.9847s
+	iteras: 15, epoch: 4 | loss:1.2656360 | label_loss: 1.2656360 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 341.5492s
+	iteras: 20, epoch: 4 | loss:0.7908340 | label_loss: 0.7908340 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 339.7315s
+	iteras: 25, epoch: 4 | loss:0.5669231 | label_loss: 0.5669231 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 339.4567s
+	iteras: 30, epoch: 4 | loss:0.7229899 | label_loss: 0.7229899 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 340.3577s
+	iteras: 35, epoch: 4 | loss:0.8881723 | label_loss: 0.8881723 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 340.7440s
+	iteras: 40, epoch: 4 | loss:0.7885540 | label_loss: 0.7885540 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 339.1460s
+	iteras: 45, epoch: 4 | loss:0.6487881 | label_loss: 0.6487881 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 339.1118s
+	iteras: 50, epoch: 4 | loss:0.9190913 | label_loss: 0.9190913 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 338.6367s
+	iteras: 55, epoch: 4 | loss:0.5562891 | label_loss: 0.5562891 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 333.1234s
+	iteras: 60, epoch: 4 | loss:0.5991685 | label_loss: 0.5991685 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0539s/iter; left time: 321.1077s
+Epoch: 4 cost time: 3.635625123977661
+0it [00:00, ?it/s]1it [00:00,  7.59it/s]7it [00:00, 31.69it/s]13it [00:00, 40.51it/s]19it [00:00, 43.73it/s]19it [00:00, 38.55it/s]
+0it [00:00, ?it/s]1it [00:00,  7.48it/s]6it [00:00, 29.24it/s]12it [00:00, 40.24it/s]16it [00:00, 36.77it/s]
+Epoch: 4 | Train Loss: 0.85052| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 49.4611866 | Train MAPE: 0.2279178 | Vali RMSE: 32.9483224| Vali MAE: 29.6421821| Vali MAPE: 0.2013464| Test RMSE: 65.0785697| Test MAE: 49.6109735 | Test MAPE: 0.2835869
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2024/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs32_s2024-CPTransformer_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 5 | loss:0.9085414 | label_loss: 0.9085414 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3091s/iter; left time: 1838.4866s
+	iteras: 10, epoch: 5 | loss:0.7446991 | label_loss: 0.7446991 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 335.9980s
+	iteras: 15, epoch: 5 | loss:0.5447993 | label_loss: 0.5447993 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 337.4284s
+	iteras: 20, epoch: 5 | loss:0.6232331 | label_loss: 0.6232331 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 336.5759s
+	iteras: 25, epoch: 5 | loss:1.2973300 | label_loss: 1.2973300 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 336.5760s
+	iteras: 30, epoch: 5 | loss:0.8050480 | label_loss: 0.8050480 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 336.2376s
+	iteras: 35, epoch: 5 | loss:0.9013840 | label_loss: 0.9013840 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 337.9828s
+	iteras: 40, epoch: 5 | loss:0.8055874 | label_loss: 0.8055874 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 336.7273s
+	iteras: 45, epoch: 5 | loss:0.7149894 | label_loss: 0.7149894 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 335.8143s
+	iteras: 50, epoch: 5 | loss:0.7377884 | label_loss: 0.7377884 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 335.4215s
+	iteras: 55, epoch: 5 | loss:0.6579313 | label_loss: 0.6579313 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 329.9637s
+	iteras: 60, epoch: 5 | loss:0.7767191 | label_loss: 0.7767191 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0542s/iter; left time: 319.4145s
+Epoch: 5 cost time: 3.637218713760376
+0it [00:00, ?it/s]1it [00:00,  7.18it/s]6it [00:00, 28.50it/s]12it [00:00, 39.03it/s]18it [00:00, 45.06it/s]19it [00:00, 37.89it/s]
+0it [00:00, ?it/s]1it [00:00,  7.00it/s]6it [00:00, 26.35it/s]11it [00:00, 33.90it/s]16it [00:00, 34.98it/s]16it [00:00, 31.23it/s]
+Epoch: 5 | Train Loss: 0.74129| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 46.1759212 | Train MAPE: 0.2119682 | Vali RMSE: 31.4328160| Vali MAE: 27.4975922| Vali MAPE: 0.1842775| Test RMSE: 61.5992465| Test MAE: 45.2886319 | Test MAPE: 0.2581284
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2024/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs32_s2024-CPTransformer_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 6 | loss:0.6687567 | label_loss: 0.6687567 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3474s/iter; left time: 2044.9493s
+	iteras: 10, epoch: 6 | loss:0.6174202 | label_loss: 0.6174202 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 332.4625s
+	iteras: 15, epoch: 6 | loss:0.7704318 | label_loss: 0.7704318 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 333.8828s
+	iteras: 20, epoch: 6 | loss:0.8182764 | label_loss: 0.8182764 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 333.4167s
+	iteras: 25, epoch: 6 | loss:0.6247784 | label_loss: 0.6247784 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 332.5135s
+	iteras: 30, epoch: 6 | loss:0.7553153 | label_loss: 0.7553153 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 333.9237s
+	iteras: 35, epoch: 6 | loss:0.6170678 | label_loss: 0.6170678 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 333.3255s
+	iteras: 40, epoch: 6 | loss:0.8112657 | label_loss: 0.8112657 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 332.4508s
+	iteras: 45, epoch: 6 | loss:0.5469093 | label_loss: 0.5469093 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 332.2364s
+	iteras: 50, epoch: 6 | loss:0.6405668 | label_loss: 0.6405668 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 331.9361s
+	iteras: 55, epoch: 6 | loss:0.5919356 | label_loss: 0.5919356 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 326.2908s
+	iteras: 60, epoch: 6 | loss:0.6328092 | label_loss: 0.6328092 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0542s/iter; left time: 316.0796s
+Epoch: 6 cost time: 3.646536350250244
+0it [00:00, ?it/s]1it [00:00,  7.03it/s]7it [00:00, 31.19it/s]13it [00:00, 40.25it/s]19it [00:00, 43.63it/s]19it [00:00, 38.14it/s]
+0it [00:00, ?it/s]1it [00:00,  7.19it/s]7it [00:00, 31.20it/s]13it [00:00, 41.07it/s]16it [00:00, 36.51it/s]
+Epoch: 6 | Train Loss: 0.69481| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 44.7048656 | Train MAPE: 0.2017187 | Vali RMSE: 55.8951960| Vali MAE: 45.5814632| Vali MAPE: 0.3095751| Test RMSE: 69.7050276| Test MAE: 60.2979751 | Test MAPE: 0.3697603
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 7 | loss:0.6431227 | label_loss: 0.6431227 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2987s/iter; left time: 1739.5716s
+	iteras: 10, epoch: 7 | loss:0.8930753 | label_loss: 0.8930753 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 326.2358s
+	iteras: 15, epoch: 7 | loss:0.5200874 | label_loss: 0.5200874 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 328.5781s
+	iteras: 20, epoch: 7 | loss:0.5848194 | label_loss: 0.5848194 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 327.7628s
+	iteras: 25, epoch: 7 | loss:0.8239415 | label_loss: 0.8239415 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 327.4838s
+	iteras: 30, epoch: 7 | loss:0.6745868 | label_loss: 0.6745868 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 328.9429s
+	iteras: 35, epoch: 7 | loss:0.4688280 | label_loss: 0.4688280 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 327.4412s
+	iteras: 40, epoch: 7 | loss:0.6663128 | label_loss: 0.6663128 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 327.7029s
+	iteras: 45, epoch: 7 | loss:0.5649674 | label_loss: 0.5649674 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 327.1926s
+	iteras: 50, epoch: 7 | loss:0.6423910 | label_loss: 0.6423910 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 327.3551s
+	iteras: 55, epoch: 7 | loss:0.5965980 | label_loss: 0.5965980 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 322.5474s
+	iteras: 60, epoch: 7 | loss:0.6913992 | label_loss: 0.6913992 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0540s/iter; left time: 311.5936s
+Epoch: 7 cost time: 3.623680830001831
+0it [00:00, ?it/s]1it [00:00,  7.21it/s]6it [00:00, 28.61it/s]12it [00:00, 39.04it/s]18it [00:00, 45.01it/s]19it [00:00, 37.81it/s]
+0it [00:00, ?it/s]1it [00:00,  7.43it/s]6it [00:00, 28.60it/s]12it [00:00, 39.69it/s]16it [00:00, 36.11it/s]
+Epoch: 7 | Train Loss: 0.67163| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 43.9529325 | Train MAPE: 0.1972705 | Vali RMSE: 38.8832874| Vali MAE: 31.2845558| Vali MAPE: 0.2184592| Test RMSE: 64.1230314| Test MAE: 50.1880785 | Test MAPE: 0.2923703
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 8 | loss:0.3406286 | label_loss: 0.3406286 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3015s/iter; left time: 1737.1248s
+	iteras: 10, epoch: 8 | loss:0.5674205 | label_loss: 0.5674205 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 326.9423s
+	iteras: 15, epoch: 8 | loss:0.5857806 | label_loss: 0.5857806 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 329.6623s
+	iteras: 20, epoch: 8 | loss:0.6844581 | label_loss: 0.6844581 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 329.6928s
+	iteras: 25, epoch: 8 | loss:0.5745791 | label_loss: 0.5745791 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 328.9402s
+	iteras: 30, epoch: 8 | loss:0.5646167 | label_loss: 0.5646167 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 328.4461s
+	iteras: 35, epoch: 8 | loss:0.5271406 | label_loss: 0.5271406 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 328.7732s
+	iteras: 40, epoch: 8 | loss:0.7317970 | label_loss: 0.7317970 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0575s/iter; left time: 329.4550s
+	iteras: 45, epoch: 8 | loss:0.6458157 | label_loss: 0.6458157 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 327.9994s
+	iteras: 50, epoch: 8 | loss:0.4118337 | label_loss: 0.4118337 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0577s/iter; left time: 330.0632s
+	iteras: 55, epoch: 8 | loss:0.5718445 | label_loss: 0.5718445 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 322.4042s
+	iteras: 60, epoch: 8 | loss:0.4947712 | label_loss: 0.4947712 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0547s/iter; left time: 312.3623s
+Epoch: 8 cost time: 3.6736557483673096
+0it [00:00, ?it/s]1it [00:00,  6.88it/s]6it [00:00, 28.25it/s]12it [00:00, 38.58it/s]18it [00:00, 44.31it/s]19it [00:00, 37.14it/s]
+0it [00:00, ?it/s]1it [00:00,  7.34it/s]6it [00:00, 28.43it/s]12it [00:00, 39.73it/s]16it [00:00, 36.16it/s]
+Epoch: 8 | Train Loss: 0.61803| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 42.1623465 | Train MAPE: 0.1910042 | Vali RMSE: 31.5735839| Vali MAE: 27.5225003| Vali MAPE: 0.1825533| Test RMSE: 63.2212212| Test MAE: 43.5572807 | Test MAPE: 0.2376529
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2024/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs32_s2024-CPTransformer_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 9 | loss:0.7595677 | label_loss: 0.7595677 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3162s/iter; left time: 1802.3493s
+	iteras: 10, epoch: 9 | loss:0.5795343 | label_loss: 0.5795343 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 320.3940s
+	iteras: 15, epoch: 9 | loss:0.5095006 | label_loss: 0.5095006 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 325.2591s
+	iteras: 20, epoch: 9 | loss:0.6966693 | label_loss: 0.6966693 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 325.5214s
+	iteras: 25, epoch: 9 | loss:0.8268215 | label_loss: 0.8268215 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 325.3413s
+	iteras: 30, epoch: 9 | loss:0.4660490 | label_loss: 0.4660490 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 324.3473s
+	iteras: 35, epoch: 9 | loss:0.4386708 | label_loss: 0.4386708 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 323.8084s
+	iteras: 40, epoch: 9 | loss:0.5232934 | label_loss: 0.5232934 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 323.7357s
+	iteras: 45, epoch: 9 | loss:1.0593597 | label_loss: 1.0593597 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0577s/iter; left time: 326.5872s
+	iteras: 50, epoch: 9 | loss:0.9465216 | label_loss: 0.9465216 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 322.8757s
+	iteras: 55, epoch: 9 | loss:1.1552539 | label_loss: 1.1552539 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 318.9179s
+	iteras: 60, epoch: 9 | loss:1.0616152 | label_loss: 1.0616152 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0546s/iter; left time: 308.2999s
+Epoch: 9 cost time: 3.6607632637023926
+0it [00:00, ?it/s]1it [00:00,  7.48it/s]6it [00:00, 28.66it/s]12it [00:00, 38.92it/s]18it [00:00, 44.73it/s]19it [00:00, 37.80it/s]
+0it [00:00, ?it/s]1it [00:00,  7.40it/s]6it [00:00, 29.20it/s]12it [00:00, 40.16it/s]16it [00:00, 36.64it/s]
+Epoch: 9 | Train Loss: 0.68700| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 44.4528443 | Train MAPE: 0.1990745 | Vali RMSE: 49.8985565| Vali MAE: 38.3583419| Vali MAPE: 0.2696385| Test RMSE: 66.2146895| Test MAE: 55.4550734 | Test MAPE: 0.3426043
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 10 | loss:0.6749158 | label_loss: 0.6749158 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3022s/iter; left time: 1703.7637s
+	iteras: 10, epoch: 10 | loss:0.4538740 | label_loss: 0.4538740 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 316.2696s
+	iteras: 15, epoch: 10 | loss:0.6403831 | label_loss: 0.6403831 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 322.9256s
+	iteras: 20, epoch: 10 | loss:0.5503243 | label_loss: 0.5503243 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0577s/iter; left time: 324.3560s
+	iteras: 25, epoch: 10 | loss:0.8374780 | label_loss: 0.8374780 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 321.9532s
+	iteras: 30, epoch: 10 | loss:0.3930761 | label_loss: 0.3930761 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 321.9214s
+	iteras: 35, epoch: 10 | loss:0.6613622 | label_loss: 0.6613622 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 320.6610s
+	iteras: 40, epoch: 10 | loss:0.8359016 | label_loss: 0.8359016 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 320.4708s
+	iteras: 45, epoch: 10 | loss:1.2929922 | label_loss: 1.2929922 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 320.0348s
+	iteras: 50, epoch: 10 | loss:1.1285366 | label_loss: 1.1285366 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 319.4852s
+	iteras: 55, epoch: 10 | loss:0.9592528 | label_loss: 0.9592528 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0559s/iter; left time: 312.5536s
+	iteras: 60, epoch: 10 | loss:0.8727375 | label_loss: 0.8727375 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0542s/iter; left time: 302.6318s
+Epoch: 10 cost time: 3.6674931049346924
+0it [00:00, ?it/s]1it [00:00,  6.86it/s]7it [00:00, 30.62it/s]13it [00:00, 39.40it/s]19it [00:00, 42.66it/s]19it [00:00, 37.32it/s]
+0it [00:00, ?it/s]1it [00:00,  7.30it/s]6it [00:00, 28.65it/s]12it [00:00, 40.36it/s]16it [00:00, 36.58it/s]
+Epoch: 10 | Train Loss: 0.73211| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 45.8891704 | Train MAPE: 0.2092896 | Vali RMSE: 35.0420671| Vali MAE: 29.5007749| Vali MAPE: 0.2054232| Test RMSE: 63.2052962| Test MAE: 47.7782926 | Test MAPE: 0.2765419
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 11 | loss:0.8931800 | label_loss: 0.8931800 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3027s/iter; left time: 1688.1320s
+	iteras: 10, epoch: 11 | loss:0.5820349 | label_loss: 0.5820349 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0564s/iter; left time: 314.4637s
+	iteras: 15, epoch: 11 | loss:0.5995984 | label_loss: 0.5995984 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0576s/iter; left time: 320.3727s
+	iteras: 20, epoch: 11 | loss:0.4577916 | label_loss: 0.4577916 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 317.0031s
+	iteras: 25, epoch: 11 | loss:0.3975857 | label_loss: 0.3975857 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 317.2161s
+	iteras: 30, epoch: 11 | loss:0.6710832 | label_loss: 0.6710832 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 316.5964s
+	iteras: 35, epoch: 11 | loss:0.7169511 | label_loss: 0.7169511 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 316.4336s
+	iteras: 40, epoch: 11 | loss:0.7464181 | label_loss: 0.7464181 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 316.0287s
+	iteras: 45, epoch: 11 | loss:0.7063394 | label_loss: 0.7063394 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 315.7971s
+	iteras: 50, epoch: 11 | loss:0.5949423 | label_loss: 0.5949423 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 315.7677s
+	iteras: 55, epoch: 11 | loss:0.6474078 | label_loss: 0.6474078 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 310.7856s
+	iteras: 60, epoch: 11 | loss:0.7118389 | label_loss: 0.7118389 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0548s/iter; left time: 302.6858s
+Epoch: 11 cost time: 3.662660837173462
+0it [00:00, ?it/s]1it [00:00,  7.02it/s]6it [00:00, 28.52it/s]12it [00:00, 38.94it/s]18it [00:00, 44.94it/s]19it [00:00, 37.69it/s]
+0it [00:00, ?it/s]1it [00:00,  7.29it/s]6it [00:00, 28.56it/s]12it [00:00, 39.81it/s]16it [00:00, 36.22it/s]
+Epoch: 11 | Train Loss: 0.63441| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 42.7176932 | Train MAPE: 0.1943699 | Vali RMSE: 30.1291300| Vali MAE: 26.6053094| Vali MAPE: 0.1777729| Test RMSE: 61.1193756| Test MAE: 42.7273163 | Test MAPE: 0.2392333
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2024/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs32_s2024-CPTransformer_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 12 | loss:0.4782214 | label_loss: 0.4782214 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3141s/iter; left time: 1732.1447s
+	iteras: 10, epoch: 12 | loss:0.7392541 | label_loss: 0.7392541 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 311.5236s
+	iteras: 15, epoch: 12 | loss:0.8703561 | label_loss: 0.8703561 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 314.5409s
+	iteras: 20, epoch: 12 | loss:0.5927801 | label_loss: 0.5927801 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 313.3479s
+	iteras: 25, epoch: 12 | loss:0.5303888 | label_loss: 0.5303888 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 313.2500s
+	iteras: 30, epoch: 12 | loss:0.6009483 | label_loss: 0.6009483 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 312.9097s
+	iteras: 35, epoch: 12 | loss:1.0804977 | label_loss: 1.0804977 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 311.9035s
+	iteras: 40, epoch: 12 | loss:0.6814824 | label_loss: 0.6814824 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 312.5615s
+	iteras: 45, epoch: 12 | loss:0.7191385 | label_loss: 0.7191385 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 313.0267s
+	iteras: 50, epoch: 12 | loss:0.6244442 | label_loss: 0.6244442 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 311.4783s
+	iteras: 55, epoch: 12 | loss:0.6424799 | label_loss: 0.6424799 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 306.9907s
+	iteras: 60, epoch: 12 | loss:0.5148858 | label_loss: 0.5148858 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0544s/iter; left time: 296.8520s
+Epoch: 12 cost time: 3.6521284580230713
+0it [00:00, ?it/s]1it [00:00,  7.05it/s]6it [00:00, 28.48it/s]11it [00:00, 37.30it/s]17it [00:00, 44.20it/s]19it [00:00, 37.53it/s]
+0it [00:00, ?it/s]1it [00:00,  7.50it/s]6it [00:00, 29.34it/s]12it [00:00, 40.50it/s]16it [00:00, 36.99it/s]
+Epoch: 12 | Train Loss: 0.63170| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 42.6264058 | Train MAPE: 0.1920524 | Vali RMSE: 37.0849358| Vali MAE: 33.0801292| Vali MAPE: 0.2149929| Test RMSE: 67.1368684| Test MAE: 47.5409888 | Test MAPE: 0.2555031
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 13 | loss:0.5618109 | label_loss: 0.5618109 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2991s/iter; left time: 1630.9086s
+	iteras: 10, epoch: 13 | loss:0.6873795 | label_loss: 0.6873795 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 306.6831s
+	iteras: 15, epoch: 13 | loss:0.5818826 | label_loss: 0.5818826 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 309.7867s
+	iteras: 20, epoch: 13 | loss:0.5822702 | label_loss: 0.5822702 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 309.2400s
+	iteras: 25, epoch: 13 | loss:0.5038011 | label_loss: 0.5038011 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 308.4572s
+	iteras: 30, epoch: 13 | loss:0.7712004 | label_loss: 0.7712004 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 307.9792s
+	iteras: 35, epoch: 13 | loss:0.7664826 | label_loss: 0.7664826 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 306.6755s
+	iteras: 40, epoch: 13 | loss:0.9341618 | label_loss: 0.9341618 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 308.3406s
+	iteras: 45, epoch: 13 | loss:0.6242096 | label_loss: 0.6242096 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 307.3507s
+	iteras: 50, epoch: 13 | loss:0.6165242 | label_loss: 0.6165242 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 306.8643s
+	iteras: 55, epoch: 13 | loss:0.4216197 | label_loss: 0.4216197 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 302.9550s
+	iteras: 60, epoch: 13 | loss:0.6274033 | label_loss: 0.6274033 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0543s/iter; left time: 292.8428s
+Epoch: 13 cost time: 3.6369307041168213
+0it [00:00, ?it/s]1it [00:00,  7.48it/s]6it [00:00, 29.07it/s]12it [00:00, 39.38it/s]18it [00:00, 45.36it/s]19it [00:00, 38.24it/s]
+0it [00:00, ?it/s]1it [00:00,  6.87it/s]7it [00:00, 30.63it/s]13it [00:00, 40.50it/s]16it [00:00, 36.02it/s]
+Epoch: 13 | Train Loss: 0.64837| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 43.1848597 | Train MAPE: 0.1937193 | Vali RMSE: 37.0916263| Vali MAE: 32.2335503| Vali MAPE: 0.2137447| Test RMSE: 64.7145664| Test MAE: 47.5842455 | Test MAPE: 0.2652131
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 14 | loss:0.4969818 | label_loss: 0.4969818 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2999s/iter; left time: 1616.3670s
+	iteras: 10, epoch: 14 | loss:0.5358448 | label_loss: 0.5358448 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 302.4646s
+	iteras: 15, epoch: 14 | loss:0.4725222 | label_loss: 0.4725222 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0568s/iter; left time: 305.7820s
+	iteras: 20, epoch: 14 | loss:0.6835198 | label_loss: 0.6835198 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 306.2164s
+	iteras: 25, epoch: 14 | loss:0.6850253 | label_loss: 0.6850253 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 306.0573s
+	iteras: 30, epoch: 14 | loss:0.7489564 | label_loss: 0.7489564 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 305.4618s
+	iteras: 35, epoch: 14 | loss:0.4422604 | label_loss: 0.4422604 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 305.4554s
+	iteras: 40, epoch: 14 | loss:0.6462620 | label_loss: 0.6462620 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 306.0397s
+	iteras: 45, epoch: 14 | loss:0.7025818 | label_loss: 0.7025818 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 305.8027s
+	iteras: 50, epoch: 14 | loss:0.6875550 | label_loss: 0.6875550 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0570s/iter; left time: 304.6875s
+	iteras: 55, epoch: 14 | loss:0.7789400 | label_loss: 0.7789400 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 300.3633s
+	iteras: 60, epoch: 14 | loss:0.6819795 | label_loss: 0.6819795 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0545s/iter; left time: 290.6286s
+Epoch: 14 cost time: 3.6473898887634277
+0it [00:00, ?it/s]1it [00:00,  7.13it/s]6it [00:00, 26.58it/s]11it [00:00, 33.76it/s]17it [00:00, 40.85it/s]19it [00:00, 35.10it/s]
+0it [00:00, ?it/s]1it [00:00,  7.18it/s]6it [00:00, 28.55it/s]12it [00:00, 39.54it/s]16it [00:00, 36.11it/s]
+Epoch: 14 | Train Loss: 0.62712| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 42.4713580 | Train MAPE: 0.1911929 | Vali RMSE: 28.7636763| Vali MAE: 26.6072668| Vali MAPE: 0.1718581| Test RMSE: 60.9097949| Test MAE: 42.8287318 | Test MAPE: 0.2356784
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2024/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs32_s2024-CPTransformer_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 15 | loss:0.5436120 | label_loss: 0.5436120 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3224s/iter; left time: 1717.9441s
+	iteras: 10, epoch: 15 | loss:0.4004297 | label_loss: 0.4004297 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 299.0058s
+	iteras: 15, epoch: 15 | loss:0.5140297 | label_loss: 0.5140297 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 304.0030s
+	iteras: 20, epoch: 15 | loss:0.7356390 | label_loss: 0.7356390 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0569s/iter; left time: 302.4608s
+	iteras: 25, epoch: 15 | loss:0.6491385 | label_loss: 0.6491385 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 303.1362s
+	iteras: 30, epoch: 15 | loss:0.6166037 | label_loss: 0.6166037 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 302.9559s
+	iteras: 35, epoch: 15 | loss:0.3360201 | label_loss: 0.3360201 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 302.4964s
+	iteras: 40, epoch: 15 | loss:0.7536689 | label_loss: 0.7536689 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 303.9287s
+	iteras: 45, epoch: 15 | loss:0.5415877 | label_loss: 0.5415877 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 303.0947s
+	iteras: 50, epoch: 15 | loss:0.4129112 | label_loss: 0.4129112 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 301.5143s
+	iteras: 55, epoch: 15 | loss:0.4474768 | label_loss: 0.4474768 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0563s/iter; left time: 296.9154s
+	iteras: 60, epoch: 15 | loss:0.6835348 | label_loss: 0.6835348 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0540s/iter; left time: 284.7576s
+Epoch: 15 cost time: 3.6555960178375244
+0it [00:00, ?it/s]1it [00:00,  6.39it/s]6it [00:00, 24.92it/s]11it [00:00, 32.52it/s]16it [00:00, 36.49it/s]19it [00:00, 31.72it/s]
+0it [00:00, ?it/s]1it [00:00,  7.04it/s]6it [00:00, 26.88it/s]11it [00:00, 36.11it/s]16it [00:00, 40.12it/s]16it [00:00, 34.45it/s]
+Epoch: 15 | Train Loss: 0.58112| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 40.8841268 | Train MAPE: 0.1857425 | Vali RMSE: 37.4000777| Vali MAE: 34.2816079| Vali MAPE: 0.2178920| Test RMSE: 67.3704954| Test MAE: 46.6377157 | Test MAPE: 0.2479079
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 16 | loss:0.4090052 | label_loss: 0.4090052 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3267s/iter; left time: 1720.4515s
+	iteras: 10, epoch: 16 | loss:0.5238234 | label_loss: 0.5238234 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0566s/iter; left time: 297.8817s
+	iteras: 15, epoch: 16 | loss:0.6284131 | label_loss: 0.6284131 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0578s/iter; left time: 304.0046s
+	iteras: 20, epoch: 16 | loss:0.3999722 | label_loss: 0.3999722 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 300.0560s
+	iteras: 25, epoch: 16 | loss:1.2194184 | label_loss: 1.2194184 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0578s/iter; left time: 302.9624s
+	iteras: 30, epoch: 16 | loss:1.2196469 | label_loss: 1.2196469 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 300.6087s
+	iteras: 35, epoch: 16 | loss:0.7347187 | label_loss: 0.7347187 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0578s/iter; left time: 302.6071s
+	iteras: 40, epoch: 16 | loss:0.8136399 | label_loss: 0.8136399 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 298.8401s
+	iteras: 45, epoch: 16 | loss:0.5565008 | label_loss: 0.5565008 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0576s/iter; left time: 301.1578s
+	iteras: 50, epoch: 16 | loss:0.4925917 | label_loss: 0.4925917 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 298.9788s
+	iteras: 55, epoch: 16 | loss:0.4190996 | label_loss: 0.4190996 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0567s/iter; left time: 295.6892s
+	iteras: 60, epoch: 16 | loss:0.4018467 | label_loss: 0.4018467 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0545s/iter; left time: 284.0863s
+Epoch: 16 cost time: 3.68054461479187
+0it [00:00, ?it/s]1it [00:00,  7.47it/s]6it [00:00, 29.05it/s]11it [00:00, 37.60it/s]17it [00:00, 44.46it/s]19it [00:00, 37.96it/s]
+0it [00:00, ?it/s]1it [00:00,  7.36it/s]6it [00:00, 28.96it/s]12it [00:00, 39.54it/s]16it [00:00, 36.06it/s]
+Epoch: 16 | Train Loss: 0.66701| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 43.8014257 | Train MAPE: 0.1974127 | Vali RMSE: 40.5790302| Vali MAE: 30.6650332| Vali MAPE: 0.2184561| Test RMSE: 61.9487810| Test MAE: 48.4288362 | Test MAPE: 0.2919616
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 17 | loss:0.5865929 | label_loss: 0.5865929 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3022s/iter; left time: 1572.5725s
+	iteras: 10, epoch: 17 | loss:0.6493846 | label_loss: 0.6493846 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 291.5778s
+	iteras: 15, epoch: 17 | loss:0.6356701 | label_loss: 0.6356701 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 296.9812s
+	iteras: 20, epoch: 17 | loss:0.4395181 | label_loss: 0.4395181 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0576s/iter; left time: 298.6628s
+	iteras: 25, epoch: 17 | loss:0.6813381 | label_loss: 0.6813381 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 297.3032s
+	iteras: 30, epoch: 17 | loss:0.6522403 | label_loss: 0.6522403 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 296.0892s
+	iteras: 35, epoch: 17 | loss:0.6940224 | label_loss: 0.6940224 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 295.3846s
+	iteras: 40, epoch: 17 | loss:0.5885456 | label_loss: 0.5885456 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 296.1070s
+	iteras: 45, epoch: 17 | loss:0.4473541 | label_loss: 0.4473541 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 295.8186s
+	iteras: 50, epoch: 17 | loss:0.5427207 | label_loss: 0.5427207 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 294.4956s
+	iteras: 55, epoch: 17 | loss:0.6400347 | label_loss: 0.6400347 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 291.3301s
+	iteras: 60, epoch: 17 | loss:0.6162022 | label_loss: 0.6162022 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0544s/iter; left time: 280.0220s
+Epoch: 17 cost time: 3.6641054153442383
+0it [00:00, ?it/s]1it [00:00,  7.36it/s]6it [00:00, 28.97it/s]11it [00:00, 37.46it/s]17it [00:00, 44.12it/s]19it [00:00, 37.69it/s]
+0it [00:00, ?it/s]1it [00:00,  7.16it/s]6it [00:00, 28.69it/s]12it [00:00, 39.65it/s]16it [00:00, 35.99it/s]
+Epoch: 17 | Train Loss: 0.57810| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 40.7776380 | Train MAPE: 0.1857646 | Vali RMSE: 42.0498666| Vali MAE: 36.2704912| Vali MAPE: 0.2392057| Test RMSE: 63.0408222| Test MAE: 47.2363716 | Test MAPE: 0.2714358
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 18 | loss:0.5389239 | label_loss: 0.5389239 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3021s/iter; left time: 1553.2677s
+	iteras: 10, epoch: 18 | loss:0.4598493 | label_loss: 0.4598493 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0565s/iter; left time: 290.2711s
+	iteras: 15, epoch: 18 | loss:0.6251953 | label_loss: 0.6251953 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 293.3708s
+	iteras: 20, epoch: 18 | loss:0.4580554 | label_loss: 0.4580554 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 292.9165s
+	iteras: 25, epoch: 18 | loss:0.4522210 | label_loss: 0.4522210 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 293.0219s
+	iteras: 30, epoch: 18 | loss:0.4895704 | label_loss: 0.4895704 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 292.6836s
+	iteras: 35, epoch: 18 | loss:0.6229165 | label_loss: 0.6229165 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 293.4361s
+	iteras: 40, epoch: 18 | loss:0.4317989 | label_loss: 0.4317989 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 291.4252s
+	iteras: 45, epoch: 18 | loss:0.5802743 | label_loss: 0.5802743 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 291.1732s
+	iteras: 50, epoch: 18 | loss:0.4597572 | label_loss: 0.4597572 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 291.4587s
+	iteras: 55, epoch: 18 | loss:0.4700348 | label_loss: 0.4700348 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0561s/iter; left time: 285.8607s
+	iteras: 60, epoch: 18 | loss:0.4135051 | label_loss: 0.4135051 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0545s/iter; left time: 277.0380s
+Epoch: 18 cost time: 3.6566805839538574
+0it [00:00, ?it/s]1it [00:00,  7.39it/s]6it [00:00, 29.14it/s]12it [00:00, 39.23it/s]18it [00:00, 45.32it/s]19it [00:00, 38.18it/s]
+0it [00:00, ?it/s]1it [00:00,  7.41it/s]6it [00:00, 29.15it/s]12it [00:00, 40.10it/s]16it [00:00, 36.51it/s]
+Epoch: 18 | Train Loss: 0.51566| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 38.5125883 | Train MAPE: 0.1732371 | Vali RMSE: 31.1101360| Vali MAE: 27.7351692| Vali MAPE: 0.1771749| Test RMSE: 64.8018495| Test MAE: 45.3639377 | Test MAPE: 0.2373430
+EarlyStopping counter: 4 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 19 | loss:0.2055054 | label_loss: 0.2055054 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3009s/iter; left time: 1528.7996s
+	iteras: 10, epoch: 19 | loss:0.2867248 | label_loss: 0.2867248 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 285.2752s
+	iteras: 15, epoch: 19 | loss:0.2952256 | label_loss: 0.2952256 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 290.2634s
+	iteras: 20, epoch: 19 | loss:0.2127468 | label_loss: 0.2127468 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 289.8953s
+	iteras: 25, epoch: 19 | loss:0.2955311 | label_loss: 0.2955311 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0571s/iter; left time: 288.9922s
+	iteras: 30, epoch: 19 | loss:0.4780996 | label_loss: 0.4780996 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 289.1716s
+	iteras: 35, epoch: 19 | loss:0.3114592 | label_loss: 0.3114592 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0574s/iter; left time: 289.7377s
+	iteras: 40, epoch: 19 | loss:0.3384973 | label_loss: 0.3384973 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0573s/iter; left time: 289.0968s
+	iteras: 45, epoch: 19 | loss:0.3482966 | label_loss: 0.3482966 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0572s/iter; left time: 288.0907s
+	iteras: 50, epoch: 19 | loss:0.3748185 | label_loss: 0.3748185 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0575s/iter; left time: 289.2994s
+	iteras: 55, epoch: 19 | loss:0.2847966 | label_loss: 0.2847966 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0562s/iter; left time: 282.6662s
+	iteras: 60, epoch: 19 | loss:0.3527942 | label_loss: 0.3527942 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0545s/iter; left time: 274.0830s
+Epoch: 19 cost time: 3.66352915763855
+0it [00:00, ?it/s]1it [00:00,  7.22it/s]6it [00:00, 28.71it/s]11it [00:00, 37.54it/s]17it [00:00, 44.29it/s]19it [00:00, 37.71it/s]
+0it [00:00, ?it/s]1it [00:00,  6.83it/s]7it [00:00, 30.80it/s]13it [00:00, 40.95it/s]16it [00:00, 36.24it/s]
+wandb: 
+wandb: Run history:
+wandb:      epoch ▁▁▂▂▂▃▃▄▄▄▅▅▅▆▆▇▇▇██
+wandb:  test_MAPE ▇▅█▃▂▇▄▁▆▃▁▂▂▁▂▄▃▁▂▁
+wandb:  test_RMSE ▂▃▆▄▂█▄▃▅▃▁▆▄▁▆▂▃▄▆▁
+wandb:  test_acc1 ▆▁▁▁█▁██▁██▇██▁███▂█
+wandb:  test_acc2 ▃▃▁▄▆▃▆▅▄██▄▆█▄▇█▂▃█
+wandb: train_loss █▆▅▆▅▅▄▄▄▅▄▄▄▄▃▄▃▃▁▁
+wandb:  vali_MAPE ▆▃█▂▂█▃▂▆▃▁▃▃▁▃▃▄▁▃▁
+wandb:  vali_RMSE ▆▃█▂▂█▄▂▆▃▁▃▃▁▃▄▄▂▃▁
+wandb:  vali_acc1 ▇█▇▇▇▆▇▄▇▇▅▅▇▆▅▇▇▄▁▆
+wandb:  vali_acc2 ▅█▇▂▄▅█▂██▅▁▃▄▁█▅▁▁▄
+wandb: 
+wandb: Run summary:
+wandb:      epoch 19
+wandb:  test_MAPE 0.23568
+wandb:  test_RMSE 60.90979
+wandb:  test_acc1 40
+wandb:  test_acc2 40
+wandb: train_loss 0.35442
+wandb:  vali_MAPE 0.17186
+wandb:  vali_RMSE 28.76368
+wandb:  vali_acc1 48.16667
+wandb:  vali_acc2 31.66667
+wandb: 
+wandb: You can sync this run to the cloud by running:
+wandb: wandb sync /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_060126-pdoflcfh
+wandb: Find logs at: ./wandb/offline-run-20260913_060126-pdoflcfh/logs
+Epoch: 19 | Train Loss: 0.35442| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 31.9285942 | Train MAPE: 0.1431462 | Vali RMSE: 35.1794178| Vali MAE: 32.3587830| Vali MAPE: 0.2084806| Test RMSE: 67.4980400| Test MAE: 47.6712319 | Test MAPE: 0.2512496
+EarlyStopping counter: 5 out of 5
+Early stopping
+Best model performance: Test MAE: 42.8287 | Test RMSE: 60.9098 | Test MAPE: 0.2357 | Test 15%-accuracy: 40.0000 | Test 10%-accuracy: 40.0000 | Val MAE: 26.6073 | Val RMSE: 28.7637 | Val MAPE: 0.1719 | Val 15%-accuracy: 48.1667 | Val 10%-accuracy: 31.6667 
+Best model performance: Test Seen MAPE: 0.1295 | Test Unseen MAPE: 0.3950
+Best model performance: Test Seen 15%-accuracy: 66.6667 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 66.6667 | Test Unseen 10%-accuracy: 0.0000
+/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPTransformer_NAION_seed2024/CPTransformer_sl1_lr5e-05_dm128_nh4_el4_dl9_df128_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs32_s2024-CPTransformer_Naion_s2024
+=== Best model performance lines across all 3 seeds ===
+Best model performance: Test MAE: 53.8570 | Test RMSE: 63.1025 | Test MAPE: 0.3455 | Test 15%-accuracy: 40.0000 | Test 10%-accuracy: 33.6000 | Val MAE: 16.3045 | Val RMSE: 18.3374 | Val MAPE: 0.0940 | Val 15%-accuracy: 78.5000 | Val 10%-accuracy: 62.0000 
+Best model performance: Test Seen MAPE: 0.2806 | Test Unseen MAPE: 0.4430
+Best model performance: Test Seen 15%-accuracy: 66.6667 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 56.0000 | Test Unseen 10%-accuracy: 0.0000
+Best model performance: Test MAE: 42.8287 | Test RMSE: 60.9098 | Test MAPE: 0.2357 | Test 15%-accuracy: 40.0000 | Test 10%-accuracy: 40.0000 | Val MAE: 26.6073 | Val RMSE: 28.7637 | Val MAPE: 0.1719 | Val 15%-accuracy: 48.1667 | Val 10%-accuracy: 31.6667 
+Best model performance: Test Seen MAPE: 0.1295 | Test Unseen MAPE: 0.3950
+Best model performance: Test Seen 15%-accuracy: 66.6667 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 66.6667 | Test Unseen 10%-accuracy: 0.0000
+Best model performance: Test MAE: 53.0167 | Test RMSE: 73.6568 | Test MAPE: 0.2598 | Test 15%-accuracy: 33.0000 | Test 10%-accuracy: 14.2000 | Val MAE: 46.7849 | Val RMSE: 60.5243 | Val MAPE: 0.2062 | Val 15%-accuracy: 45.1667 | Val 10%-accuracy: 21.0000 
+Best model performance: Test Seen MAPE: 0.2143 | Test Unseen MAPE: 0.3280
+Best model performance: Test Seen 15%-accuracy: 23.3333 | Test Unseen 15%-accuracy: 47.5000
+Best model performance: Test Seen 10%-accuracy: 3.6667 | Test Unseen 10%-accuracy: 30.0000

@@ -1,0 +1,826 @@
+=== CPMLP geo_bins | dataset=NAion seed=2021 ===
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+{'task_name': 'classification', 'is_training': 1, 'model_id': 'CPMLP', 'model_comment': 'CPMLP_geobins_Naion_s2021', 'model': 'CPMLP', 'seed': 2021, 'charge_discharge_length': 300, 'dataset': 'NAion', 'data': 'Dataset_original', 'root_path': './dataset', 'data_path': 'ETTh1.csv', 'features': 'MS', 'target': 'OT', 'loader': 'modal', 'freq': 'h', 'checkpoints': '/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2021', 'early_cycle_threshold': 100, 'seq_len': 1, 'pred_len': 5, 'label_len': 50, 'seasonal_patterns': 'Monthly', 'enc_in': 3, 'dec_in': 1, 'c_out': 1, 'd_model': 64, 'n_heads': 8, 'lstm_layers': 2, 'e_layers': 1, 'd_layers': 9, 'd_ff': 32, 'moving_avg': 25, 'factor': 3, 'dropout': 0.0, 'embed': 'timeF', 'activation': 'relu', 'output_attention': False, 'patch_len': 10, 'stride': 10, 'patch_len2': 10, 'stride2': 10, 'prompt_domain': 0, 'output_num': 28, 'class_num': 8, 'prediction_mode': 'geo_bins', 'geo_bin_tol': 0.15, 'geo_bin_min': 1.0, 'geo_bin_max': 3842.0, 'weighted_loss': False, 'weighted_sampling': False, 'num_workers': 4, 'itr': 1, 'train_epochs': 100, 'least_epochs': 5, 'batch_size': 128, 'patience': 5, 'learning_rate': 5e-05, 'wd': 0.0, 'des': 'Exp', 'loss': 'MSE', 'lradj': 'constant', 'pct_start': 0.2, 'use_amp': False, 'percent': 100, 'accumulation_steps': 1, 'mlp': 0, 'alpha1': 0.15, 'alpha2': 0.1}
+geo_bins enabled: 28 bins, ratio=1.3529, range=[1.0, 3842.0], tol=0.15
+Loading training samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:10,  1.78it/s] 10%|█         | 2/20 [00:01<00:10,  1.79it/s] 15%|█▌        | 3/20 [00:01<00:09,  1.82it/s] 20%|██        | 4/20 [00:02<00:08,  1.85it/s] 25%|██▌       | 5/20 [00:02<00:08,  1.74it/s] 30%|███       | 6/20 [00:03<00:08,  1.66it/s] 35%|███▌      | 7/20 [00:04<00:07,  1.71it/s] 40%|████      | 8/20 [00:04<00:06,  1.78it/s] 45%|████▌     | 9/20 [00:05<00:06,  1.81it/s] 50%|█████     | 10/20 [00:05<00:05,  1.85it/s] 55%|█████▌    | 11/20 [00:06<00:04,  1.84it/s] 60%|██████    | 12/20 [00:06<00:04,  1.85it/s] 65%|██████▌   | 13/20 [00:07<00:03,  1.86it/s] 70%|███████   | 14/20 [00:07<00:03,  1.87it/s] 75%|███████▌  | 15/20 [00:08<00:02,  1.85it/s] 80%|████████  | 16/20 [00:09<00:02,  1.64it/s] 85%|████████▌ | 17/20 [00:09<00:01,  1.72it/s] 90%|█████████ | 18/20 [00:10<00:01,  1.67it/s] 95%|█████████▌| 19/20 [00:10<00:00,  1.74it/s]100%|██████████| 20/20 [00:11<00:00,  1.79it/s]100%|██████████| 20/20 [00:11<00:00,  1.78it/s]
+Loading vali samples......
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:02,  1.89it/s] 33%|███▎      | 2/6 [00:01<00:02,  1.87it/s] 50%|█████     | 3/6 [00:01<00:01,  1.91it/s] 67%|██████▋   | 4/6 [00:02<00:01,  1.92it/s] 83%|████████▎ | 5/6 [00:02<00:00,  1.91it/s]100%|██████████| 6/6 [00:03<00:00,  1.91it/s]100%|██████████| 6/6 [00:03<00:00,  1.91it/s]
+Loading test samples......
+  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [00:00<00:02,  1.88it/s] 40%|████      | 2/5 [00:01<00:01,  1.93it/s] 60%|██████    | 3/5 [00:01<00:01,  1.92it/s] 80%|████████  | 4/5 [00:02<00:00,  1.87it/s]100%|██████████| 5/5 [00:02<00:00,  1.86it/s]100%|██████████| 5/5 [00:02<00:00,  1.88it/s]
+wandb: Tracking run with wandb version 0.30.0
+wandb: W&B syncing is set to `offline` in this directory. Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
+wandb: Run data is saved locally in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_053234-368g2s31
+wandb: View this run in the terminal with `wandb leet`
+{'Total': 512348, 'Trainable': 512348, 'Percent': 1.0}
+intra_flatten  :  Flatten(start_dim=2, end_dim=-1)
+intra_embed  :  Linear(in_features=900, out_features=64, bias=True)
+intra_MLP  :  ModuleList(
+  (0): MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=32, bias=True)
+    (dropout): Dropout(p=0.0, inplace=False)
+    (out_linear): Linear(in_features=32, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+inter_flatten  :  Sequential(
+  (0): Flatten(start_dim=1, end_dim=-1)
+  (1): Linear(in_features=6400, out_features=64, bias=True)
+)
+inter_MLP  :  ModuleList(
+  (0-8): 9 x MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=32, bias=True)
+    (dropout): Dropout(p=0.0, inplace=False)
+    (out_linear): Linear(in_features=32, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+head_output  :  Linear(in_features=64, out_features=28, bias=True)
+Trainable parameters are: ['intra_embed.weight', 'intra_embed.bias', 'intra_MLP.0.in_linear.weight', 'intra_MLP.0.in_linear.bias', 'intra_MLP.0.out_linear.weight', 'intra_MLP.0.out_linear.bias', 'intra_MLP.0.ln.weight', 'intra_MLP.0.ln.bias', 'inter_flatten.1.weight', 'inter_flatten.1.bias', 'inter_MLP.0.in_linear.weight', 'inter_MLP.0.in_linear.bias', 'inter_MLP.0.out_linear.weight', 'inter_MLP.0.out_linear.bias', 'inter_MLP.0.ln.weight', 'inter_MLP.0.ln.bias', 'inter_MLP.1.in_linear.weight', 'inter_MLP.1.in_linear.bias', 'inter_MLP.1.out_linear.weight', 'inter_MLP.1.out_linear.bias', 'inter_MLP.1.ln.weight', 'inter_MLP.1.ln.bias', 'inter_MLP.2.in_linear.weight', 'inter_MLP.2.in_linear.bias', 'inter_MLP.2.out_linear.weight', 'inter_MLP.2.out_linear.bias', 'inter_MLP.2.ln.weight', 'inter_MLP.2.ln.bias', 'inter_MLP.3.in_linear.weight', 'inter_MLP.3.in_linear.bias', 'inter_MLP.3.out_linear.weight', 'inter_MLP.3.out_linear.bias', 'inter_MLP.3.ln.weight', 'inter_MLP.3.ln.bias', 'inter_MLP.4.in_linear.weight', 'inter_MLP.4.in_linear.bias', 'inter_MLP.4.out_linear.weight', 'inter_MLP.4.out_linear.bias', 'inter_MLP.4.ln.weight', 'inter_MLP.4.ln.bias', 'inter_MLP.5.in_linear.weight', 'inter_MLP.5.in_linear.bias', 'inter_MLP.5.out_linear.weight', 'inter_MLP.5.out_linear.bias', 'inter_MLP.5.ln.weight', 'inter_MLP.5.ln.bias', 'inter_MLP.6.in_linear.weight', 'inter_MLP.6.in_linear.bias', 'inter_MLP.6.out_linear.weight', 'inter_MLP.6.out_linear.bias', 'inter_MLP.6.ln.weight', 'inter_MLP.6.ln.bias', 'inter_MLP.7.in_linear.weight', 'inter_MLP.7.in_linear.bias', 'inter_MLP.7.out_linear.weight', 'inter_MLP.7.out_linear.bias', 'inter_MLP.7.ln.weight', 'inter_MLP.7.ln.bias', 'inter_MLP.8.in_linear.weight', 'inter_MLP.8.in_linear.bias', 'inter_MLP.8.out_linear.weight', 'inter_MLP.8.out_linear.bias', 'inter_MLP.8.ln.weight', 'inter_MLP.8.ln.bias', 'head_output.weight', 'head_output.bias']
+	iteras: 5, epoch: 1 | loss:2.8222647 | label_loss: 2.8222647 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2486s/iter; left time: 371.9333s
+	iteras: 10, epoch: 1 | loss:2.6805229 | label_loss: 2.6805229 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0283s/iter; left time: 42.1799s
+	iteras: 15, epoch: 1 | loss:2.5180521 | label_loss: 2.5180521 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0262s/iter; left time: 38.9990s
+Epoch: 1 cost time: 1.271195411682129
+0it [00:00, ?it/s]1it [00:00,  4.35it/s]5it [00:00, 15.96it/s]
+0it [00:00, ?it/s]1it [00:00,  4.50it/s]4it [00:00, 13.71it/s]
+Epoch: 1 | Train Loss: 2.77824| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 203.7294520 | Train MAPE: 0.6748506 | Vali RMSE: 71.8979176| Vali MAE: 65.5908448| Vali MAPE: 0.3649028| Test RMSE: 95.5087238| Test MAE: 77.2549368 | Test MAPE: 0.5594979
+[2026-09-13 05:32:36,796] [INFO] [real_accelerator.py:203:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Warning: The default cache directory for DeepSpeed Triton autotune, /usr4/dl523/dgordon/.triton/autotune, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path.
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2021/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_geobins_Naion_s2021!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 2 | loss:2.4365258 | label_loss: 2.4365258 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.9026s/iter; left time: 1336.7128s
+	iteras: 10, epoch: 2 | loss:2.5047507 | label_loss: 2.5047507 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0288s/iter; left time: 42.4381s
+	iteras: 15, epoch: 2 | loss:2.3380742 | label_loss: 2.3380742 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0271s/iter; left time: 39.8902s
+Epoch: 2 cost time: 0.6705315113067627
+0it [00:00, ?it/s]1it [00:00,  4.35it/s]5it [00:00, 15.84it/s]
+0it [00:00, ?it/s]1it [00:00,  4.64it/s]4it [00:00, 14.13it/s]
+Epoch: 2 | Train Loss: 2.40699| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 74.2920158 | Train MAPE: 0.3114181 | Vali RMSE: 42.4098479| Vali MAE: 38.7738444| Vali MAPE: 0.2018505| Test RMSE: 80.6228974| Test MAE: 74.6821533 | Test MAPE: 0.3955862
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2021/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_geobins_Naion_s2021!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 3 | loss:2.3364503 | label_loss: 2.3364503 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2138s/iter; left time: 313.4885s
+	iteras: 10, epoch: 3 | loss:2.1701951 | label_loss: 2.1701951 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0318s/iter; left time: 46.5083s
+	iteras: 15, epoch: 3 | loss:2.2167039 | label_loss: 2.2167039 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0299s/iter; left time: 43.4824s
+Epoch: 3 cost time: 0.7340364456176758
+0it [00:00, ?it/s]1it [00:00,  4.40it/s]5it [00:00, 15.87it/s]
+0it [00:00, ?it/s]1it [00:00,  4.46it/s]4it [00:00, 13.47it/s]
+Epoch: 3 | Train Loss: 2.30942| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 66.5587324 | Train MAPE: 0.2317040 | Vali RMSE: 42.4098479| Vali MAE: 38.7738444| Vali MAPE: 0.2018505| Test RMSE: 80.6228974| Test MAE: 74.6821533 | Test MAPE: 0.3955862
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2021/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_geobins_Naion_s2021!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 4 | loss:2.3837214 | label_loss: 2.3837214 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2120s/iter; left time: 307.6795s
+	iteras: 10, epoch: 4 | loss:2.1762936 | label_loss: 2.1762936 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0321s/iter; left time: 46.4567s
+	iteras: 15, epoch: 4 | loss:2.2758744 | label_loss: 2.2758744 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0264s/iter; left time: 38.0706s
+Epoch: 4 cost time: 0.697136640548706
+0it [00:00, ?it/s]1it [00:00,  4.46it/s]5it [00:00, 16.16it/s]
+0it [00:00, ?it/s]1it [00:00,  4.62it/s]4it [00:00, 14.11it/s]
+Epoch: 4 | Train Loss: 2.27355| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 66.6439021 | Train MAPE: 0.2323234 | Vali RMSE: 42.4098479| Vali MAE: 38.7738444| Vali MAPE: 0.2018505| Test RMSE: 80.6228974| Test MAE: 74.6821533 | Test MAPE: 0.3955862
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2021/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_geobins_Naion_s2021!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 5 | loss:2.2651448 | label_loss: 2.2651448 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2067s/iter; left time: 296.7663s
+	iteras: 10, epoch: 5 | loss:2.2601874 | label_loss: 2.2601874 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0346s/iter; left time: 49.4981s
+	iteras: 15, epoch: 5 | loss:2.1931171 | label_loss: 2.1931171 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0266s/iter; left time: 37.9312s
+Epoch: 5 cost time: 0.7011945247650146
+0it [00:00, ?it/s]1it [00:00,  4.40it/s]5it [00:00, 15.93it/s]
+0it [00:00, ?it/s]1it [00:00,  4.36it/s]4it [00:00, 13.50it/s]
+Epoch: 5 | Train Loss: 2.24204| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 66.1512043 | Train MAPE: 0.2314194 | Vali RMSE: 42.4098479| Vali MAE: 38.7738444| Vali MAPE: 0.2018505| Test RMSE: 80.6228974| Test MAE: 74.6821533 | Test MAPE: 0.3955862
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2021/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_geobins_Naion_s2021!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 6 | loss:2.2742381 | label_loss: 2.2742381 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2091s/iter; left time: 297.1321s
+	iteras: 10, epoch: 6 | loss:2.0918531 | label_loss: 2.0918531 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0293s/iter; left time: 41.4972s
+	iteras: 15, epoch: 6 | loss:2.1535909 | label_loss: 2.1535909 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0270s/iter; left time: 38.0697s
+Epoch: 6 cost time: 0.6728417873382568
+0it [00:00, ?it/s]1it [00:00,  4.32it/s]5it [00:00, 15.90it/s]
+0it [00:00, ?it/s]1it [00:00,  4.53it/s]4it [00:00, 13.55it/s]
+Epoch: 6 | Train Loss: 2.20280| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 65.5648224 | Train MAPE: 0.2280136 | Vali RMSE: 42.4098479| Vali MAE: 38.7738444| Vali MAPE: 0.2018505| Test RMSE: 80.6228974| Test MAE: 74.6821533 | Test MAPE: 0.3955862
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2021/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_geobins_Naion_s2021!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 7 | loss:2.2332122 | label_loss: 2.2332122 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2071s/iter; left time: 291.2027s
+	iteras: 10, epoch: 7 | loss:2.1112235 | label_loss: 2.1112235 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0289s/iter; left time: 40.4541s
+	iteras: 15, epoch: 7 | loss:2.0812926 | label_loss: 2.0812926 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0270s/iter; left time: 37.7484s
+Epoch: 7 cost time: 0.6600832939147949
+0it [00:00, ?it/s]1it [00:00,  4.36it/s]5it [00:00, 15.82it/s]
+0it [00:00, ?it/s]1it [00:00,  4.46it/s]4it [00:00, 13.40it/s]
+Epoch: 7 | Train Loss: 2.16176| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 62.6480030 | Train MAPE: 0.2205909 | Vali RMSE: 43.6960955| Vali MAE: 39.6836365| Vali MAPE: 0.2068550| Test RMSE: 75.2869303| Test MAE: 67.8482139 | Test MAPE: 0.3662242
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 8 | loss:2.1092374 | label_loss: 2.1092374 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2074s/iter; left time: 288.5571s
+	iteras: 10, epoch: 8 | loss:2.1815314 | label_loss: 2.1815314 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0287s/iter; left time: 39.7332s
+	iteras: 15, epoch: 8 | loss:2.0083969 | label_loss: 2.0083969 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0270s/iter; left time: 37.2329s
+Epoch: 8 cost time: 0.6744091510772705
+0it [00:00, ?it/s]1it [00:00,  4.40it/s]5it [00:00, 15.95it/s]
+0it [00:00, ?it/s]1it [00:00,  4.46it/s]4it [00:00, 13.72it/s]
+Epoch: 8 | Train Loss: 2.10083| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 57.5122415 | Train MAPE: 0.2213274 | Vali RMSE: 53.4134138| Vali MAE: 47.4352600| Vali MAPE: 0.2490326| Test RMSE: 67.2469412| Test MAE: 58.4345644 | Test MAPE: 0.3254979
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 9 | loss:2.0148761 | label_loss: 2.0148761 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2031s/iter; left time: 279.4885s
+	iteras: 10, epoch: 9 | loss:2.1353910 | label_loss: 2.1353910 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0294s/iter; left time: 40.2634s
+	iteras: 15, epoch: 9 | loss:1.9235977 | label_loss: 1.9235977 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0269s/iter; left time: 36.7280s
+Epoch: 9 cost time: 0.664682149887085
+0it [00:00, ?it/s]1it [00:00,  4.53it/s]5it [00:00, 16.35it/s]
+0it [00:00, ?it/s]1it [00:00,  4.44it/s]4it [00:00, 13.45it/s]
+Epoch: 9 | Train Loss: 2.04020| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 52.2448006 | Train MAPE: 0.2135219 | Vali RMSE: 52.9451295| Vali MAE: 47.0261252| Vali MAPE: 0.2467846| Test RMSE: 67.3176611| Test MAE: 58.5127374 | Test MAPE: 0.3258423
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 10 | loss:1.9728826 | label_loss: 1.9728826 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2020s/iter; left time: 274.8990s
+	iteras: 10, epoch: 10 | loss:1.9861982 | label_loss: 1.9861982 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0282s/iter; left time: 38.3021s
+	iteras: 15, epoch: 10 | loss:2.0170949 | label_loss: 2.0170949 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0262s/iter; left time: 35.4629s
+Epoch: 10 cost time: 0.6519455909729004
+0it [00:00, ?it/s]1it [00:00,  4.50it/s]5it [00:00, 16.18it/s]
+0it [00:00, ?it/s]1it [00:00,  4.48it/s]4it [00:00, 13.84it/s]
+Epoch: 10 | Train Loss: 1.95964| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 50.1842364 | Train MAPE: 0.2023001 | Vali RMSE: 63.6511488| Vali MAE: 57.2802168| Vali MAPE: 0.3025424| Test RMSE: 65.1127109| Test MAE: 56.1140655 | Test MAPE: 0.3154241
+EarlyStopping counter: 4 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 11 | loss:1.9095225 | label_loss: 1.9095225 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2033s/iter; left time: 273.5785s
+	iteras: 10, epoch: 11 | loss:1.9571850 | label_loss: 1.9571850 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0287s/iter; left time: 38.5250s
+	iteras: 15, epoch: 11 | loss:1.7591598 | label_loss: 1.7591598 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0263s/iter; left time: 35.1307s
+Epoch: 11 cost time: 0.6665816307067871
+0it [00:00, ?it/s]1it [00:00,  4.32it/s]5it [00:00, 15.93it/s]
+0it [00:00, ?it/s]1it [00:00,  4.57it/s]4it [00:00, 13.97it/s]
+wandb: 
+wandb: Run history:
+wandb:      epoch ▁▂▂▃▄▄▅▅▆▇▇█
+wandb:  test_MAPE █▃▃▃▃▃▂▁▁▁▁▃
+wandb:  test_RMSE █▅▅▅▅▅▃▁▂▁▁▅
+wandb:  test_acc1 █▁▁▁▁▁▄▆▆▇▇▁
+wandb:  test_acc2 █▁▁▁▁▁▁▁▁▁▁▁
+wandb: train_loss █▅▄▄▄▃▃▃▂▂▁▁
+wandb:  vali_MAPE █▁▁▁▁▁▁▃▃▅▄▁
+wandb:  vali_RMSE █▁▁▁▁▁▁▄▄▆▄▁
+wandb:  vali_acc1 ▁███████████
+wandb:  vali_acc2 ▁███████████
+wandb: 
+wandb: Run summary:
+wandb:      epoch 11
+wandb:  test_MAPE 0.39559
+wandb:  test_RMSE 80.6229
+wandb:  test_acc1 0
+wandb:  test_acc2 0
+wandb: train_loss 1.89499
+wandb:  vali_MAPE 0.20185
+wandb:  vali_RMSE 42.40985
+wandb:  vali_acc1 16.66667
+wandb:  vali_acc2 16.66667
+wandb: 
+wandb: You can sync this run to the cloud by running:
+wandb: wandb sync /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_053234-368g2s31
+wandb: Find logs at: ./wandb/offline-run-20260913_053234-368g2s31/logs
+Epoch: 11 | Train Loss: 1.89499| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 51.2005920 | Train MAPE: 0.2100938 | Vali RMSE: 55.9773472| Vali MAE: 49.7392038| Vali MAPE: 0.2615574| Test RMSE: 65.1127109| Test MAE: 56.1140655 | Test MAPE: 0.3154241
+EarlyStopping counter: 5 out of 5
+Early stopping
+Best model performance: Test MAE: 74.6822 | Test RMSE: 80.6229 | Test MAPE: 0.3956 | Test 15%-accuracy: 0.0000 | Test 10%-accuracy: 0.0000 | Val MAE: 38.7738 | Val RMSE: 42.4098 | Val MAPE: 0.2019 | Val 15%-accuracy: 16.6667 | Val 10%-accuracy: 16.6667 
+Best model performance: Test Seen MAPE: 0.3892 | Test Unseen MAPE: 0.4052
+Best model performance: Test Seen 15%-accuracy: 0.0000 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 0.0000 | Test Unseen 10%-accuracy: 0.0000
+/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2021/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_geobins_Naion_s2021
+=== CPMLP geo_bins | dataset=NAion42 seed=42 ===
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+{'task_name': 'classification', 'is_training': 1, 'model_id': 'CPMLP', 'model_comment': 'CPMLP_geobins_Naion_s42', 'model': 'CPMLP', 'seed': 42, 'charge_discharge_length': 300, 'dataset': 'NAion42', 'data': 'Dataset_original', 'root_path': './dataset', 'data_path': 'ETTh1.csv', 'features': 'MS', 'target': 'OT', 'loader': 'modal', 'freq': 'h', 'checkpoints': '/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42', 'early_cycle_threshold': 100, 'seq_len': 1, 'pred_len': 5, 'label_len': 50, 'seasonal_patterns': 'Monthly', 'enc_in': 3, 'dec_in': 1, 'c_out': 1, 'd_model': 64, 'n_heads': 8, 'lstm_layers': 2, 'e_layers': 1, 'd_layers': 9, 'd_ff': 32, 'moving_avg': 25, 'factor': 3, 'dropout': 0.0, 'embed': 'timeF', 'activation': 'relu', 'output_attention': False, 'patch_len': 10, 'stride': 10, 'patch_len2': 10, 'stride2': 10, 'prompt_domain': 0, 'output_num': 28, 'class_num': 8, 'prediction_mode': 'geo_bins', 'geo_bin_tol': 0.15, 'geo_bin_min': 1.0, 'geo_bin_max': 3842.0, 'weighted_loss': False, 'weighted_sampling': False, 'num_workers': 4, 'itr': 1, 'train_epochs': 100, 'least_epochs': 5, 'batch_size': 128, 'patience': 5, 'learning_rate': 5e-05, 'wd': 0.0, 'des': 'Exp', 'loss': 'MSE', 'lradj': 'constant', 'pct_start': 0.2, 'use_amp': False, 'percent': 100, 'accumulation_steps': 1, 'mlp': 0, 'alpha1': 0.15, 'alpha2': 0.1}
+geo_bins enabled: 28 bins, ratio=1.3529, range=[1.0, 3842.0], tol=0.15
+Loading training samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:10,  1.81it/s] 10%|█         | 2/20 [00:01<00:09,  1.89it/s] 15%|█▌        | 3/20 [00:01<00:09,  1.75it/s] 20%|██        | 4/20 [00:02<00:08,  1.82it/s] 25%|██▌       | 5/20 [00:02<00:08,  1.87it/s] 30%|███       | 6/20 [00:03<00:07,  1.91it/s] 35%|███▌      | 7/20 [00:03<00:06,  1.93it/s] 40%|████      | 8/20 [00:04<00:06,  1.94it/s] 45%|████▌     | 9/20 [00:04<00:05,  1.96it/s] 50%|█████     | 10/20 [00:05<00:05,  1.98it/s] 55%|█████▌    | 11/20 [00:05<00:04,  2.00it/s] 60%|██████    | 12/20 [00:06<00:04,  1.98it/s] 65%|██████▌   | 13/20 [00:06<00:03,  1.96it/s] 70%|███████   | 14/20 [00:07<00:03,  1.96it/s] 75%|███████▌  | 15/20 [00:08<00:02,  1.72it/s] 80%|████████  | 16/20 [00:08<00:02,  1.79it/s] 85%|████████▌ | 17/20 [00:09<00:01,  1.84it/s] 90%|█████████ | 18/20 [00:09<00:01,  1.85it/s] 95%|█████████▌| 19/20 [00:10<00:00,  1.89it/s]100%|██████████| 20/20 [00:10<00:00,  1.94it/s]100%|██████████| 20/20 [00:10<00:00,  1.90it/s]
+Loading vali samples......
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:02,  2.04it/s] 33%|███▎      | 2/6 [00:00<00:01,  2.03it/s] 50%|█████     | 3/6 [00:01<00:01,  1.99it/s] 67%|██████▋   | 4/6 [00:02<00:01,  1.98it/s] 83%|████████▎ | 5/6 [00:02<00:00,  2.01it/s]100%|██████████| 6/6 [00:02<00:00,  2.02it/s]100%|██████████| 6/6 [00:02<00:00,  2.01it/s]
+Loading test samples......
+  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [00:00<00:02,  1.65it/s] 40%|████      | 2/5 [00:01<00:01,  1.79it/s] 60%|██████    | 3/5 [00:01<00:01,  1.84it/s] 80%|████████  | 4/5 [00:02<00:00,  1.77it/s]100%|██████████| 5/5 [00:02<00:00,  1.85it/s]100%|██████████| 5/5 [00:02<00:00,  1.82it/s]
+wandb: Tracking run with wandb version 0.30.0
+wandb: W&B syncing is set to `offline` in this directory. Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
+wandb: Run data is saved locally in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_053322-pjd02b2u
+wandb: View this run in the terminal with `wandb leet`
+{'Total': 512348, 'Trainable': 512348, 'Percent': 1.0}
+intra_flatten  :  Flatten(start_dim=2, end_dim=-1)
+intra_embed  :  Linear(in_features=900, out_features=64, bias=True)
+intra_MLP  :  ModuleList(
+  (0): MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=32, bias=True)
+    (dropout): Dropout(p=0.0, inplace=False)
+    (out_linear): Linear(in_features=32, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+inter_flatten  :  Sequential(
+  (0): Flatten(start_dim=1, end_dim=-1)
+  (1): Linear(in_features=6400, out_features=64, bias=True)
+)
+inter_MLP  :  ModuleList(
+  (0-8): 9 x MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=32, bias=True)
+    (dropout): Dropout(p=0.0, inplace=False)
+    (out_linear): Linear(in_features=32, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+head_output  :  Linear(in_features=64, out_features=28, bias=True)
+Trainable parameters are: ['intra_embed.weight', 'intra_embed.bias', 'intra_MLP.0.in_linear.weight', 'intra_MLP.0.in_linear.bias', 'intra_MLP.0.out_linear.weight', 'intra_MLP.0.out_linear.bias', 'intra_MLP.0.ln.weight', 'intra_MLP.0.ln.bias', 'inter_flatten.1.weight', 'inter_flatten.1.bias', 'inter_MLP.0.in_linear.weight', 'inter_MLP.0.in_linear.bias', 'inter_MLP.0.out_linear.weight', 'inter_MLP.0.out_linear.bias', 'inter_MLP.0.ln.weight', 'inter_MLP.0.ln.bias', 'inter_MLP.1.in_linear.weight', 'inter_MLP.1.in_linear.bias', 'inter_MLP.1.out_linear.weight', 'inter_MLP.1.out_linear.bias', 'inter_MLP.1.ln.weight', 'inter_MLP.1.ln.bias', 'inter_MLP.2.in_linear.weight', 'inter_MLP.2.in_linear.bias', 'inter_MLP.2.out_linear.weight', 'inter_MLP.2.out_linear.bias', 'inter_MLP.2.ln.weight', 'inter_MLP.2.ln.bias', 'inter_MLP.3.in_linear.weight', 'inter_MLP.3.in_linear.bias', 'inter_MLP.3.out_linear.weight', 'inter_MLP.3.out_linear.bias', 'inter_MLP.3.ln.weight', 'inter_MLP.3.ln.bias', 'inter_MLP.4.in_linear.weight', 'inter_MLP.4.in_linear.bias', 'inter_MLP.4.out_linear.weight', 'inter_MLP.4.out_linear.bias', 'inter_MLP.4.ln.weight', 'inter_MLP.4.ln.bias', 'inter_MLP.5.in_linear.weight', 'inter_MLP.5.in_linear.bias', 'inter_MLP.5.out_linear.weight', 'inter_MLP.5.out_linear.bias', 'inter_MLP.5.ln.weight', 'inter_MLP.5.ln.bias', 'inter_MLP.6.in_linear.weight', 'inter_MLP.6.in_linear.bias', 'inter_MLP.6.out_linear.weight', 'inter_MLP.6.out_linear.bias', 'inter_MLP.6.ln.weight', 'inter_MLP.6.ln.bias', 'inter_MLP.7.in_linear.weight', 'inter_MLP.7.in_linear.bias', 'inter_MLP.7.out_linear.weight', 'inter_MLP.7.out_linear.bias', 'inter_MLP.7.ln.weight', 'inter_MLP.7.ln.bias', 'inter_MLP.8.in_linear.weight', 'inter_MLP.8.in_linear.bias', 'inter_MLP.8.out_linear.weight', 'inter_MLP.8.out_linear.bias', 'inter_MLP.8.ln.weight', 'inter_MLP.8.ln.bias', 'head_output.weight', 'head_output.bias']
+	iteras: 5, epoch: 1 | loss:2.8696115 | label_loss: 2.8696115 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.1545s/iter; left time: 231.1173s
+	iteras: 10, epoch: 1 | loss:2.5758836 | label_loss: 2.5758836 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0299s/iter; left time: 44.5103s
+	iteras: 15, epoch: 1 | loss:2.5780644 | label_loss: 2.5780644 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0277s/iter; left time: 41.1337s
+Epoch: 1 cost time: 0.8539032936096191
+0it [00:00, ?it/s]1it [00:00,  4.36it/s]5it [00:00, 15.93it/s]
+0it [00:00, ?it/s]1it [00:00,  4.50it/s]4it [00:00, 13.66it/s]
+Epoch: 1 | Train Loss: 2.87148| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 325.0251083 | Train MAPE: 0.9632159 | Vali RMSE: 92.0548054| Vali MAE: 81.1071815| Vali MAPE: 0.3682110| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+[2026-09-13 05:33:24,736] [INFO] [real_accelerator.py:203:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Warning: The default cache directory for DeepSpeed Triton autotune, /usr4/dl523/dgordon/.triton/autotune, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path.
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 2 | loss:2.4613547 | label_loss: 2.4613547 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.4404s/iter; left time: 652.2817s
+	iteras: 10, epoch: 2 | loss:2.5905457 | label_loss: 2.5905457 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0329s/iter; left time: 48.5258s
+	iteras: 15, epoch: 2 | loss:2.5313420 | label_loss: 2.5313420 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0297s/iter; left time: 43.7329s
+Epoch: 2 cost time: 0.7045416831970215
+0it [00:00, ?it/s]1it [00:00,  4.33it/s]5it [00:00, 15.59it/s]
+0it [00:00, ?it/s]1it [00:00,  4.49it/s]4it [00:00, 13.52it/s]
+Epoch: 2 | Train Loss: 2.50553| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 54.7165230 | Train MAPE: 0.2117043 | Vali RMSE: 92.0548054| Vali MAE: 81.1071815| Vali MAPE: 0.3682110| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 3 | loss:2.4763203 | label_loss: 2.4763203 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2120s/iter; left time: 310.8281s
+	iteras: 10, epoch: 3 | loss:2.4517119 | label_loss: 2.4517119 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0288s/iter; left time: 42.0766s
+	iteras: 15, epoch: 3 | loss:2.3775764 | label_loss: 2.3775764 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0274s/iter; left time: 39.9487s
+Epoch: 3 cost time: 0.6795477867126465
+0it [00:00, ?it/s]1it [00:00,  4.42it/s]5it [00:00, 15.75it/s]
+0it [00:00, ?it/s]1it [00:00,  4.47it/s]4it [00:00, 13.33it/s]
+Epoch: 3 | Train Loss: 2.42984| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 54.5673660 | Train MAPE: 0.2114848 | Vali RMSE: 92.0548054| Vali MAE: 81.1071815| Vali MAPE: 0.3682110| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 4 | loss:2.3575788 | label_loss: 2.3575788 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2135s/iter; left time: 309.8518s
+	iteras: 10, epoch: 4 | loss:2.3559809 | label_loss: 2.3559809 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0296s/iter; left time: 42.7426s
+	iteras: 15, epoch: 4 | loss:2.3392565 | label_loss: 2.3392565 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0278s/iter; left time: 40.1152s
+Epoch: 4 cost time: 0.689561128616333
+0it [00:00, ?it/s]1it [00:00,  4.42it/s]5it [00:00, 16.02it/s]
+0it [00:00, ?it/s]1it [00:00,  4.60it/s]4it [00:00, 13.97it/s]
+Epoch: 4 | Train Loss: 2.37661| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 54.2954911 | Train MAPE: 0.2109432 | Vali RMSE: 92.0548054| Vali MAE: 81.1071815| Vali MAPE: 0.3682110| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 5 | loss:2.3745937 | label_loss: 2.3745937 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2074s/iter; left time: 297.8942s
+	iteras: 10, epoch: 5 | loss:2.2945411 | label_loss: 2.2945411 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0290s/iter; left time: 41.5537s
+	iteras: 15, epoch: 5 | loss:2.3481045 | label_loss: 2.3481045 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0273s/iter; left time: 38.8901s
+Epoch: 5 cost time: 0.6758840084075928
+0it [00:00, ?it/s]1it [00:00,  4.41it/s]5it [00:00, 15.95it/s]
+0it [00:00, ?it/s]1it [00:00,  4.34it/s]4it [00:00, 13.37it/s]
+Epoch: 5 | Train Loss: 2.34600| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 54.5420725 | Train MAPE: 0.2118583 | Vali RMSE: 92.0548054| Vali MAE: 81.1071815| Vali MAPE: 0.3682110| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 6 | loss:2.2593927 | label_loss: 2.2593927 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2107s/iter; left time: 299.3699s
+	iteras: 10, epoch: 6 | loss:2.2996347 | label_loss: 2.2996347 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0287s/iter; left time: 40.6510s
+	iteras: 15, epoch: 6 | loss:2.3401859 | label_loss: 2.3401859 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0270s/iter; left time: 38.0350s
+Epoch: 6 cost time: 0.6752068996429443
+0it [00:00, ?it/s]1it [00:00,  4.37it/s]5it [00:00, 15.90it/s]
+0it [00:00, ?it/s]1it [00:00,  4.38it/s]4it [00:00, 13.45it/s]
+Epoch: 6 | Train Loss: 2.31143| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 54.6678781 | Train MAPE: 0.2119770 | Vali RMSE: 92.0548054| Vali MAE: 81.1071815| Vali MAPE: 0.3682110| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 7 | loss:2.2553666 | label_loss: 2.2553666 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2087s/iter; left time: 293.4107s
+	iteras: 10, epoch: 7 | loss:2.3219309 | label_loss: 2.3219309 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0285s/iter; left time: 39.9650s
+	iteras: 15, epoch: 7 | loss:2.3198218 | label_loss: 2.3198218 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0275s/iter; left time: 38.3469s
+Epoch: 7 cost time: 0.66745924949646
+0it [00:00, ?it/s]1it [00:00,  4.32it/s]5it [00:00, 15.76it/s]
+0it [00:00, ?it/s]1it [00:00,  4.41it/s]4it [00:00, 13.60it/s]
+Epoch: 7 | Train Loss: 2.27235| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 54.5844220 | Train MAPE: 0.2114183 | Vali RMSE: 92.0548054| Vali MAE: 81.1071815| Vali MAPE: 0.3682110| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 8 | loss:2.2117121 | label_loss: 2.2117121 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2104s/iter; left time: 292.6618s
+	iteras: 10, epoch: 8 | loss:2.1984308 | label_loss: 2.1984308 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0289s/iter; left time: 39.9885s
+	iteras: 15, epoch: 8 | loss:2.2527459 | label_loss: 2.2527459 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0273s/iter; left time: 37.7373s
+Epoch: 8 cost time: 0.6773796081542969
+0it [00:00, ?it/s]1it [00:00,  4.35it/s]5it [00:00, 15.84it/s]
+0it [00:00, ?it/s]1it [00:00,  4.38it/s]4it [00:00, 13.46it/s]
+Epoch: 8 | Train Loss: 2.23541| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 54.7319476 | Train MAPE: 0.2122829 | Vali RMSE: 92.0548054| Vali MAE: 81.1071815| Vali MAPE: 0.3682110| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 9 | loss:2.2089510 | label_loss: 2.2089510 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2110s/iter; left time: 290.3292s
+	iteras: 10, epoch: 9 | loss:2.1723628 | label_loss: 2.1723628 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0290s/iter; left time: 39.7899s
+	iteras: 15, epoch: 9 | loss:2.0834105 | label_loss: 2.0834105 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0269s/iter; left time: 36.7206s
+Epoch: 9 cost time: 0.6759142875671387
+0it [00:00, ?it/s]1it [00:00,  4.43it/s]5it [00:00, 15.95it/s]
+0it [00:00, ?it/s]1it [00:00,  4.39it/s]4it [00:00, 13.47it/s]
+Epoch: 9 | Train Loss: 2.17918| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 53.7240000 | Train MAPE: 0.2085775 | Vali RMSE: 92.0548054| Vali MAE: 81.1071815| Vali MAPE: 0.3682110| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 10 | loss:2.1779897 | label_loss: 2.1779897 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2107s/iter; left time: 286.7720s
+	iteras: 10, epoch: 10 | loss:2.0940619 | label_loss: 2.0940619 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0292s/iter; left time: 39.5749s
+	iteras: 15, epoch: 10 | loss:2.0100620 | label_loss: 2.0100620 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0278s/iter; left time: 37.5155s
+Epoch: 10 cost time: 0.6841349601745605
+0it [00:00, ?it/s]1it [00:00,  4.26it/s]5it [00:00, 15.63it/s]
+0it [00:00, ?it/s]1it [00:00,  4.58it/s]4it [00:00, 13.92it/s]
+Epoch: 10 | Train Loss: 2.09996| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 43.9988596 | Train MAPE: 0.1815424 | Vali RMSE: 82.6684825| Vali MAE: 74.2412887| Vali MAPE: 0.3441557| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 11 | loss:2.0397158 | label_loss: 2.0397158 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2099s/iter; left time: 282.5241s
+	iteras: 10, epoch: 11 | loss:1.8993100 | label_loss: 1.8993100 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0298s/iter; left time: 39.9399s
+	iteras: 15, epoch: 11 | loss:1.9410634 | label_loss: 1.9410634 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0275s/iter; left time: 36.7171s
+Epoch: 11 cost time: 0.6855933666229248
+0it [00:00, ?it/s]1it [00:00,  4.37it/s]5it [00:00, 15.87it/s]
+0it [00:00, ?it/s]1it [00:00,  4.52it/s]4it [00:00, 13.81it/s]
+Epoch: 11 | Train Loss: 1.99373| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 36.8844221 | Train MAPE: 0.1671468 | Vali RMSE: 69.4677180| Vali MAE: 55.1926811| Vali MAPE: 0.2568898| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 12 | loss:1.9442880 | label_loss: 1.9442880 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2085s/iter; left time: 277.5123s
+	iteras: 10, epoch: 12 | loss:1.8744291 | label_loss: 1.8744291 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0285s/iter; left time: 37.7808s
+	iteras: 15, epoch: 12 | loss:1.8913825 | label_loss: 1.8913825 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0272s/iter; left time: 35.9177s
+Epoch: 12 cost time: 0.6705749034881592
+0it [00:00, ?it/s]1it [00:00,  4.47it/s]5it [00:00, 16.12it/s]
+0it [00:00, ?it/s]1it [00:00,  4.52it/s]4it [00:00, 13.81it/s]
+Epoch: 12 | Train Loss: 1.88859| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 34.1538672 | Train MAPE: 0.1579301 | Vali RMSE: 66.1948133| Vali MAE: 57.4605590| Vali MAPE: 0.2898769| Test RMSE: 58.9115798| Test MAE: 41.3346771 | Test MAPE: 0.2292009
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 13 | loss:1.8477408 | label_loss: 1.8477408 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2058s/iter; left time: 270.8877s
+	iteras: 10, epoch: 13 | loss:1.7654176 | label_loss: 1.7654176 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0300s/iter; left time: 39.3268s
+	iteras: 15, epoch: 13 | loss:1.8646152 | label_loss: 1.8646152 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0274s/iter; left time: 35.7598s
+Epoch: 13 cost time: 0.6899428367614746
+0it [00:00, ?it/s]1it [00:00,  4.34it/s]5it [00:00, 15.87it/s]
+0it [00:00, ?it/s]1it [00:00,  4.58it/s]4it [00:00, 13.91it/s]
+Epoch: 13 | Train Loss: 1.82780| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 34.4381943 | Train MAPE: 0.1592172 | Vali RMSE: 67.1167033| Vali MAE: 52.7244657| Vali MAPE: 0.2460889| Test RMSE: 65.7395498| Test MAE: 51.5786786 | Test MAPE: 0.2770701
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 14 | loss:1.7637239 | label_loss: 1.7637239 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2066s/iter; left time: 268.7854s
+	iteras: 10, epoch: 14 | loss:1.7134330 | label_loss: 1.7134330 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0292s/iter; left time: 37.7915s
+	iteras: 15, epoch: 14 | loss:1.7623825 | label_loss: 1.7623825 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0281s/iter; left time: 36.2502s
+Epoch: 14 cost time: 0.6728987693786621
+0it [00:00, ?it/s]1it [00:00,  4.31it/s]5it [00:00, 15.74it/s]
+0it [00:00, ?it/s]1it [00:00,  4.37it/s]4it [00:00, 13.20it/s]
+Epoch: 14 | Train Loss: 1.78277| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 34.4237470 | Train MAPE: 0.1594727 | Vali RMSE: 67.5243439| Vali MAE: 53.1807508| Vali MAPE: 0.2481108| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 15 | loss:1.7219269 | label_loss: 1.7219269 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2134s/iter; left time: 274.4007s
+	iteras: 10, epoch: 15 | loss:1.6286726 | label_loss: 1.6286726 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0315s/iter; left time: 40.3274s
+	iteras: 15, epoch: 15 | loss:1.6615735 | label_loss: 1.6615735 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0274s/iter; left time: 34.8987s
+Epoch: 15 cost time: 0.7122464179992676
+0it [00:00, ?it/s]1it [00:00,  4.46it/s]5it [00:00, 16.15it/s]
+0it [00:00, ?it/s]1it [00:00,  4.48it/s]4it [00:00, 13.49it/s]
+Epoch: 15 | Train Loss: 1.68435| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 31.9514027 | Train MAPE: 0.1486370 | Vali RMSE: 67.2297752| Vali MAE: 52.8969236| Vali MAPE: 0.2468896| Test RMSE: 65.8049050| Test MAE: 51.6821533 | Test MAPE: 0.2775536
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 16 | loss:1.6205710 | label_loss: 1.6205710 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2043s/iter; left time: 259.6394s
+	iteras: 10, epoch: 16 | loss:1.6373273 | label_loss: 1.6373273 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0290s/iter; left time: 36.7241s
+	iteras: 15, epoch: 16 | loss:1.6028734 | label_loss: 1.6028734 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0277s/iter; left time: 34.9096s
+Epoch: 16 cost time: 0.6715939044952393
+0it [00:00, ?it/s]1it [00:00,  4.35it/s]5it [00:00, 15.69it/s]
+0it [00:00, ?it/s]1it [00:00,  4.50it/s]4it [00:00, 13.71it/s]
+Epoch: 16 | Train Loss: 1.61850| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 30.2196152 | Train MAPE: 0.1401329 | Vali RMSE: 64.7887532| Vali MAE: 55.9645300| Vali MAPE: 0.2846024| Test RMSE: 65.3460461| Test MAE: 50.9578300 | Test MAPE: 0.2741689
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 17 | loss:1.5772947 | label_loss: 1.5772947 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2078s/iter; left time: 261.0144s
+	iteras: 10, epoch: 17 | loss:1.5196232 | label_loss: 1.5196232 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0292s/iter; left time: 36.4983s
+	iteras: 15, epoch: 17 | loss:1.4963012 | label_loss: 1.4963012 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0277s/iter; left time: 34.4866s
+Epoch: 17 cost time: 0.6851222515106201
+0it [00:00, ?it/s]1it [00:00,  4.31it/s]5it [00:00, 15.68it/s]
+0it [00:00, ?it/s]1it [00:00,  4.42it/s]4it [00:00, 13.55it/s]
+Epoch: 17 | Train Loss: 1.53649| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 29.2463112 | Train MAPE: 0.1363626 | Vali RMSE: 67.2881790| Vali MAE: 53.1708577| Vali MAPE: 0.2483331| Test RMSE: 65.7395498| Test MAE: 51.5786786 | Test MAPE: 0.2770701
+EarlyStopping counter: 4 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 18 | loss:1.4620867 | label_loss: 1.4620867 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2085s/iter; left time: 258.7055s
+	iteras: 10, epoch: 18 | loss:1.3931456 | label_loss: 1.3931456 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0290s/iter; left time: 35.8317s
+	iteras: 15, epoch: 18 | loss:1.3444929 | label_loss: 1.3444929 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0270s/iter; left time: 33.2878s
+Epoch: 18 cost time: 0.6804666519165039
+0it [00:00, ?it/s]1it [00:00,  4.31it/s]5it [00:00, 15.67it/s]
+0it [00:00, ?it/s]1it [00:00,  4.52it/s]4it [00:00, 13.77it/s]
+wandb: 
+wandb: Run history:
+wandb:      epoch ▁▁▂▂▃▃▃▄▄▅▅▅▆▆▆▇▇██
+wandb:  test_MAPE ███████████▁█████▆█
+wandb:  test_RMSE ███████████▁█████▇█
+wandb:  test_acc1 ▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▃▁
+wandb:  test_acc2 ▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▃▁
+wandb: train_loss █▆▆▆▅▅▅▅▅▄▄▃▃▃▂▂▁▁▁
+wandb:  vali_MAPE █████████▇▂▄▁▁▁▃▁▆▁
+wandb:  vali_RMSE █████████▆▂▁▂▂▂▁▂▂▂
+wandb:  vali_acc1 ▁▁▁▁▁▁▁▁▁▁▇▅███▅▇▃█
+wandb:  vali_acc2 ▁▁▁▁▁▁▁▁▁▁▇▄███▄█▁█
+wandb: 
+wandb: Run summary:
+wandb:      epoch 18
+wandb:  test_MAPE 0.27707
+wandb:  test_RMSE 65.73955
+wandb:  test_acc1 20.2
+wandb:  test_acc2 20.2
+wandb: train_loss 1.43936
+wandb:  vali_MAPE 0.24609
+wandb:  vali_RMSE 67.1167
+wandb:  vali_acc1 50
+wandb:  vali_acc2 16.66667
+wandb: 
+wandb: You can sync this run to the cloud by running:
+wandb: wandb sync /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_053322-pjd02b2u
+wandb: Find logs at: ./wandb/offline-run-20260913_053322-pjd02b2u/logs
+Epoch: 18 | Train Loss: 1.43936| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 28.4571539 | Train MAPE: 0.1341393 | Vali RMSE: 69.6483044| Vali MAE: 63.7604105| Vali MAPE: 0.3254629| Test RMSE: 64.3517602| Test MAE: 49.4057086 | Test MAPE: 0.2669160
+EarlyStopping counter: 5 out of 5
+Early stopping
+Best model performance: Test MAE: 51.5787 | Test RMSE: 65.7395 | Test MAPE: 0.2771 | Test 15%-accuracy: 20.2000 | Test 10%-accuracy: 20.2000 | Val MAE: 52.7245 | Val RMSE: 67.1167 | Val MAPE: 0.2461 | Val 15%-accuracy: 50.0000 | Val 10%-accuracy: 16.6667 
+Best model performance: Test Seen MAPE: 0.1917 | Test Unseen MAPE: 0.4052
+Best model performance: Test Seen 15%-accuracy: 33.6667 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 33.6667 | Test Unseen 10%-accuracy: 0.0000
+/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed42/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_geobins_Naion_s42
+=== CPMLP geo_bins | dataset=NAion2024 seed=2024 ===
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+{'task_name': 'classification', 'is_training': 1, 'model_id': 'CPMLP', 'model_comment': 'CPMLP_geobins_Naion_s2024', 'model': 'CPMLP', 'seed': 2024, 'charge_discharge_length': 300, 'dataset': 'NAion2024', 'data': 'Dataset_original', 'root_path': './dataset', 'data_path': 'ETTh1.csv', 'features': 'MS', 'target': 'OT', 'loader': 'modal', 'freq': 'h', 'checkpoints': '/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2024', 'early_cycle_threshold': 100, 'seq_len': 1, 'pred_len': 5, 'label_len': 50, 'seasonal_patterns': 'Monthly', 'enc_in': 3, 'dec_in': 1, 'c_out': 1, 'd_model': 64, 'n_heads': 8, 'lstm_layers': 2, 'e_layers': 1, 'd_layers': 9, 'd_ff': 32, 'moving_avg': 25, 'factor': 3, 'dropout': 0.0, 'embed': 'timeF', 'activation': 'relu', 'output_attention': False, 'patch_len': 10, 'stride': 10, 'patch_len2': 10, 'stride2': 10, 'prompt_domain': 0, 'output_num': 28, 'class_num': 8, 'prediction_mode': 'geo_bins', 'geo_bin_tol': 0.15, 'geo_bin_min': 1.0, 'geo_bin_max': 3842.0, 'weighted_loss': False, 'weighted_sampling': False, 'num_workers': 4, 'itr': 1, 'train_epochs': 100, 'least_epochs': 5, 'batch_size': 128, 'patience': 5, 'learning_rate': 5e-05, 'wd': 0.0, 'des': 'Exp', 'loss': 'MSE', 'lradj': 'constant', 'pct_start': 0.2, 'use_amp': False, 'percent': 100, 'accumulation_steps': 1, 'mlp': 0, 'alpha1': 0.15, 'alpha2': 0.1}
+geo_bins enabled: 28 bins, ratio=1.3529, range=[1.0, 3842.0], tol=0.15
+Loading training samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:10,  1.86it/s] 10%|█         | 2/20 [00:01<00:09,  1.91it/s] 15%|█▌        | 3/20 [00:01<00:08,  1.93it/s] 20%|██        | 4/20 [00:02<00:08,  1.95it/s] 25%|██▌       | 5/20 [00:02<00:07,  1.96it/s] 30%|███       | 6/20 [00:03<00:07,  1.97it/s] 35%|███▌      | 7/20 [00:03<00:07,  1.82it/s] 40%|████      | 8/20 [00:04<00:06,  1.85it/s] 45%|████▌     | 9/20 [00:04<00:05,  1.90it/s] 50%|█████     | 10/20 [00:05<00:05,  1.81it/s] 55%|█████▌    | 11/20 [00:05<00:04,  1.87it/s] 60%|██████    | 12/20 [00:06<00:04,  1.89it/s] 65%|██████▌   | 13/20 [00:06<00:03,  1.92it/s] 70%|███████   | 14/20 [00:07<00:03,  1.92it/s] 75%|███████▌  | 15/20 [00:08<00:02,  1.68it/s] 80%|████████  | 16/20 [00:08<00:02,  1.77it/s] 85%|████████▌ | 17/20 [00:09<00:01,  1.82it/s] 90%|█████████ | 18/20 [00:09<00:01,  1.83it/s] 95%|█████████▌| 19/20 [00:10<00:00,  1.88it/s]100%|██████████| 20/20 [00:10<00:00,  1.91it/s]100%|██████████| 20/20 [00:10<00:00,  1.87it/s]
+Loading vali samples......
+  0%|          | 0/6 [00:00<?, ?it/s] 17%|█▋        | 1/6 [00:00<00:02,  2.05it/s] 33%|███▎      | 2/6 [00:00<00:01,  2.03it/s] 50%|█████     | 3/6 [00:01<00:01,  1.94it/s] 67%|██████▋   | 4/6 [00:02<00:01,  1.95it/s] 83%|████████▎ | 5/6 [00:02<00:00,  1.97it/s]100%|██████████| 6/6 [00:03<00:00,  1.96it/s]100%|██████████| 6/6 [00:03<00:00,  1.97it/s]
+Loading test samples......
+  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [00:00<00:02,  1.66it/s] 40%|████      | 2/5 [00:01<00:01,  1.85it/s] 60%|██████    | 3/5 [00:01<00:01,  1.92it/s] 80%|████████  | 4/5 [00:02<00:00,  1.91it/s]100%|██████████| 5/5 [00:02<00:00,  1.88it/s]100%|██████████| 5/5 [00:02<00:00,  1.87it/s]
+wandb: Tracking run with wandb version 0.30.0
+wandb: W&B syncing is set to `offline` in this directory. Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
+wandb: Run data is saved locally in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_053420-y46klofz
+wandb: View this run in the terminal with `wandb leet`
+{'Total': 512348, 'Trainable': 512348, 'Percent': 1.0}
+intra_flatten  :  Flatten(start_dim=2, end_dim=-1)
+intra_embed  :  Linear(in_features=900, out_features=64, bias=True)
+intra_MLP  :  ModuleList(
+  (0): MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=32, bias=True)
+    (dropout): Dropout(p=0.0, inplace=False)
+    (out_linear): Linear(in_features=32, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+inter_flatten  :  Sequential(
+  (0): Flatten(start_dim=1, end_dim=-1)
+  (1): Linear(in_features=6400, out_features=64, bias=True)
+)
+inter_MLP  :  ModuleList(
+  (0-8): 9 x MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=32, bias=True)
+    (dropout): Dropout(p=0.0, inplace=False)
+    (out_linear): Linear(in_features=32, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+head_output  :  Linear(in_features=64, out_features=28, bias=True)
+Trainable parameters are: ['intra_embed.weight', 'intra_embed.bias', 'intra_MLP.0.in_linear.weight', 'intra_MLP.0.in_linear.bias', 'intra_MLP.0.out_linear.weight', 'intra_MLP.0.out_linear.bias', 'intra_MLP.0.ln.weight', 'intra_MLP.0.ln.bias', 'inter_flatten.1.weight', 'inter_flatten.1.bias', 'inter_MLP.0.in_linear.weight', 'inter_MLP.0.in_linear.bias', 'inter_MLP.0.out_linear.weight', 'inter_MLP.0.out_linear.bias', 'inter_MLP.0.ln.weight', 'inter_MLP.0.ln.bias', 'inter_MLP.1.in_linear.weight', 'inter_MLP.1.in_linear.bias', 'inter_MLP.1.out_linear.weight', 'inter_MLP.1.out_linear.bias', 'inter_MLP.1.ln.weight', 'inter_MLP.1.ln.bias', 'inter_MLP.2.in_linear.weight', 'inter_MLP.2.in_linear.bias', 'inter_MLP.2.out_linear.weight', 'inter_MLP.2.out_linear.bias', 'inter_MLP.2.ln.weight', 'inter_MLP.2.ln.bias', 'inter_MLP.3.in_linear.weight', 'inter_MLP.3.in_linear.bias', 'inter_MLP.3.out_linear.weight', 'inter_MLP.3.out_linear.bias', 'inter_MLP.3.ln.weight', 'inter_MLP.3.ln.bias', 'inter_MLP.4.in_linear.weight', 'inter_MLP.4.in_linear.bias', 'inter_MLP.4.out_linear.weight', 'inter_MLP.4.out_linear.bias', 'inter_MLP.4.ln.weight', 'inter_MLP.4.ln.bias', 'inter_MLP.5.in_linear.weight', 'inter_MLP.5.in_linear.bias', 'inter_MLP.5.out_linear.weight', 'inter_MLP.5.out_linear.bias', 'inter_MLP.5.ln.weight', 'inter_MLP.5.ln.bias', 'inter_MLP.6.in_linear.weight', 'inter_MLP.6.in_linear.bias', 'inter_MLP.6.out_linear.weight', 'inter_MLP.6.out_linear.bias', 'inter_MLP.6.ln.weight', 'inter_MLP.6.ln.bias', 'inter_MLP.7.in_linear.weight', 'inter_MLP.7.in_linear.bias', 'inter_MLP.7.out_linear.weight', 'inter_MLP.7.out_linear.bias', 'inter_MLP.7.ln.weight', 'inter_MLP.7.ln.bias', 'inter_MLP.8.in_linear.weight', 'inter_MLP.8.in_linear.bias', 'inter_MLP.8.out_linear.weight', 'inter_MLP.8.out_linear.bias', 'inter_MLP.8.ln.weight', 'inter_MLP.8.ln.bias', 'head_output.weight', 'head_output.bias']
+	iteras: 5, epoch: 1 | loss:2.4704428 | label_loss: 2.4704428 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.1581s/iter; left time: 236.5538s
+	iteras: 10, epoch: 1 | loss:2.3097486 | label_loss: 2.3097486 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0292s/iter; left time: 43.5143s
+	iteras: 15, epoch: 1 | loss:2.2410707 | label_loss: 2.2410707 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0283s/iter; left time: 42.0498s
+Epoch: 1 cost time: 0.8586015701293945
+0it [00:00, ?it/s]1it [00:00,  4.37it/s]5it [00:00, 15.87it/s]
+0it [00:00, ?it/s]1it [00:00,  4.55it/s]4it [00:00, 13.29it/s]
+Epoch: 1 | Train Loss: 2.45748| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 118.1627646 | Train MAPE: 0.4385930 | Vali RMSE: 106.4515512| Vali MAE: 98.4909159| Vali MAPE: 0.6720699| Test RMSE: 115.7440011| Test MAE: 101.1242493 | Test MAPE: 0.7706525
+[2026-09-13 05:34:22,494] [INFO] [real_accelerator.py:203:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Warning: The default cache directory for DeepSpeed Triton autotune, /usr4/dl523/dgordon/.triton/autotune, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path.
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2024/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_geobins_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 2 | loss:2.2319672 | label_loss: 2.2319672 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.4516s/iter; left time: 668.8083s
+	iteras: 10, epoch: 2 | loss:2.1705952 | label_loss: 2.1705952 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0285s/iter; left time: 42.0540s
+	iteras: 15, epoch: 2 | loss:2.2105777 | label_loss: 2.2105777 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0272s/iter; left time: 40.0783s
+Epoch: 2 cost time: 0.6728184223175049
+0it [00:00, ?it/s]1it [00:00,  4.59it/s]5it [00:00, 16.57it/s]
+0it [00:00, ?it/s]1it [00:00,  4.70it/s]4it [00:00, 14.23it/s]
+Epoch: 2 | Train Loss: 2.19148| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 79.0464725 | Train MAPE: 0.4208176 | Vali RMSE: 86.5313333| Vali MAE: 73.7604809| Vali MAPE: 0.5073432| Test RMSE: 94.9520557| Test MAE: 81.3265514 | Test MAPE: 0.6025073
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2024/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_geobins_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 3 | loss:2.1739056 | label_loss: 2.1739056 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2078s/iter; left time: 304.6912s
+	iteras: 10, epoch: 3 | loss:2.1419041 | label_loss: 2.1419041 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0334s/iter; left time: 48.8063s
+	iteras: 15, epoch: 3 | loss:2.1399231 | label_loss: 2.1399231 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0315s/iter; left time: 45.9359s
+Epoch: 3 cost time: 0.7374563217163086
+0it [00:00, ?it/s]1it [00:00,  4.36it/s]5it [00:00, 15.98it/s]
+0it [00:00, ?it/s]1it [00:00,  4.46it/s]4it [00:00, 12.95it/s]
+Epoch: 3 | Train Loss: 2.15229| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 69.5129729 | Train MAPE: 0.3609198 | Vali RMSE: 53.7001853| Vali MAE: 44.3361411| Vali MAPE: 0.3103909| Test RMSE: 66.5177085| Test MAE: 60.5398076 | Test MAPE: 0.4246224
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2024/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_geobins_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 4 | loss:2.1401501 | label_loss: 2.1401501 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2167s/iter; left time: 314.4432s
+	iteras: 10, epoch: 4 | loss:2.0540581 | label_loss: 2.0540581 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0347s/iter; left time: 50.1413s
+	iteras: 15, epoch: 4 | loss:2.1883934 | label_loss: 2.1883934 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0280s/iter; left time: 40.3006s
+Epoch: 4 cost time: 0.7293004989624023
+0it [00:00, ?it/s]1it [00:00,  4.27it/s]5it [00:00, 15.73it/s]
+0it [00:00, ?it/s]1it [00:00,  4.52it/s]4it [00:00, 13.87it/s]
+Epoch: 4 | Train Loss: 2.11857| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 56.2102692 | Train MAPE: 0.2812788 | Vali RMSE: 78.2436165| Vali MAE: 65.7721025| Vali MAPE: 0.4517985| Test RMSE: 84.5327258| Test MAE: 74.8504530 | Test MAPE: 0.5352710
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 5 | loss:2.1277502 | label_loss: 2.1277502 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2047s/iter; left time: 293.8828s
+	iteras: 10, epoch: 5 | loss:2.0508032 | label_loss: 2.0508032 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0305s/iter; left time: 43.6962s
+	iteras: 15, epoch: 5 | loss:2.0847802 | label_loss: 2.0847802 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0272s/iter; left time: 38.7540s
+Epoch: 5 cost time: 0.6774406433105469
+0it [00:00, ?it/s]1it [00:00,  4.42it/s]5it [00:00, 16.11it/s]
+0it [00:00, ?it/s]1it [00:00,  4.60it/s]4it [00:00, 13.31it/s]
+Epoch: 5 | Train Loss: 2.09197| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 71.7269464 | Train MAPE: 0.3767686 | Vali RMSE: 55.2384454| Vali MAE: 45.5803657| Vali MAPE: 0.3181406| Test RMSE: 67.4261848| Test MAE: 61.1023827 | Test MAPE: 0.4295561
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 6 | loss:2.0501788 | label_loss: 2.0501788 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2037s/iter; left time: 289.5102s
+	iteras: 10, epoch: 6 | loss:2.0256577 | label_loss: 2.0256577 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0292s/iter; left time: 41.3528s
+	iteras: 15, epoch: 6 | loss:2.0869882 | label_loss: 2.0869882 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0274s/iter; left time: 38.6470s
+Epoch: 6 cost time: 0.6620140075683594
+0it [00:00, ?it/s]1it [00:00,  4.37it/s]5it [00:00, 15.93it/s]
+0it [00:00, ?it/s]1it [00:00,  4.55it/s]4it [00:00, 13.57it/s]
+Epoch: 6 | Train Loss: 2.06548| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 55.5361195 | Train MAPE: 0.2810672 | Vali RMSE: 50.6653694| Vali MAE: 42.1809344| Vali MAPE: 0.2963513| Test RMSE: 65.0824830| Test MAE: 59.5572467 | Test MAPE: 0.4168882
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2024/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_geobins_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 7 | loss:2.0489063 | label_loss: 2.0489063 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2056s/iter; left time: 289.0976s
+	iteras: 10, epoch: 7 | loss:1.9571276 | label_loss: 1.9571276 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0292s/iter; left time: 40.9452s
+	iteras: 15, epoch: 7 | loss:2.0170803 | label_loss: 2.0170803 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0269s/iter; left time: 37.5577s
+Epoch: 7 cost time: 0.6550271511077881
+0it [00:00, ?it/s]1it [00:00,  4.52it/s]5it [00:00, 16.42it/s]
+0it [00:00, ?it/s]1it [00:00,  4.57it/s]4it [00:00, 13.45it/s]
+Epoch: 7 | Train Loss: 2.03611| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 65.3563738 | Train MAPE: 0.3378028 | Vali RMSE: 76.9644705| Vali MAE: 66.0601643| Vali MAPE: 0.4493326| Test RMSE: 78.8768323| Test MAE: 72.8658763 | Test MAPE: 0.5051235
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 8 | loss:2.0247393 | label_loss: 2.0247393 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2021s/iter; left time: 281.0827s
+	iteras: 10, epoch: 8 | loss:1.9844563 | label_loss: 1.9844563 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0343s/iter; left time: 47.6022s
+	iteras: 15, epoch: 8 | loss:2.0178580 | label_loss: 2.0178580 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0290s/iter; left time: 40.0844s
+Epoch: 8 cost time: 0.6986861228942871
+0it [00:00, ?it/s]1it [00:00,  4.46it/s]5it [00:00, 16.25it/s]
+0it [00:00, ?it/s]1it [00:00,  4.71it/s]4it [00:00, 14.28it/s]
+Epoch: 8 | Train Loss: 1.99535| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 58.4091713 | Train MAPE: 0.2978454 | Vali RMSE: 68.9756672| Vali MAE: 58.4887095| Vali MAPE: 0.3983491| Test RMSE: 73.7408601| Test MAE: 66.2745970 | Test MAPE: 0.4610426
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 9 | loss:1.9802287 | label_loss: 1.9802287 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.1979s/iter; left time: 272.3140s
+	iteras: 10, epoch: 9 | loss:1.9587696 | label_loss: 1.9587696 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0285s/iter; left time: 39.0707s
+	iteras: 15, epoch: 9 | loss:1.8979589 | label_loss: 1.8979589 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0265s/iter; left time: 36.2665s
+Epoch: 9 cost time: 0.6484849452972412
+0it [00:00, ?it/s]1it [00:00,  4.41it/s]5it [00:00, 15.68it/s]
+0it [00:00, ?it/s]1it [00:00,  4.56it/s]4it [00:00, 13.97it/s]
+Epoch: 9 | Train Loss: 1.94142| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 56.6476217 | Train MAPE: 0.2826210 | Vali RMSE: 61.3146463| Vali MAE: 51.1811458| Vali MAPE: 0.3463046| Test RMSE: 70.6627306| Test MAE: 60.5903922 | Test MAPE: 0.3979818
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 10 | loss:1.9100194 | label_loss: 1.9100194 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2034s/iter; left time: 276.7670s
+	iteras: 10, epoch: 10 | loss:1.8755227 | label_loss: 1.8755227 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0336s/iter; left time: 45.5240s
+	iteras: 15, epoch: 10 | loss:1.8318412 | label_loss: 1.8318412 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0308s/iter; left time: 41.5908s
+Epoch: 10 cost time: 0.707489013671875
+0it [00:00, ?it/s]1it [00:00,  4.40it/s]5it [00:00, 15.37it/s]
+0it [00:00, ?it/s]1it [00:00,  4.58it/s]4it [00:00, 13.92it/s]
+Epoch: 10 | Train Loss: 1.87248| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 53.0688433 | Train MAPE: 0.2611476 | Vali RMSE: 54.5218809| Vali MAE: 43.3591663| Vali MAPE: 0.2924738| Test RMSE: 64.9199220| Test MAE: 50.0989274 | Test MAPE: 0.3059731
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2024/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_geobins_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 11 | loss:1.7894778 | label_loss: 1.7894778 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2104s/iter; left time: 283.1515s
+	iteras: 10, epoch: 11 | loss:1.8433204 | label_loss: 1.8433204 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0289s/iter; left time: 38.8211s
+	iteras: 15, epoch: 11 | loss:1.7531354 | label_loss: 1.7531354 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0274s/iter; left time: 36.6006s
+Epoch: 11 cost time: 0.6697468757629395
+0it [00:00, ?it/s]1it [00:00,  4.35it/s]5it [00:00, 15.13it/s]
+0it [00:00, ?it/s]1it [00:00,  4.40it/s]4it [00:00, 13.10it/s]
+Epoch: 11 | Train Loss: 1.81760| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 47.4470580 | Train MAPE: 0.2261618 | Vali RMSE: 53.5454771| Vali MAE: 41.8564880| Vali MAPE: 0.2785548| Test RMSE: 69.9572257| Test MAE: 56.4217305 | Test MAPE: 0.3355484
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2024/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_geobins_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 12 | loss:1.7671413 | label_loss: 1.7671413 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2129s/iter; left time: 283.4067s
+	iteras: 10, epoch: 12 | loss:1.7570804 | label_loss: 1.7570804 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0301s/iter; left time: 39.9447s
+	iteras: 15, epoch: 12 | loss:1.7823653 | label_loss: 1.7823653 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0273s/iter; left time: 36.0956s
+Epoch: 12 cost time: 0.6696896553039551
+0it [00:00, ?it/s]1it [00:00,  4.35it/s]5it [00:00, 15.48it/s]
+0it [00:00, ?it/s]1it [00:00,  4.48it/s]4it [00:00, 13.17it/s]
+Epoch: 12 | Train Loss: 1.77666| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 48.0111313 | Train MAPE: 0.2303425 | Vali RMSE: 57.1472523| Vali MAE: 46.3403943| Vali MAPE: 0.3135853| Test RMSE: 71.0347142| Test MAE: 57.9616785 | Test MAPE: 0.3439177
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 13 | loss:1.7719387 | label_loss: 1.7719387 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2088s/iter; left time: 274.7729s
+	iteras: 10, epoch: 13 | loss:1.7211671 | label_loss: 1.7211671 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0326s/iter; left time: 42.6749s
+	iteras: 15, epoch: 13 | loss:1.7317994 | label_loss: 1.7317994 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0284s/iter; left time: 37.1201s
+Epoch: 13 cost time: 0.6943328380584717
+0it [00:00, ?it/s]1it [00:00,  4.36it/s]5it [00:00, 15.74it/s]
+0it [00:00, ?it/s]1it [00:00,  4.48it/s]4it [00:00, 13.30it/s]
+Epoch: 13 | Train Loss: 1.74324| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 48.0637623 | Train MAPE: 0.2276076 | Vali RMSE: 49.5534171| Vali MAE: 37.2245893| Vali MAPE: 0.2448992| Test RMSE: 65.3251878| Test MAE: 49.4084625 | Test MAPE: 0.2924688
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2024/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_geobins_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 14 | loss:1.7384583 | label_loss: 1.7384583 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2100s/iter; left time: 273.1769s
+	iteras: 10, epoch: 14 | loss:1.6497612 | label_loss: 1.6497612 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0288s/iter; left time: 37.2630s
+	iteras: 15, epoch: 14 | loss:1.7043803 | label_loss: 1.7043803 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0313s/iter; left time: 40.3686s
+Epoch: 14 cost time: 0.6843700408935547
+0it [00:00, ?it/s]1it [00:00,  4.34it/s]5it [00:00, 15.97it/s]
+0it [00:00, ?it/s]1it [00:00,  4.45it/s]4it [00:00, 13.42it/s]
+Epoch: 14 | Train Loss: 1.69840| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 46.2275489 | Train MAPE: 0.2193456 | Vali RMSE: 37.7095739| Vali MAE: 27.2485280| Vali MAPE: 0.1897260| Test RMSE: 65.2759321| Test MAE: 49.4084625 | Test MAPE: 0.2930408
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2024/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_geobins_Naion_s2024!
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 15 | loss:1.6932843 | label_loss: 1.6932843 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2082s/iter; left time: 267.7376s
+	iteras: 10, epoch: 15 | loss:1.6827444 | label_loss: 1.6827444 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0307s/iter; left time: 39.2771s
+	iteras: 15, epoch: 15 | loss:1.6341330 | label_loss: 1.6341330 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0285s/iter; left time: 36.3621s
+Epoch: 15 cost time: 0.6786341667175293
+0it [00:00, ?it/s]1it [00:00,  4.21it/s]5it [00:00, 14.97it/s]
+0it [00:00, ?it/s]1it [00:00,  4.33it/s]4it [00:00, 12.95it/s]
+Epoch: 15 | Train Loss: 1.67352| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 49.3440190 | Train MAPE: 0.2285567 | Vali RMSE: 49.7495157| Vali MAE: 37.4000864| Vali MAPE: 0.2448237| Test RMSE: 66.7867747| Test MAE: 53.8230288 | Test MAPE: 0.3211530
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 16 | loss:1.5905247 | label_loss: 1.5905247 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2119s/iter; left time: 269.3268s
+	iteras: 10, epoch: 16 | loss:1.6101379 | label_loss: 1.6101379 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0301s/iter; left time: 38.0586s
+	iteras: 15, epoch: 16 | loss:1.5887735 | label_loss: 1.5887735 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0278s/iter; left time: 35.0227s
+Epoch: 16 cost time: 0.6765944957733154
+0it [00:00, ?it/s]1it [00:00,  4.47it/s]5it [00:00, 15.56it/s]
+0it [00:00, ?it/s]1it [00:00,  4.41it/s]4it [00:00, 13.00it/s]
+Epoch: 16 | Train Loss: 1.61091| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 43.6734496 | Train MAPE: 0.2074732 | Vali RMSE: 51.6227934| Vali MAE: 39.4942062| Vali MAPE: 0.2574073| Test RMSE: 71.2128905| Test MAE: 59.9938496 | Test MAPE: 0.3587454
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 17 | loss:1.5556823 | label_loss: 1.5556823 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2061s/iter; left time: 258.9179s
+	iteras: 10, epoch: 17 | loss:1.5363803 | label_loss: 1.5363803 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0297s/iter; left time: 37.1287s
+	iteras: 15, epoch: 17 | loss:1.5062325 | label_loss: 1.5062325 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0283s/iter; left time: 35.2479s
+Epoch: 17 cost time: 0.6641092300415039
+0it [00:00, ?it/s]1it [00:00,  4.42it/s]5it [00:00, 16.11it/s]
+0it [00:00, ?it/s]1it [00:00,  4.55it/s]4it [00:00, 13.15it/s]
+Epoch: 17 | Train Loss: 1.54263| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 41.8890824 | Train MAPE: 0.1851681 | Vali RMSE: 51.0068808| Vali MAE: 38.8062680| Vali MAPE: 0.2532876| Test RMSE: 69.7285078| Test MAE: 58.0774023 | Test MAPE: 0.3479528
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 18 | loss:1.4983461 | label_loss: 1.4983461 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2082s/iter; left time: 258.3424s
+	iteras: 10, epoch: 18 | loss:1.4319484 | label_loss: 1.4319484 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0346s/iter; left time: 42.7604s
+	iteras: 15, epoch: 18 | loss:1.3919474 | label_loss: 1.3919474 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0290s/iter; left time: 35.7095s
+Epoch: 18 cost time: 0.7160770893096924
+0it [00:00, ?it/s]1it [00:00,  4.42it/s]5it [00:00, 15.86it/s]
+0it [00:00, ?it/s]1it [00:00,  4.46it/s]4it [00:00, 13.74it/s]
+Epoch: 18 | Train Loss: 1.45398| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 33.3145236 | Train MAPE: 0.1447953 | Vali RMSE: 50.4226966| Vali MAE: 38.5371084| Vali MAPE: 0.2502509| Test RMSE: 67.9889166| Test MAE: 54.5771876 | Test MAPE: 0.3208701
+EarlyStopping counter: 4 out of 5
+constant| Updating learning rate to 5e-05
+	iteras: 5, epoch: 19 | loss:1.3699863 | label_loss: 1.3699863 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2041s/iter; left time: 250.2286s
+	iteras: 10, epoch: 19 | loss:1.3594508 | label_loss: 1.3594508 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0344s/iter; left time: 42.0316s
+	iteras: 15, epoch: 19 | loss:1.2854176 | label_loss: 1.2854176 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0294s/iter; left time: 35.7698s
+Epoch: 19 cost time: 0.706118106842041
+0it [00:00, ?it/s]1it [00:00,  4.36it/s]5it [00:00, 16.00it/s]
+0it [00:00, ?it/s]1it [00:00,  4.35it/s]4it [00:00, 13.42it/s]
+wandb: 
+wandb: Run history:
+wandb:      epoch ▁▁▂▂▂▃▃▄▄▄▅▅▅▆▆▇▇▇██
+wandb:  test_MAPE █▆▃▅▃▃▄▃▃▁▂▂▁▁▁▂▂▁▂▁
+wandb:  test_RMSE █▅▁▄▁▁▃▂▂▁▂▂▁▁▁▂▂▁▃▁
+wandb:  test_acc1 ▄▃▃▂▃▄▁▃▅█▆▅██▅▃▄▄▂█
+wandb:  test_acc2 ▄▃▃▂▃▄▁▃▅█▆▅██▅▃▄▄▂█
+wandb: train_loss █▆▆▆▆▆▅▅▅▄▄▄▃▃▃▃▂▂▁▁
+wandb:  vali_MAPE █▆▃▅▃▃▅▄▃▂▂▃▂▁▂▂▂▂▂▁
+wandb:  vali_RMSE █▆▃▅▃▂▅▄▃▃▃▃▂▁▂▂▂▂▃▁
+wandb:  vali_acc1 ▁▂▃▂▃▃▂▃▄▆▆▅▇█▇▇▇▇▇█
+wandb:  vali_acc2 ▁▃▅▃▅▆▃▃▄▆▆▆▆█▆▅▆▅▅█
+wandb: 
+wandb: Run summary:
+wandb:      epoch 19
+wandb:  test_MAPE 0.29304
+wandb:  test_RMSE 65.27593
+wandb:  test_acc1 39.6
+wandb:  test_acc2 39.6
+wandb: train_loss 1.3546
+wandb:  vali_MAPE 0.18973
+wandb:  vali_RMSE 37.70957
+wandb:  vali_acc1 71
+wandb:  vali_acc2 49.5
+wandb: 
+wandb: You can sync this run to the cloud by running:
+wandb: wandb sync /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_053420-y46klofz
+wandb: Find logs at: ./wandb/offline-run-20260913_053420-y46klofz/logs
+Epoch: 19 | Train Loss: 1.35460| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 28.6437635 | Train MAPE: 0.1252260 | Vali RMSE: 53.1982383| Vali MAE: 40.8638314| Vali MAPE: 0.2688745| Test RMSE: 76.3116853| Test MAE: 64.8474047 | Test MAPE: 0.3782490
+EarlyStopping counter: 5 out of 5
+Early stopping
+Best model performance: Test MAE: 49.4085 | Test RMSE: 65.2759 | Test MAPE: 0.2930 | Test 15%-accuracy: 39.6000 | Test 10%-accuracy: 39.6000 | Val MAE: 27.2485 | Val RMSE: 37.7096 | Val MAPE: 0.1897 | Val 15%-accuracy: 71.0000 | Val 10%-accuracy: 49.5000 
+Best model performance: Test Seen MAPE: 0.2145 | Test Unseen MAPE: 0.4109
+Best model performance: Test Seen 15%-accuracy: 66.0000 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 66.0000 | Test Unseen 10%-accuracy: 0.0000
+/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_NAION_geobins_seed2024/CPMLP_sl1_lr5e-05_dm64_nh8_el1_dl9_df32_lradjconstant_datasetNAion2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_geobins_Naion_s2024
+=== Best model performance lines across all 3 seeds (geo_bins) ===
+Best model performance: Test MAE: 74.6822 | Test RMSE: 80.6229 | Test MAPE: 0.3956 | Test 15%-accuracy: 0.0000 | Test 10%-accuracy: 0.0000 | Val MAE: 38.7738 | Val RMSE: 42.4098 | Val MAPE: 0.2019 | Val 15%-accuracy: 16.6667 | Val 10%-accuracy: 16.6667 
+Best model performance: Test Seen MAPE: 0.3892 | Test Unseen MAPE: 0.4052
+Best model performance: Test Seen 15%-accuracy: 0.0000 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 0.0000 | Test Unseen 10%-accuracy: 0.0000
+Best model performance: Test MAE: 49.4085 | Test RMSE: 65.2759 | Test MAPE: 0.2930 | Test 15%-accuracy: 39.6000 | Test 10%-accuracy: 39.6000 | Val MAE: 27.2485 | Val RMSE: 37.7096 | Val MAPE: 0.1897 | Val 15%-accuracy: 71.0000 | Val 10%-accuracy: 49.5000 
+Best model performance: Test Seen MAPE: 0.2145 | Test Unseen MAPE: 0.4109
+Best model performance: Test Seen 15%-accuracy: 66.0000 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 66.0000 | Test Unseen 10%-accuracy: 0.0000
+Best model performance: Test MAE: 51.5787 | Test RMSE: 65.7395 | Test MAPE: 0.2771 | Test 15%-accuracy: 20.2000 | Test 10%-accuracy: 20.2000 | Val MAE: 52.7245 | Val RMSE: 67.1167 | Val MAPE: 0.2461 | Val 15%-accuracy: 50.0000 | Val 10%-accuracy: 16.6667 
+Best model performance: Test Seen MAPE: 0.1917 | Test Unseen MAPE: 0.4052
+Best model performance: Test Seen 15%-accuracy: 33.6667 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 33.6667 | Test Unseen 10%-accuracy: 0.0000
