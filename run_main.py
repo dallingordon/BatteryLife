@@ -29,6 +29,7 @@ def list_of_ints(arg):
 # os.environ["CUDA_VISIBLE_DEVICES"] = '4,5,6,7'
 
 from utils.tools import del_files, EarlyStopping, adjust_learning_rate, vali_baseline, load_content
+from utils.geo_bins import GeoBins
 parser = argparse.ArgumentParser(description='BatteryLife')
 
 def set_seed(seed):
@@ -101,6 +102,15 @@ parser.add_argument('--prompt_domain', type=int, default=0, help='')
 parser.add_argument('--output_num', type=int, default=1, help='The number of prediction targets')
 parser.add_argument('--class_num', type=int, default=8, help='The number of life classes')
 
+# geo_bins: turn the regression target into classification over geometric ("within X%%") bins
+parser.add_argument('--prediction_mode', type=str, default='regression', choices=['regression', 'geo_bins'],
+                    help='regression (default): original single-scalar MSE/MAPE regression, unchanged. '
+                         'geo_bins: classification over geometric bins of the label range, each bin sized '
+                         'to match +/-geo_bin_tol relative error (see utils/geo_bins.py).')
+parser.add_argument('--geo_bin_tol', type=float, default=0.15, help='relative tolerance defining bin width in geo_bins mode')
+parser.add_argument('--geo_bin_min', type=float, default=1.0, help='global min label value covered by geo_bins (see notes/notes_9_8.txt cycle-length audit)')
+parser.add_argument('--geo_bin_max', type=float, default=3842.0, help='global max label value covered by geo_bins (see notes/notes_9_8.txt cycle-length audit)')
+
 # optimization
 parser.add_argument('--weighted_loss', action='store_true', default=False, help='use weighted loss')
 parser.add_argument('--weighted_sampling', action='store_true', default=False, help='use weighted sampling')
@@ -129,6 +139,10 @@ parser.add_argument('--alpha2', type=float, default=0.1, help='the 15 percent al
 
 args = parser.parse_args()
 
+geo_bins = None
+if args.prediction_mode == 'geo_bins':
+    geo_bins = GeoBins(range_min=args.geo_bin_min, range_max=args.geo_bin_max, tol=args.geo_bin_tol)
+    args.output_num = geo_bins.num_bins
 
 nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 set_seed(args.seed)
@@ -136,6 +150,8 @@ ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
 deepspeed_plugin = DeepSpeedPlugin(hf_ds_config='./ds_config_zero2_baseline.json')
 accelerator = Accelerator(kwargs_handlers=[ddp_kwargs], deepspeed_plugin=deepspeed_plugin, gradient_accumulation_steps=args.accumulation_steps)
 accelerator.print(args.__dict__)
+if geo_bins is not None:
+    accelerator.print(f'geo_bins enabled: {geo_bins.num_bins} bins, ratio={geo_bins.ratio:.4f}, range=[{geo_bins.range_min}, {geo_bins.range_max}], tol={geo_bins.tol}')
 for ii in range(args.itr):
     # setting record of experiments
     setting = '{}_sl{}_lr{}_dm{}_nh{}_el{}_dl{}_df{}_lradj{}_dataset{}_loss{}_wd{}_wl{}_bs{}_s{}'.format(
@@ -218,6 +234,8 @@ for ii in range(args.itr):
     accelerator.wait_for_everyone()
     joblib.dump(label_scaler, f'{path}/label_scaler')
     joblib.dump(life_class_scaler, f'{path}/life_class_scaler')
+    if geo_bins is not None:
+        geo_bins.save(f'{path}/geo_bins.json')
     with open(path+'/args.json', 'w') as f:
         json.dump(args.__dict__, f)
     if accelerator.is_local_main_process:
@@ -274,6 +292,7 @@ for ii in range(args.itr):
 
 
     life_class_criterion = nn.MSELoss() 
+    classification_criterion = nn.CrossEntropyLoss(reduction='none') if geo_bins is not None else None
 
     train_loader, vali_loader, test_loader, model, model_optim, scheduler = accelerator.prepare(
         train_loader, vali_loader, test_loader, model, model_optim, scheduler)
@@ -324,7 +343,13 @@ for ii in range(args.itr):
 
                 cut_off = labels.shape[0]
                     
-                if args.loss == 'MSE':
+                if args.prediction_mode == 'geo_bins':
+                    raw_labels_np = (labels[:cut_off].detach().cpu().numpy().reshape(-1) * std) + mean_value
+                    true_bins_np = geo_bins.value_to_bin(raw_labels_np)
+                    true_bins = torch.from_numpy(true_bins_np).long().to(accelerator.device)
+                    loss = classification_criterion(outputs[:cut_off], true_bins)
+                    loss = torch.mean(loss * weights.reshape(-1))
+                elif args.loss == 'MSE':
                     loss = criterion(outputs[:cut_off], labels)
                     loss = torch.mean(loss * weights)
                 elif args.loss == 'MAPE':
@@ -342,8 +367,14 @@ for ii in range(args.itr):
                 total_cl_loss += print_cl_loss
                 total_lc_loss += print_life_class_loss
 
-                transformed_preds = outputs[:cut_off] * std + mean_value
-                transformed_labels = labels[:cut_off]  * std + mean_value
+                if args.prediction_mode == 'geo_bins':
+                    pred_bins_np = outputs[:cut_off].detach().argmax(dim=-1).cpu().numpy()
+                    pred_values_np = geo_bins.bin_to_center(pred_bins_np)
+                    transformed_preds = torch.from_numpy(pred_values_np).float().to(accelerator.device)
+                    transformed_labels = torch.from_numpy(raw_labels_np).float().to(accelerator.device)
+                else:
+                    transformed_preds = outputs[:cut_off] * std + mean_value
+                    transformed_labels = labels[:cut_off]  * std + mean_value
                 all_predictions, all_targets = accelerator.gather_for_metrics((transformed_preds, transformed_labels))
                 
                 total_preds = total_preds + all_predictions.detach().cpu().numpy().reshape(-1).tolist()
@@ -366,8 +397,8 @@ for ii in range(args.itr):
         train_mape = mean_absolute_percentage_error(total_references, total_preds)
         accelerator.print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
 
-        vali_rmse, vali_mae_loss, vali_mape, vali_alpha_acc1, vali_alpha_acc2 = vali_baseline(args, accelerator, model, vali_data, vali_loader, criterion, compute_seen_unseen=False)
-        test_rmse, test_mae_loss, test_mape, test_alpha_acc1, test_alpha_acc2, test_unseen_mape, test_seen_mape, test_unseen_alpha_acc1, test_seen_alpha_acc1, test_unseen_alpha_acc2, test_seen_alpha_acc2 = vali_baseline(args, accelerator, model, test_data, test_loader, criterion, compute_seen_unseen=True)
+        vali_rmse, vali_mae_loss, vali_mape, vali_alpha_acc1, vali_alpha_acc2 = vali_baseline(args, accelerator, model, vali_data, vali_loader, criterion, compute_seen_unseen=False, geo_bins=geo_bins)
+        test_rmse, test_mae_loss, test_mape, test_alpha_acc1, test_alpha_acc2, test_unseen_mape, test_seen_mape, test_unseen_alpha_acc1, test_seen_alpha_acc1, test_unseen_alpha_acc2, test_seen_alpha_acc2 = vali_baseline(args, accelerator, model, test_data, test_loader, criterion, compute_seen_unseen=True, geo_bins=geo_bins)
         vali_loss = vali_mape
 
         
