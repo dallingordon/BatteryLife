@@ -186,3 +186,77 @@ Neither Zn-ion nor Na-ion has a Li-ion-style data/extraction/dispatch/hyperparam
 issues (Zn-ion's bad regression reproduction; Na-ion's CPMLP+geo_bins seed2021 anomaly) remain
 open scientific questions (skew hypothesis; seed-instability pattern shared with CALB42),
 not engineering fixes. Don't re-check dispatch/hyperparams for these two again.
+
+--- Reproduction quality summary: Na-ion good, Zn-ion bad (neither is a data bug) ---
+Na-ion regression reproduces well: CPTransformer 0.280 vs published 0.255 MAPE (~10% relative,
+within the paper's own std). CPMLP 0.321 vs published 0.274 (~17% relative, a real but modest
+miss). Normal reproduction variance, nothing alarming.
+
+Zn-ion regression does NOT reproduce well: CPMLP 1.037 vs published 0.558 (~86% relative miss,
+roughly double). CPTransformer 0.663 vs published 0.515 (~29% worse). Ruled out (see above)
+both a dataset-dispatch bug and a hyperparameter mismatch - printed args confirm 'dataset':
+'ZN-coin' and exact table hyperparams (batch correctly doubled) were used. So this is NOT a
+Li-ion-style data/extraction bug. Pattern is consistent with the skew hypothesis at the level of
+"Zn-ion is the hardest chemistry" (published MAPE is already the worst of the four, cv=1.14 is
+the highest), BUT skew alone does NOT explain why OUR reproduction is worse than THEIRS on the
+identical method - they dealt with the same skewed labels and got 0.558. Real remaining
+candidates for the reproduction-specific gap (none confirmed yet):
+  - single-GPU batch-doubling vs their 2-GPU DDP introducing a small but real optimization
+    difference that gets amplified because Zn-ion's regression loss is already fragile (skewed,
+    small-n) - geo_bins doesn't show the same gap because its loss is bounded/more robust to the
+    same perturbation
+  - seed/hardware nondeterminism (same seed value != same random draws across different
+    GPU/CUDA/PyTorch versions), again more visible on an already-fragile optimization
+  - unverified protocol details (train_epochs/patience/model-selection criterion vs whatever the
+    paper actually used) - not yet checked against a paper source
+
+--- Zn-ion noise-vs-systematic-gap test: submitted ---
+dgordon's idea: run more seeds to see if the regression gap is just unlucky sampling (3 seeds
+happened to land badly) or a real, persistent gap. Strong prior going in: all 3 existing seeds
+were uniformly bad (CPMLP: 0.887, 0.887, 1.336 - not one outlier dragging an otherwise-good
+average down), which is a very unlikely draw if the true distribution were centered near
+published's 0.558 with published's reported std of 0.034 - so expectation is 10 seeds tightens
+the estimate around ~1.0 rather than pulling it toward published, but running it settles this
+properly instead of arguing from priors.
+Wrote train_eval_scripts/CPMLP_znion_10seeds_qsub.sh and CPTransformer_znion_10seeds_qsub.sh -
+7 NEW seeds each (1-7), regression mode only, identical hyperparams/dataset/batch-doubling as
+the original 3-seed run (seed is the only thing varied, on purpose). Logs land as
+CPMLP_Znion_seed1.log...seed7.log (CPTransformer equivalent), no collision with the existing
+seed2021/42/2024 logs, so compare_results.py's existing glob pattern will pick up all 10 in one
+shot once these finish.
+
+--- Git sync snag: SCC had its own uncommitted geo_bins implementation ---
+dgordon committed the Mac-side changes (data_loader.py missing-file patch, new qsub scripts,
+these notes) and tried to pull on SCC. SCC's repo was behind (still at commit 847d32a, never
+had received the already-pushed "geo bins"/"geo stuff" commits) AND had its own uncommitted
+local edits to models/CPMLP.py, run_main.py, utils/tools.py, plus untracked utils/geo_bins.py -
+i.e. two independent copies of the geo_bins implementation existed (SCC's actual working
+version that produced every result this session, and whatever got committed to git from
+elsewhere). Did NOT blindly pull - risk of silently swapping the tested SCC implementation for a
+different version without noticing. Resolution:
+  1. Committed SCC's uncommitted geo_bins files as their own snapshot commit first (safety net)
+  2. git fetch + git diff HEAD origin/main -- <those 4 files> came back EMPTY - the content was
+     actually identical, the "conflict" was purely SCC's git history being behind, not a real
+     code divergence
+  3. git pull --no-rebase completed cleanly
+Good scare, no actual damage - but worth remembering that SCC and the Mac-side repo can drift
+independently since work happens directly on SCC (via a real terminal there, not through this
+session's tools) as well as via the Mac's connected-folder git checkout.
+
+--- Jobs currently running (as of end of 9/13 session) ---
+6 qsub jobs submitted and in queue/running:
+  cpmlp_liion_3seeds (running), cpmlp_liion_3seeds_geobins (running) - real complete MIX_large
+    data now (MATR/ISU_ILCC re-extracted), full parity with paper's split
+  cptransformer_liion_3seeds (queued), cptransformer_liion_3seeds_geobins (queued)
+  cpmlp_znion_10seeds (queued), cptransformer_znion_10seeds (queued) - 7 new seeds each,
+    Zn-ion regression noise-vs-systematic-gap test
+
+Next session: qstat to confirm all 6 done, then:
+  compare_results.py "results_logs/CPMLP_Liion*seed*.log" --model CPMLP --dataset_family Li-ion
+    (regression and geobins separately, same pattern as the other 3 chemistries)
+  compare_results.py "results_logs/CPTransformer_Liion*seed*.log" --model CPTransformer --dataset_family Li-ion
+  compare_results.py "results_logs/CPMLP_Znion_seed*.log" --model CPMLP --dataset_family Zn-ion
+    (now picks up all 10 seeds: original 3 + new 7)
+  compare_results.py "results_logs/CPTransformer_Znion_seed*.log" --model CPTransformer --dataset_family Zn-ion
+Then update geo_bins_results_9_12.md with real Li-ion numbers and the Zn-ion 10-seed verdict
+(noise vs systematic gap).

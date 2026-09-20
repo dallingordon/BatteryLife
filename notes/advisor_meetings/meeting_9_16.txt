@@ -1,0 +1,11 @@
+Advisor Meeting Notes - 9/16/2026
+
+- Literature review: not putting all my eggs in one basket. Plan to spend an hour this week doing a lit review.
+
+- Mamba vs Transformer experiment: test whether each architecture can learn dynamics that occur after the 100th cycle.
+  - Hypothesis: LTI (linear time-invariant) structure may let Mamba capture this, while a Transformer can't.
+  - Need to run this and see.
+
+- Unified model idea: a single model that takes battery type as a condition (input) somewhere in the architecture.
+
+- Review normalization approach. What about cross-battery normalization?
