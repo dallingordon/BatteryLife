@@ -50,6 +50,22 @@ datasetName2ids = {
     'NA-ion42':28,
     'NA-ion2024':29,
 }
+# ---- multi-chemistry pooling (see data_provider/data_loader_pooled.py) ----
+# Chemistry-level class index. Each chemistry maps to the same split lists the per-chemistry
+# runs already use, so pooled val/test cells are exactly the ones in the per-chemistry baselines.
+CHEMISTRIES = ['Li-ion', 'CALB', 'Zn-ion', 'Na-ion']   # index in this list == chemistry_id
+_CHEMISTRY_SPLIT_PREFIX = {'Li-ion': 'MIX_large', 'CALB': 'CALB', 'Zn-ion': 'ZNcoin', 'Na-ion': 'NAion_2021'}
+
+def dataset_id_to_chemistry_id(dataset_id):
+    """source-dataset id (datasetName2ids) -> chemistry id. Everything that is not CALB / Zn-ion / Na-ion is Li-ion (MIX_large)."""
+    if dataset_id == datasetName2ids['CALB']:
+        return CHEMISTRIES.index('CALB')
+    if dataset_id == datasetName2ids['ZN-coin']:
+        return CHEMISTRIES.index('Zn-ion')
+    if dataset_id == datasetName2ids['NA-ion']:
+        return CHEMISTRIES.index('Na-ion')
+    return CHEMISTRIES.index('Li-ion')
+
 def my_collate_fn_withId(samples):
     cycle_curve_data = torch.vstack([i['cycle_curve_data'].unsqueeze(0) for i in samples])
     curve_attn_mask = torch.vstack([i['curve_attn_mask'].unsqueeze(0) for i in samples])
@@ -202,6 +218,13 @@ class Dataset_original(Dataset):
             self.val_files = split_recorder.NAion_2024_val_files
             self.test_files = split_recorder.NAion_2024_test_files
         
+        elif self.dataset == 'POOLED':
+            # concat of the per-chemistry split lists (optionally a subset: self.pooled_chemistries)
+            _chems = getattr(self, 'pooled_chemistries', None) or CHEMISTRIES
+            _cat = lambda kind: [f for c in _chems for f in getattr(split_recorder, f'{_CHEMISTRY_SPLIT_PREFIX[c]}_{kind}_files')]
+            self.train_files, self.val_files, self.test_files = _cat('train'), _cat('val'), _cat('test')
+            assert len(set(self.train_files + self.val_files + self.test_files)) == len(self.train_files + self.val_files + self.test_files), 'file appears in more than one chemistry/split'
+
         if flag == 'train':
             self.files = [i for i in self.train_files]
         elif flag == 'val':
@@ -222,6 +245,10 @@ class Dataset_original(Dataset):
                 self.unseen_seen_record = json.load(open(f'{self.root_path}/seen_unseen_labels/cal_for_test_NA42.json'))
             elif self.dataset == 'NAion2024':
                 self.unseen_seen_record = json.load(open(f'{self.root_path}/seen_unseen_labels/cal_for_test_NA2024.json'))
+            elif self.dataset == 'POOLED':
+                # Li-ion / CALB / Zn-ion are all covered by cal_for_test.json; Na-ion has its own file
+                self.unseen_seen_record = json.load(open(f'{self.root_path}/seen_unseen_labels/cal_for_test.json'))
+                self.unseen_seen_record.update(json.load(open(f'{self.root_path}/seen_unseen_labels/cal_for_test_NA2021.json')))
             else:
                 self.unseen_seen_record = json.load(open(f'{self.root_path}/seen_unseen_labels/cal_for_test.json'))
             # self.unseen_seen_record = json.load(open(f'{self.root_path}/cal_for_test.json'))
@@ -705,7 +732,10 @@ class Dataset_original(Dataset):
         return prompt
     
     def merge_MICH(self, merge_path):
-        os.makedirs(merge_path)
+        if os.path.isdir(merge_path) and os.listdir(merge_path):
+            # already merged (e.g. by a concurrent job on the same shared dataset dir)
+            return
+        os.makedirs(merge_path, exist_ok=True)
         source_path1 = f'{self.root_path}/MICH/'
         source_path2 = f'{self.root_path}/MICH_EXP/'
         source1_files = [i for i in os.listdir(source_path1) if i.endswith('.pkl')]

@@ -1,6 +1,7 @@
 from data_provider.data_loader import Dataset_original
 from data_provider.data_loader import my_collate_fn_baseline, my_collate_fn_withId
 from torch.utils.data import DataLoader, RandomSampler, Dataset
+from data_provider.data_loader_pooled import Dataset_pooled, my_collate_fn_pooled
 
 data_dict = {
     'Dataset_original': Dataset_original
@@ -158,4 +159,23 @@ def data_provider_evaluate(args, flag, tokenizer=None, label_scaler=None, eval_c
                 num_workers=args.num_workers,
                 drop_last=drop_last,
                 collate_fn=my_collate_fn_withId)
+    return data_set, data_loader
+
+
+def data_provider_pooled(args, flag, label_scaler=None, life_class_scaler=None, chemistries=None):
+    """
+    Multi-chemistry loader. Train: all chemistries pooled (chemistries=None). Val/test: call once per
+    chemistry (chemistries=['Zn-ion'], ...) to keep evaluation split by chemistry with the same cells as
+    the per-chemistry baselines. Batches are (7 baseline items..., chemistry_ids).
+    """
+    train = (flag == 'train')
+    data_set = Dataset_pooled(args, flag=flag, chemistries=chemistries,
+                              label_scaler=label_scaler, life_class_scaler=life_class_scaler)
+    data_loader = DataLoader(
+        data_set,
+        batch_size=args.batch_size,
+        shuffle=train,
+        num_workers=args.num_workers,
+        drop_last=train,
+        collate_fn=my_collate_fn_pooled)
     return data_set, data_loader
