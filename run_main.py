@@ -12,7 +12,9 @@ from models import CPGRU, CPLSTM, CPMLP, CPBiGRU, CPBiLSTM, CPTransformer, Patch
     BiLSTM, BiGRU, GRU, LSTM
 import wandb
 from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
-from data_provider.data_factory import data_provider_baseline
+from data_provider.data_factory import data_provider_baseline, data_provider_pooled
+from data_provider.data_loader import CHEMISTRIES
+from utils.pooled_eval import macro_tuple, PooledTracker
 import time
 import json
 import random
@@ -111,6 +113,15 @@ parser.add_argument('--geo_bin_tol', type=float, default=0.15, help='relative to
 parser.add_argument('--geo_bin_min', type=float, default=1.0, help='global min label value covered by geo_bins (see notes/notes_9_8.txt cycle-length audit)')
 parser.add_argument('--geo_bin_max', type=float, default=3842.0, help='global max label value covered by geo_bins (see notes/notes_9_8.txt cycle-length audit)')
 
+# pooled multi-chemistry training (see data_provider/data_loader_pooled.py, utils/pooled_eval.py)
+parser.add_argument('--pooled', action='store_true', default=False,
+                    help='train ONE model on all chemistries pooled; val/test are evaluated separately per chemistry '
+                         '(same cells as the per-chemistry baselines). Default off: behavior unchanged.')
+parser.add_argument('--pooled_chemistries', nargs='+', default=None, choices=CHEMISTRIES,
+                    help='subset of chemistries to pool (default: all four). Handy for fast tests, e.g. without Li-ion.')
+parser.add_argument('--pooled_split_seed', type=int, default=2021, choices=[2021, 42, 2024],
+                    help='which data split CALB / Zn-ion / Na-ion use (as the paper\'s seed does); Li-ion has one split')
+
 # optimization
 parser.add_argument('--weighted_loss', action='store_true', default=False, help='use weighted loss')
 parser.add_argument('--weighted_sampling', action='store_true', default=False, help='use weighted sampling')
@@ -138,6 +149,10 @@ parser.add_argument('--alpha2', type=float, default=0.1, help='the 15 percent al
 
 
 args = parser.parse_args()
+pooled_chems = None
+if args.pooled:
+    args.dataset = 'POOLED'
+    pooled_chems = list(args.pooled_chemistries) if args.pooled_chemistries else list(CHEMISTRIES)
 
 geo_bins = None
 if args.prediction_mode == 'geo_bins':
@@ -217,14 +232,26 @@ for ii in range(args.itr):
                         setting + '-' + args.model_comment)  # unique checkpoint saving path
     
     
-    accelerator.print("Loading training samples......")
-    train_data, train_loader = data_provider_func(args, 'train', None, sample_weighted=args.weighted_sampling)
-    label_scaler = train_data.return_label_scaler()  
-    life_class_scaler = train_data.return_life_class_scaler()    
-    accelerator.print("Loading vali samples......")
-    vali_data, vali_loader = data_provider_func(args, 'val', None, label_scaler, life_class_scaler=life_class_scaler, sample_weighted=args.weighted_sampling)
-    accelerator.print("Loading test samples......")
-    test_data, test_loader = data_provider_func(args, 'test', None, label_scaler, life_class_scaler=life_class_scaler, sample_weighted=args.weighted_sampling)
+    if args.pooled:
+        accelerator.print(f"Loading POOLED samples: chemistries={pooled_chems}, split_seed={args.pooled_split_seed}")
+        train_data, train_loader = data_provider_pooled(args, 'train', chemistries=pooled_chems, split_seed=args.pooled_split_seed)
+        label_scaler = train_data.return_label_scaler()
+        life_class_scaler = train_data.return_life_class_scaler()
+        accelerator.print(f"pooled train samples per chemistry: {train_data.chemistry_counts()}")
+        pooled_eval_sets = {}   # (chemistry, 'val'|'test') -> (dataset, loader); evaluation stays split by chemistry
+        for c in pooled_chems:
+            for flag in ('val', 'test'):
+                accelerator.print(f"Loading {c} {flag} samples......")
+                pooled_eval_sets[(c, flag)] = data_provider_pooled(args, flag, label_scaler, life_class_scaler, chemistries=[c], split_seed=args.pooled_split_seed)
+    else:
+        accelerator.print("Loading training samples......")
+        train_data, train_loader = data_provider_func(args, 'train', None, sample_weighted=args.weighted_sampling)
+        label_scaler = train_data.return_label_scaler()  
+        life_class_scaler = train_data.return_life_class_scaler()    
+        accelerator.print("Loading vali samples......")
+        vali_data, vali_loader = data_provider_func(args, 'val', None, label_scaler, life_class_scaler=life_class_scaler, sample_weighted=args.weighted_sampling)
+        accelerator.print("Loading test samples......")
+        test_data, test_loader = data_provider_func(args, 'test', None, label_scaler, life_class_scaler=life_class_scaler, sample_weighted=args.weighted_sampling)
 
     if accelerator.is_local_main_process and os.path.exists(path):
         del_files(path)  # delete checkpoint files
@@ -294,8 +321,16 @@ for ii in range(args.itr):
     life_class_criterion = nn.MSELoss() 
     classification_criterion = nn.CrossEntropyLoss(reduction='none') if geo_bins is not None else None
 
-    train_loader, vali_loader, test_loader, model, model_optim, scheduler = accelerator.prepare(
-        train_loader, vali_loader, test_loader, model, model_optim, scheduler)
+    if args.pooled:
+        _eval_keys = list(pooled_eval_sets.keys())
+        _prepared = accelerator.prepare(train_loader, *[pooled_eval_sets[k][1] for k in _eval_keys], model, model_optim, scheduler)
+        train_loader = _prepared[0]
+        for k, l in zip(_eval_keys, _prepared[1:1 + len(_eval_keys)]):
+            pooled_eval_sets[k] = (pooled_eval_sets[k][0], l)
+        model, model_optim, scheduler = _prepared[1 + len(_eval_keys):]
+    else:
+        train_loader, vali_loader, test_loader, model, model_optim, scheduler = accelerator.prepare(
+            train_loader, vali_loader, test_loader, model, model_optim, scheduler)
     best_vali_loss = float('inf')
     best_vali_MAE, best_test_MAE = 0, 0
     best_vali_RMSE, best_test_RMSE = 0, 0
@@ -311,6 +346,8 @@ for ii in range(args.itr):
     best_seen_vali_MAPE, best_seen_test_MAPE = 0, 0
     best_unseen_vali_MAPE, best_unseen_test_MAPE = 0, 0
 
+    pooled_tracker = PooledTracker(pooled_chems) if args.pooled else None
+
     for epoch in range(args.train_epochs):
         mae_metric = evaluate.load('./utils/mae')
         mape_metric = evaluate.load('./utils/mape')
@@ -325,7 +362,9 @@ for ii in range(args.itr):
         print_life_class_loss = 0
         std, mean_value = np.sqrt(train_data.label_scaler.var_[-1]), train_data.label_scaler.mean_[-1]
         total_preds, total_references = [], []
-        for i, (cycle_curve_data, curve_attn_mask,  labels, life_class, scaled_life_class, weights, seen_unseen_ids) in enumerate(train_loader):
+        for i, batch in enumerate(train_loader):
+            cycle_curve_data, curve_attn_mask, labels, life_class, scaled_life_class, weights, seen_unseen_ids = batch[:7]  # pooled loader appends chemistry_ids as an 8th item
+            chemistry_ids = batch[7] if len(batch) > 7 else None  # not consumed by the model yet
             with accelerator.accumulate(model):
                 model_optim.zero_grad()
                 iter_count += 1
@@ -397,8 +436,24 @@ for ii in range(args.itr):
         train_mape = mean_absolute_percentage_error(total_references, total_preds)
         accelerator.print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
 
-        vali_rmse, vali_mae_loss, vali_mape, vali_alpha_acc1, vali_alpha_acc2 = vali_baseline(args, accelerator, model, vali_data, vali_loader, criterion, compute_seen_unseen=False, geo_bins=geo_bins)
-        test_rmse, test_mae_loss, test_mape, test_alpha_acc1, test_alpha_acc2, test_unseen_mape, test_seen_mape, test_unseen_alpha_acc1, test_seen_alpha_acc1, test_unseen_alpha_acc2, test_seen_alpha_acc2 = vali_baseline(args, accelerator, model, test_data, test_loader, criterion, compute_seen_unseen=True, geo_bins=geo_bins)
+        pooled_log = {}
+        if args.pooled:
+            vali_res, test_res = {}, {}
+            for c in pooled_chems:
+                vd, vl = pooled_eval_sets[(c, 'val')]
+                td, tl = pooled_eval_sets[(c, 'test')]
+                vali_res[c] = vali_baseline(args, accelerator, model, vd, vl, criterion, compute_seen_unseen=False, geo_bins=geo_bins)
+                test_res[c] = vali_baseline(args, accelerator, model, td, tl, criterion, compute_seen_unseen=True, geo_bins=geo_bins)
+                accelerator.print(f'\tPooled epoch {epoch+1} | {c:7s} | Val MAPE {vali_res[c][2]:.4f} acc15 {vali_res[c][3]:.1f} | Test MAPE {test_res[c][2]:.4f} acc15 {test_res[c][3]:.1f}')
+                pooled_log.update({f'val_MAPE/{c}': vali_res[c][2], f'val_acc1/{c}': vali_res[c][3], f'test_MAPE/{c}': test_res[c][2], f'test_acc1/{c}': test_res[c][3]})
+            pooled_tracker.update(epoch + 1, vali_res, test_res)
+            # macro-average over chemistries (each counts equally) drives model selection and early stopping
+            vali_rmse, vali_mae_loss, vali_mape, vali_alpha_acc1, vali_alpha_acc2 = macro_tuple(list(vali_res.values()))
+            (test_rmse, test_mae_loss, test_mape, test_alpha_acc1, test_alpha_acc2, test_unseen_mape, test_seen_mape,
+             test_unseen_alpha_acc1, test_seen_alpha_acc1, test_unseen_alpha_acc2, test_seen_alpha_acc2) = macro_tuple(list(test_res.values()))
+        else:
+            vali_rmse, vali_mae_loss, vali_mape, vali_alpha_acc1, vali_alpha_acc2 = vali_baseline(args, accelerator, model, vali_data, vali_loader, criterion, compute_seen_unseen=False, geo_bins=geo_bins)
+            test_rmse, test_mae_loss, test_mape, test_alpha_acc1, test_alpha_acc2, test_unseen_mape, test_seen_mape, test_unseen_alpha_acc1, test_seen_alpha_acc1, test_unseen_alpha_acc2, test_seen_alpha_acc2 = vali_baseline(args, accelerator, model, test_data, test_loader, criterion, compute_seen_unseen=True, geo_bins=geo_bins)
         vali_loss = vali_mape
 
         
@@ -434,7 +489,7 @@ for ii in range(args.itr):
         
         if accelerator.is_local_main_process:
             wandb.log({"epoch": epoch, "train_loss": train_loss, "vali_RMSE": vali_rmse, "vali_MAPE": vali_mape, "vali_acc1": vali_alpha_acc1, "vali_acc2": vali_alpha_acc2, 
-                       "test_RMSE": test_rmse, "test_MAPE": test_mape, "test_acc1": test_alpha_acc1, "test_acc2": test_alpha_acc2})
+                       "test_RMSE": test_rmse, "test_MAPE": test_mape, "test_acc1": test_alpha_acc1, "test_acc2": test_alpha_acc2, **pooled_log})
         
         early_stopping(epoch+1, vali_loss, vali_mae_loss, test_mae_loss, model, path)
         if early_stopping.early_stop:
@@ -454,10 +509,16 @@ for ii in range(args.itr):
         else:
             accelerator.print('Updating learning rate to {}'.format(scheduler.get_last_lr()[0]))
 
-accelerator.print(f'Best model performance: Test MAE: {best_test_MAE:.4f} | Test RMSE: {best_test_RMSE:.4f} | Test MAPE: {best_test_MAPE:.4f} | Test 15%-accuracy: {best_test_alpha_acc1:.4f} | Test 10%-accuracy: {best_test_alpha_acc2:.4f} | Val MAE: {best_vali_MAE:.4f} | Val RMSE: {best_vali_RMSE:.4f} | Val MAPE: {best_vali_MAPE:.4f} | Val 15%-accuracy: {best_vali_alpha_acc1:.4f} | Val 10%-accuracy: {best_vali_alpha_acc2:.4f} ')
-accelerator.print(f'Best model performance: Test Seen MAPE: {best_seen_test_MAPE:.4f} | Test Unseen MAPE: {best_unseen_test_MAPE:.4f}')
-accelerator.print(f'Best model performance: Test Seen 15%-accuracy: {best_seen_test_alpha_acc1:.4f} | Test Unseen 15%-accuracy: {best_unseen_test_alpha_acc1:.4f}')
-accelerator.print(f'Best model performance: Test Seen 10%-accuracy: {best_seen_test_alpha_acc2:.4f} | Test Unseen 10%-accuracy: {best_unseen_test_alpha_acc2:.4f}')
+if args.pooled:
+    accelerator.print(f'Pooled macro-avg over chemistries (single checkpoint; NOT a per-chemistry number): Test MAE: {best_test_MAE:.4f} | Test RMSE: {best_test_RMSE:.4f} | Test MAPE: {best_test_MAPE:.4f} | Test 15%-accuracy: {best_test_alpha_acc1:.4f} | Test 10%-accuracy: {best_test_alpha_acc2:.4f} | Val MAPE: {best_vali_MAPE:.4f}')
+    accelerator.print(f'=== Pooled per-chemistry results | chemistries={pooled_chems} | split_seed={args.pooled_split_seed} | seed={args.seed} ===')
+    for _line in pooled_tracker.report_lines():
+        accelerator.print(_line)
+else:
+    accelerator.print(f'Best model performance: Test MAE: {best_test_MAE:.4f} | Test RMSE: {best_test_RMSE:.4f} | Test MAPE: {best_test_MAPE:.4f} | Test 15%-accuracy: {best_test_alpha_acc1:.4f} | Test 10%-accuracy: {best_test_alpha_acc2:.4f} | Val MAE: {best_vali_MAE:.4f} | Val RMSE: {best_vali_RMSE:.4f} | Val MAPE: {best_vali_MAPE:.4f} | Val 15%-accuracy: {best_vali_alpha_acc1:.4f} | Val 10%-accuracy: {best_vali_alpha_acc2:.4f} ')
+    accelerator.print(f'Best model performance: Test Seen MAPE: {best_seen_test_MAPE:.4f} | Test Unseen MAPE: {best_unseen_test_MAPE:.4f}')
+    accelerator.print(f'Best model performance: Test Seen 15%-accuracy: {best_seen_test_alpha_acc1:.4f} | Test Unseen 15%-accuracy: {best_unseen_test_alpha_acc1:.4f}')
+    accelerator.print(f'Best model performance: Test Seen 10%-accuracy: {best_seen_test_alpha_acc2:.4f} | Test Unseen 10%-accuracy: {best_unseen_test_alpha_acc2:.4f}')
 accelerator.print(path)
 accelerator.set_trigger()
 if accelerator.check_trigger() and accelerator.is_local_main_process:

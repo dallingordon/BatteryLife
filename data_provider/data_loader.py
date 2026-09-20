@@ -54,7 +54,25 @@ datasetName2ids = {
 # Chemistry-level class index. Each chemistry maps to the same split lists the per-chemistry
 # runs already use, so pooled val/test cells are exactly the ones in the per-chemistry baselines.
 CHEMISTRIES = ['Li-ion', 'CALB', 'Zn-ion', 'Na-ion']   # index in this list == chemistry_id
-_CHEMISTRY_SPLIT_PREFIX = {'Li-ion': 'MIX_large', 'CALB': 'CALB', 'Zn-ion': 'ZNcoin', 'Na-ion': 'NAion_2021'}
+# The paper's "seed" also selects the data split for CALB / Zn-ion / Na-ion (CALB, CALB42, CALB2024, ...), while Li-ion
+# (MIX_large) has one fixed split. `split_seed` picks the split used for each chemistry.
+POOLED_SPLIT_SEEDS = (2021, 42, 2024)
+_CHEMISTRY_SPLIT_PREFIX = {   # chemistry -> split_seed -> prefix of split_recorder.<prefix>_{train,val,test}_files
+    'Li-ion': {s: 'MIX_large' for s in POOLED_SPLIT_SEEDS},
+    'CALB':   {2021: 'CALB',       42: 'CALB_42', 2024: 'CALB_2024'},
+    'Zn-ion': {2021: 'ZNcoin',     42: 'ZN_42',   2024: 'ZN_2024'},
+    'Na-ion': {2021: 'NAion_2021', 42: 'NAion_42', 2024: 'NAion_2024'},
+}
+_CHEMISTRY_SEEN_UNSEEN_JSON = {   # chemistry -> split_seed -> file in dataset/seen_unseen_labels (same choice the per-chemistry datasets make)
+    'Li-ion': {s: 'cal_for_test.json' for s in POOLED_SPLIT_SEEDS},
+    'CALB':   {2021: 'cal_for_test.json', 42: 'cal_for_test_CALB42.json', 2024: 'cal_for_test_CALB2024.json'},
+    'Zn-ion': {2021: 'cal_for_test.json', 42: 'cal_for_test_ZN42.json',   2024: 'cal_for_test_ZN2024.json'},
+    'Na-ion': {2021: 'cal_for_test_NA2021.json', 42: 'cal_for_test_NA42.json', 2024: 'cal_for_test_NA2024.json'},
+}
+
+def pooled_split_files(chemistry, kind, split_seed):
+    """kind in train/val/test -> the split_recorder file list for that chemistry and split seed."""
+    return getattr(split_recorder, f'{_CHEMISTRY_SPLIT_PREFIX[chemistry][split_seed]}_{kind}_files')
 
 def dataset_id_to_chemistry_id(dataset_id):
     """source-dataset id (datasetName2ids) -> chemistry id. Everything that is not CALB / Zn-ion / Na-ion is Li-ion (MIX_large)."""
@@ -221,7 +239,8 @@ class Dataset_original(Dataset):
         elif self.dataset == 'POOLED':
             # concat of the per-chemistry split lists (optionally a subset: self.pooled_chemistries)
             _chems = getattr(self, 'pooled_chemistries', None) or CHEMISTRIES
-            _cat = lambda kind: [f for c in _chems for f in getattr(split_recorder, f'{_CHEMISTRY_SPLIT_PREFIX[c]}_{kind}_files')]
+            _seed = getattr(self, 'pooled_split_seed', 2021)
+            _cat = lambda kind: [f for c in _chems for f in pooled_split_files(c, kind, _seed)]
             self.train_files, self.val_files, self.test_files = _cat('train'), _cat('val'), _cat('test')
             assert len(set(self.train_files + self.val_files + self.test_files)) == len(self.train_files + self.val_files + self.test_files), 'file appears in more than one chemistry/split'
 
@@ -246,9 +265,12 @@ class Dataset_original(Dataset):
             elif self.dataset == 'NAion2024':
                 self.unseen_seen_record = json.load(open(f'{self.root_path}/seen_unseen_labels/cal_for_test_NA2024.json'))
             elif self.dataset == 'POOLED':
-                # Li-ion / CALB / Zn-ion are all covered by cal_for_test.json; Na-ion has its own file
-                self.unseen_seen_record = json.load(open(f'{self.root_path}/seen_unseen_labels/cal_for_test.json'))
-                self.unseen_seen_record.update(json.load(open(f'{self.root_path}/seen_unseen_labels/cal_for_test_NA2021.json')))
+                # per chemistry: take that chemistry's own test-cell entries from the json its per-chemistry dataset uses
+                self.unseen_seen_record = {}
+                for _c in (getattr(self, 'pooled_chemistries', None) or CHEMISTRIES):
+                    _seed = getattr(self, 'pooled_split_seed', 2021)
+                    _rec = json.load(open(f'{self.root_path}/seen_unseen_labels/{_CHEMISTRY_SEEN_UNSEEN_JSON[_c][_seed]}'))
+                    self.unseen_seen_record.update({f: _rec[f] for f in pooled_split_files(_c, 'test', _seed)})
             else:
                 self.unseen_seen_record = json.load(open(f'{self.root_path}/seen_unseen_labels/cal_for_test.json'))
             # self.unseen_seen_record = json.load(open(f'{self.root_path}/cal_for_test.json'))

@@ -217,7 +217,8 @@ def vali_baseline(args, accelerator, model, vali_data, vali_loader, criterion, c
     total_seen_unseen_ids = []
     model.eval()
     with torch.no_grad():
-        for i, (cycle_curve_data, curve_attn_mask,  labels, life_class, scaled_life_class, weights, seen_unseen_ids) in tqdm(enumerate(vali_loader)):
+        for i, batch in tqdm(enumerate(vali_loader)):
+            cycle_curve_data, curve_attn_mask, labels, life_class, scaled_life_class, weights, seen_unseen_ids = batch[:7]  # pooled loaders append chemistry_ids as an 8th item
             cycle_curve_data = cycle_curve_data.float().to(accelerator.device)# [B, S, N]
             curve_attn_mask = curve_attn_mask.float().to(accelerator.device)
             labels = labels.float().to(accelerator.device)

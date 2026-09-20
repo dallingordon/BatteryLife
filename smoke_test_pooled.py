@@ -9,16 +9,15 @@ import argparse
 import time
 import numpy as np
 
-from data_provider.data_loader import CHEMISTRIES
-from data_provider.data_split_recorder import split_recorder
+from data_provider.data_loader import CHEMISTRIES, pooled_split_files
 from data_provider.data_factory import data_provider_pooled
 
-SPLIT_PREFIX = {'Li-ion': 'MIX_large', 'CALB': 'CALB', 'Zn-ion': 'ZNcoin', 'Na-ion': 'NAion_2021'}
 BATCH_ITEMS = ['cycle_curve_data', 'curve_attn_mask', 'labels', 'life_class', 'scaled_life_class',
                'weights', 'seen_unseen_ids', 'chemistry_ids']
 
 p = argparse.ArgumentParser()
 p.add_argument('--chemistries', nargs='+', default=CHEMISTRIES, choices=CHEMISTRIES)
+p.add_argument('--split_seed', type=int, default=2021, choices=[2021, 42, 2024], help='data split for CALB/Zn-ion/Na-ion')
 p.add_argument('--root_path', default='./dataset')
 p.add_argument('--batch_size', type=int, default=32)
 p.add_argument('--num_workers', type=int, default=4)
@@ -29,7 +28,7 @@ args = p.parse_args()
 args.weighted_loss = False
 args.dataset = 'POOLED'   # Dataset_pooled sets this itself; here for completeness
 chems = args.chemistries
-print(f'chemistries: {chems}\n')
+print(f'chemistries: {chems} | split_seed: {args.split_seed}\n')
 
 
 def show_batch(name, loader):
@@ -53,9 +52,9 @@ def timed(label, fn):
 
 # ---- pooled train ----
 print('== pooled TRAIN ==')
-train_data, train_loader = timed('load train', lambda: data_provider_pooled(args, 'train', chemistries=chems))
+train_data, train_loader = timed('load train', lambda: data_provider_pooled(args, 'train', chemistries=chems, split_seed=args.split_seed))
 counts = train_data.chemistry_counts()
-n_cells = {c: len(getattr(split_recorder, f'{SPLIT_PREFIX[c]}_train_files')) for c in chems}
+n_cells = {c: len(pooled_split_files(c, 'train', args.split_seed)) for c in chems}
 print(f'  files listed: {len(train_data.files)} (expected {sum(n_cells.values())}) | samples: {len(train_data)} | batches/epoch: {len(train_loader)}')
 for c in CHEMISTRIES:
     if c in chems:
@@ -72,8 +71,8 @@ life_scaler = train_data.return_life_class_scaler()
 for flag in ('val', 'test'):
     print(f'\n== per-chemistry {flag.upper()} ==')
     for c in chems:
-        d, dl = timed(f'load {c} {flag}', lambda: data_provider_pooled(args, flag, scaler, life_scaler, chemistries=[c]))
-        expected = getattr(split_recorder, f'{SPLIT_PREFIX[c]}_{flag}_files')
+        d, dl = timed(f'load {c} {flag}', lambda: data_provider_pooled(args, flag, scaler, life_scaler, chemistries=[c], split_seed=args.split_seed))
+        expected = pooled_split_files(c, flag, args.split_seed)
         assert d.files == expected, f'{c} {flag}: file list differs from the per-chemistry baseline split'
         assert set(d.total_chemistry_ids.tolist()) == {CHEMISTRIES.index(c)}
         print(f'  {c}: files={len(d.files)} samples={len(d)} batches={len(dl)}')

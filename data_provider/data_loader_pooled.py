@@ -17,21 +17,25 @@ import copy
 import numpy as np
 import torch
 
-from data_provider.data_loader import (Dataset_original, my_collate_fn_baseline, CHEMISTRIES,
+from data_provider.data_loader import (Dataset_original, my_collate_fn_baseline, CHEMISTRIES, POOLED_SPLIT_SEEDS,
                                        dataset_id_to_chemistry_id)
 
 
 class Dataset_pooled(Dataset_original):
-    def __init__(self, args, flag='train', chemistries=None, **kwargs):
+    def __init__(self, args, flag='train', chemistries=None, split_seed=2021, **kwargs):
         """
         :param chemistries: subset of CHEMISTRIES to include (default: all four).
                             e.g. ['Zn-ion'] gives that chemistry's own split, unchanged.
+        :param split_seed: 2021 / 42 / 2024. Selects the data split for CALB, Zn-ion and Na-ion (as the paper's seed does);
+                           Li-ion (MIX_large) has a single split.
         Other kwargs are those of Dataset_original (label_scaler, life_class_scaler, ...).
         """
         chemistries = list(chemistries) if chemistries else list(CHEMISTRIES)
         for c in chemistries:
             assert c in CHEMISTRIES, f'unknown chemistry {c}, expected one of {CHEMISTRIES}'
+        assert split_seed in POOLED_SPLIT_SEEDS, f'split_seed must be one of {POOLED_SPLIT_SEEDS}'
         self.pooled_chemistries = chemistries          # read by the 'POOLED' branch in Dataset_original.__init__
+        self.pooled_split_seed = split_seed
         args = copy.copy(args)                          # don't mutate the caller's args
         args.dataset = 'POOLED'
         super().__init__(args, flag=flag, **kwargs)
