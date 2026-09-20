@@ -2,6 +2,7 @@ from data_provider.data_loader import Dataset_original
 from data_provider.data_loader import my_collate_fn_baseline, my_collate_fn_withId
 from torch.utils.data import DataLoader, RandomSampler, Dataset
 from data_provider.data_loader_pooled import Dataset_pooled, my_collate_fn_pooled
+from data_provider.data_loader_full import Dataset_full_timescale, my_collate_fn_full
 
 data_dict = {
     'Dataset_original': Dataset_original
@@ -178,4 +179,26 @@ def data_provider_pooled(args, flag, label_scaler=None, life_class_scaler=None, 
         num_workers=args.num_workers,
         drop_last=train,
         collate_fn=my_collate_fn_pooled)
+    return data_set, data_loader
+
+
+def data_provider_full(args, chemistries=None, split_seed=2021, label_scaler=None, life_class_scaler=None):
+    """
+    Full-timescale training loader (Mamba). Pooled chemistries, prefixes of any length up to the cell's stored
+    cycles, per-cell cap on prefixes per epoch. Batch size 1, no padding. Reads args.full_max_cycles,
+    args.full_prefixes_per_cell, args.full_cache_dir (None = off / default). Call data_set.set_epoch(e) before
+    iterating each epoch. Val/test: keep using data_provider_pooled, one call per chemistry.
+    """
+    data_set = Dataset_full_timescale(args, chemistries=chemistries, split_seed=split_seed,
+                                      cache_dir=getattr(args, 'full_cache_dir', None),
+                                      max_cycles=getattr(args, 'full_max_cycles', None),
+                                      prefixes_per_cell=getattr(args, 'full_prefixes_per_cell', None),
+                                      seed=getattr(args, 'seed', 0),
+                                      label_scaler=label_scaler, life_class_scaler=life_class_scaler)
+    data_loader = DataLoader(
+        data_set,
+        batch_size=1,
+        shuffle=True,
+        num_workers=args.num_workers,
+        collate_fn=my_collate_fn_full)
     return data_set, data_loader

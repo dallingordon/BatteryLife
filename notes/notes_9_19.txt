@@ -1,0 +1,48 @@
+=== notes 9/19 ===
+
+--- IDEA (parked, not implemented): per-chemistry loss weighting for pooled training ---
+Pooled training is ~84% Li-ion by cells (train cells: Li-ion 515, CALB 17, Zn-ion 60, Na-ion 20 = 612).
+Idea: scale the loss per chemistry so the big chemistry doesn't dominate - weight each sample in chemistry c
+by N_c^(-alpha), then rescale so the mean weight over the training set is 1 (keeps loss scale / effective lr
+comparable to unweighted runs). Flag shape: --chem_loss_alpha (float, default 0 = off), not a boolean.
+  alpha=1   -> chemistries contribute equally to the loss
+  alpha=0.5 -> softer, sqrt balancing
+Approx weights (cell counts as proxy): alpha=1: Li-ion ~0.3, CALB ~9, Zn ~2.5, Na ~7.7
+                                       alpha=0.5: Li-ion ~0.7, CALB ~3.8, Zn ~2.0, Na ~3.5
+Why attractive:
+  - model selection already averages per-chemistry val MAPE with equal weight, so this aligns the training
+    objective with the selection criterion
+  - in regression it may help Zn-ion (small labels -> small errors under the Li-ion-dominated pooled scaler)
+Risk: at alpha=1 CALB's 17 cells get ~9x weight; each cell gives ~100 near-duplicate truncated samples, so
+the model may memorize those 17 cells. Would sweep alpha in {0, 0.5, 1}, CPMLP first.
+Implementation sketch (when/if wanted): the training loss is already mean(loss * weights) for both regression
+and geo_bins, so fill the per-sample `weights` in Dataset_pooled (train flag only) from chemistry_counts();
+no model or training-loop change. Existing --weighted_loss is a different thing (KDE over labels).
+Alternative: oversample small chemistries with a weighted sampler (equivalent in expectation, noisier, more plumbing).
+Orthogonal to --chem_fusion (can combine).
+Status: dgordon pondering.
+
+--- Conditioning granularity: finer options (noted, not implemented) ---
+Current chemistry ids = 4 dataset groups (Li-ion=MIX_large, CALB, Zn-ion, Na-ion). Finer options:
+  - source-dataset id (~17 values; already exists as datasetName2ids / dataset_id in the loader)
+  - cathode type (tables in assets/Further_details_of_data_statistics.md; pkl has a cathode_material field):
+    LFP (MATR, HUST, SNL_LFP), LCO (CALCE), NCM variants, NCA, NCM+NCA blend (Tongji3), MnO2 (Zn), Na (unknown)
+Note: CALB is Li-ion NCM/graphite (prismatic), so "CALB vs Li-ion" is a dataset split, not a chemistry difference.
+
+--- Mamba / full-timescale unified trainer: decisions so far ---
+Goal: same unified (pooled) training as now, but train on longer horizons (all cycles available) with Mamba, on lithium
+first (small chemistries: "we try"; S4 ablation and P100 kernel compatibility are LATER concerns).
+- Training samples = prefixes 1..i of a cell (final CLS token, classify only at the final timestep). Optional
+  every-timestep prediction is a later training-loop option, not a loader concern.
+- Sample balancing: chemistry-agnostic PER-CELL CAP - at most K prefixes per cell per epoch (K specified in config),
+  resampled each epoch. Preferred over a per-chemistry drop % (simpler; also fixes long-vs-short cells within a chemistry).
+  Print each chemistry's share of training samples per epoch.
+- Val/test stay exactly as published (first 100 cycles, same cells). No prefix-length-bucket logging; val errors are enough.
+- Data facts: many CALB cells only store 100 cycles (median life ~1170); Na-ion max ~250 stored cycles; Zn-ion median 168
+  (35 of 140 files have >=300). Long cells: HUST (77 cells, median 1873), ISU_ILCC, MATR.
+  Sum of usable cycles ~730k vs ~106k capped at 100 (stats file, all sources).
+- MIX_all (1001 cells) = MIX_large (843, 14 source datasets) + ZN-coin 100 + CALB 27 + NA-ion 31, i.e. the four pooled groups
+  cover every labeled cell in the published splits. Two sources exist outside them: SDU (86 files, 70 labeled, added 2025.10)
+  and Stanford_2 (129 usable / 181 labeled; "complete Stanford" - probably OVERLAPS the 41 Stanford cells in MIX_large,
+  so check for test-set leakage before using it as extra training data).
+Status: revisit the Mamba dataloader after the pooled sweep is submitted.
