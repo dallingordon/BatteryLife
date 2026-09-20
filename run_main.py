@@ -122,6 +122,12 @@ parser.add_argument('--pooled_chemistries', nargs='+', default=None, choices=CHE
 parser.add_argument('--pooled_split_seed', type=int, default=2021, choices=[2021, 42, 2024],
                     help='which data split CALB / Zn-ion / Na-ion use (as the paper\'s seed does); Li-ion has one split')
 
+# chemistry conditioning for pooled training (CPMLP / CPTransformer only)
+parser.add_argument('--chem_fusion', type=str, default='none', choices=['none', 'late_mlp'],
+                    help='none (default): model unchanged. late_mlp: output head = MLP over [features ; chemistry embedding]. Requires --pooled.')
+parser.add_argument('--chem_embed_dim', type=int, default=16,
+                    help='chemistry embedding size for --chem_fusion late_mlp. 0 = same MLP head with NO chemistry input (capacity control).')
+
 # optimization
 parser.add_argument('--weighted_loss', action='store_true', default=False, help='use weighted loss')
 parser.add_argument('--weighted_sampling', action='store_true', default=False, help='use weighted sampling')
@@ -153,6 +159,10 @@ pooled_chems = None
 if args.pooled:
     args.dataset = 'POOLED'
     pooled_chems = list(args.pooled_chemistries) if args.pooled_chemistries else list(CHEMISTRIES)
+if args.chem_fusion != 'none':
+    assert args.pooled, '--chem_fusion needs --pooled (chemistry ids come from the pooled loader)'
+    assert args.model in ('CPMLP', 'CPTransformer'), f'--chem_fusion is only implemented for CPMLP / CPTransformer, not {args.model}'
+args.chem_num = len(CHEMISTRIES)
 
 geo_bins = None
 if args.prediction_mode == 'geo_bins':
@@ -377,7 +387,8 @@ for ii in range(args.itr):
                 
 
                 # encoder - decoder
-                outputs = model(cycle_curve_data, curve_attn_mask)
+                model_kwargs = {'chemistry_ids': chemistry_ids.to(accelerator.device)} if args.chem_fusion != 'none' else {}
+                outputs = model(cycle_curve_data, curve_attn_mask, **model_kwargs)
                 
 
                 cut_off = labels.shape[0]

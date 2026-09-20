@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from layers.Transformer_EncDec import Decoder, DecoderLayer, Encoder, EncoderLayer, ConvLayer
 from layers.SelfAttention_Family import FullAttention, AttentionLayer
 from layers.Embed import DataEmbedding, PositionalEmbedding
+from layers.ChemHead import ChemHead
 class MLPBlock(nn.Module):
     def __init__(self, in_dim, hidden_dim, out_dim, drop_rate):
         super(MLPBlock, self).__init__()
@@ -54,9 +55,15 @@ class Model(nn.Module):
         )
         self.dropout = nn.Dropout(configs.dropout)
         self.inter_flatten = nn.Flatten(start_dim=1)
-        self.projection = nn.Linear(configs.d_model * self.early_cycle_threshold, configs.output_num)
+        self.chem_fusion = getattr(configs, 'chem_fusion', 'none')
+        if self.chem_fusion == 'late_mlp':
+            # pooled multi-chemistry: [flattened features ; chemistry embedding] -> MLP -> output (chem_embed_dim=0: same head, no chemistry input)
+            self.projection = ChemHead(configs.d_model * self.early_cycle_threshold, self.d_ff, configs.output_num,
+                                       getattr(configs, 'chem_embed_dim', 16), getattr(configs, 'chem_num', 4), self.drop_rate)
+        else:
+            self.projection = nn.Linear(configs.d_model * self.early_cycle_threshold, configs.output_num)
 
-    def forward(self, cycle_curve_data, curve_attn_mask, return_embedding=False):
+    def forward(self, cycle_curve_data, curve_attn_mask, return_embedding=False, chemistry_ids=None):
         '''
         cycle_curve_data: [B, early_cycle, fixed_len, num_var]
         curve_attn_mask: [B, early_cycle]
@@ -78,7 +85,10 @@ class Model(nn.Module):
 
         output = self.dropout(output)
         output = output.reshape(output.shape[0], -1)  # (batch_size, L * d_model)
-        preds = self.projection(output)  # (batch_size, num_classes)
+        if self.chem_fusion == 'late_mlp':
+            preds = self.projection(output, chemistry_ids)  # (batch_size, num_classes)
+        else:
+            preds = self.projection(output)  # (batch_size, num_classes)
         if return_embedding:
             return preds, output
         return preds
