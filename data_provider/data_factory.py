@@ -162,14 +162,14 @@ def data_provider_evaluate(args, flag, tokenizer=None, label_scaler=None, eval_c
     return data_set, data_loader
 
 
-def data_provider_pooled(args, flag, label_scaler=None, life_class_scaler=None, chemistries=None):
+def data_provider_pooled(args, flag, label_scaler=None, life_class_scaler=None, chemistries=None, split_seed=2021):
     """
     Multi-chemistry loader. Train: all chemistries pooled (chemistries=None). Val/test: call once per
     chemistry (chemistries=['Zn-ion'], ...) to keep evaluation split by chemistry with the same cells as
     the per-chemistry baselines. Batches are (7 baseline items..., chemistry_ids).
     """
     train = (flag == 'train')
-    data_set = Dataset_pooled(args, flag=flag, chemistries=chemistries,
+    data_set = Dataset_pooled(args, flag=flag, chemistries=chemistries, split_seed=split_seed,
                               label_scaler=label_scaler, life_class_scaler=life_class_scaler)
     data_loader = DataLoader(
         data_set,
