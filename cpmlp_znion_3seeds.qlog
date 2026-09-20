@@ -1,0 +1,1231 @@
+=== CPMLP | dataset=ZN-coin seed=2021 ===
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+{'task_name': 'classification', 'is_training': 1, 'model_id': 'CPMLP', 'model_comment': 'CPMLP_Znion_s2021', 'model': 'CPMLP', 'seed': 2021, 'charge_discharge_length': 300, 'dataset': 'ZN-coin', 'data': 'Dataset_original', 'root_path': './dataset', 'data_path': 'ETTh1.csv', 'features': 'MS', 'target': 'OT', 'loader': 'modal', 'freq': 'h', 'checkpoints': '/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2021', 'early_cycle_threshold': 100, 'seq_len': 1, 'pred_len': 5, 'label_len': 50, 'seasonal_patterns': 'Monthly', 'enc_in': 3, 'dec_in': 1, 'c_out': 1, 'd_model': 64, 'n_heads': 8, 'lstm_layers': 2, 'e_layers': 5, 'd_layers': 9, 'd_ff': 64, 'moving_avg': 25, 'factor': 3, 'dropout': 0.1, 'embed': 'timeF', 'activation': 'relu', 'output_attention': False, 'patch_len': 10, 'stride': 10, 'patch_len2': 10, 'stride2': 10, 'prompt_domain': 0, 'output_num': 1, 'class_num': 8, 'prediction_mode': 'regression', 'geo_bin_tol': 0.15, 'geo_bin_min': 1.0, 'geo_bin_max': 3842.0, 'weighted_loss': False, 'weighted_sampling': False, 'num_workers': 4, 'itr': 1, 'train_epochs': 100, 'least_epochs': 5, 'batch_size': 128, 'patience': 5, 'learning_rate': 0.0005, 'wd': 0.0, 'des': 'Exp', 'loss': 'MSE', 'lradj': 'constant', 'pct_start': 0.2, 'use_amp': False, 'percent': 100, 'accumulation_steps': 1, 'mlp': 0, 'alpha1': 0.15, 'alpha2': 0.1}
+Loading training samples......
+  0%|          | 0/60 [00:00<?, ?it/s]  2%|▏         | 1/60 [00:00<00:38,  1.55it/s]  3%|▎         | 2/60 [00:01<00:35,  1.63it/s]  5%|▌         | 3/60 [00:01<00:33,  1.71it/s]  7%|▋         | 4/60 [00:02<00:30,  1.81it/s]  8%|▊         | 5/60 [00:02<00:29,  1.86it/s] 10%|█         | 6/60 [00:03<00:29,  1.84it/s] 12%|█▏        | 7/60 [00:03<00:28,  1.86it/s] 13%|█▎        | 8/60 [00:04<00:28,  1.81it/s] 15%|█▌        | 9/60 [00:04<00:27,  1.86it/s] 17%|█▋        | 10/60 [00:05<00:26,  1.88it/s] 18%|█▊        | 11/60 [00:06<00:25,  1.89it/s] 20%|██        | 12/60 [00:06<00:25,  1.90it/s] 22%|██▏       | 13/60 [00:07<00:28,  1.66it/s] 23%|██▎       | 14/60 [00:07<00:26,  1.75it/s] 25%|██▌       | 15/60 [00:08<00:25,  1.76it/s] 27%|██▋       | 16/60 [00:08<00:23,  1.84it/s] 28%|██▊       | 17/60 [00:09<00:23,  1.84it/s] 30%|███       | 18/60 [00:09<00:22,  1.87it/s] 32%|███▏      | 19/60 [00:10<00:21,  1.87it/s] 33%|███▎      | 20/60 [00:10<00:21,  1.89it/s] 35%|███▌      | 21/60 [00:11<00:20,  1.89it/s] 37%|███▋      | 22/60 [00:12<00:20,  1.87it/s] 38%|███▊      | 23/60 [00:12<00:20,  1.84it/s] 40%|████      | 24/60 [00:13<00:19,  1.87it/s] 42%|████▏     | 25/60 [00:13<00:18,  1.89it/s] 43%|████▎     | 26/60 [00:14<00:18,  1.89it/s] 45%|████▌     | 27/60 [00:14<00:17,  1.89it/s] 47%|████▋     | 28/60 [00:15<00:16,  1.98it/s] 48%|████▊     | 29/60 [00:15<00:15,  1.95it/s] 50%|█████     | 30/60 [00:16<00:15,  1.99it/s] 52%|█████▏    | 31/60 [00:16<00:14,  2.00it/s] 53%|█████▎    | 32/60 [00:17<00:15,  1.76it/s] 55%|█████▌    | 33/60 [00:17<00:14,  1.82it/s] 57%|█████▋    | 34/60 [00:18<00:14,  1.74it/s] 58%|█████▊    | 35/60 [00:19<00:14,  1.67it/s] 60%|██████    | 36/60 [00:19<00:15,  1.57it/s] 62%|██████▏   | 37/60 [00:20<00:14,  1.57it/s] 63%|██████▎   | 38/60 [00:21<00:16,  1.33it/s] 65%|██████▌   | 39/60 [00:22<00:17,  1.22it/s] 67%|██████▋   | 40/60 [00:23<00:17,  1.15it/s] 68%|██████▊   | 41/60 [00:24<00:16,  1.12it/s] 70%|███████   | 42/60 [00:25<00:16,  1.10it/s] 72%|███████▏  | 43/60 [00:26<00:15,  1.12it/s] 73%|███████▎  | 44/60 [00:27<00:14,  1.10it/s] 75%|███████▌  | 45/60 [00:28<00:13,  1.09it/s] 77%|███████▋  | 46/60 [00:29<00:13,  1.01it/s] 78%|███████▊  | 47/60 [00:30<00:12,  1.04it/s] 80%|████████  | 48/60 [00:30<00:10,  1.14it/s] 82%|████████▏ | 49/60 [00:31<00:09,  1.13it/s] 83%|████████▎ | 50/60 [00:32<00:08,  1.13it/s] 85%|████████▌ | 51/60 [00:33<00:08,  1.12it/s] 87%|████████▋ | 52/60 [00:34<00:07,  1.12it/s] 88%|████████▊ | 53/60 [00:35<00:05,  1.21it/s] 90%|█████████ | 54/60 [00:35<00:04,  1.27it/s] 92%|█████████▏| 55/60 [00:36<00:03,  1.32it/s] 93%|█████████▎| 56/60 [00:37<00:03,  1.23it/s] 95%|█████████▌| 57/60 [00:38<00:02,  1.30it/s] 97%|█████████▋| 58/60 [00:38<00:01,  1.34it/s] 98%|█████████▊| 59/60 [00:39<00:00,  1.37it/s]100%|██████████| 60/60 [00:40<00:00,  1.36it/s]100%|██████████| 60/60 [00:40<00:00,  1.49it/s]
+Loading vali samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:12,  1.50it/s] 10%|█         | 2/20 [00:01<00:10,  1.79it/s] 15%|█▌        | 3/20 [00:01<00:09,  1.83it/s] 20%|██        | 4/20 [00:02<00:08,  1.87it/s] 25%|██▌       | 5/20 [00:03<00:10,  1.49it/s] 30%|███       | 6/20 [00:03<00:08,  1.61it/s] 35%|███▌      | 7/20 [00:04<00:07,  1.67it/s] 40%|████      | 8/20 [00:05<00:08,  1.45it/s] 45%|████▌     | 9/20 [00:05<00:07,  1.54it/s] 50%|█████     | 10/20 [00:06<00:08,  1.23it/s] 55%|█████▌    | 11/20 [00:07<00:06,  1.31it/s] 60%|██████    | 12/20 [00:08<00:06,  1.21it/s] 65%|██████▌   | 13/20 [00:09<00:06,  1.16it/s] 70%|███████   | 14/20 [00:10<00:04,  1.23it/s] 75%|███████▌  | 15/20 [00:10<00:03,  1.40it/s] 80%|████████  | 16/20 [00:11<00:02,  1.52it/s] 85%|████████▌ | 17/20 [00:11<00:01,  1.54it/s] 90%|█████████ | 18/20 [00:12<00:01,  1.37it/s] 95%|█████████▌| 19/20 [00:13<00:00,  1.49it/s]100%|██████████| 20/20 [00:13<00:00,  1.60it/s]100%|██████████| 20/20 [00:13<00:00,  1.46it/s]
+Loading test samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:08,  2.12it/s] 10%|█         | 2/20 [00:01<00:12,  1.43it/s] 15%|█▌        | 3/20 [00:02<00:13,  1.23it/s] 20%|██        | 4/20 [00:02<00:11,  1.42it/s] 25%|██▌       | 5/20 [00:03<00:10,  1.38it/s] 30%|███       | 6/20 [00:04<00:09,  1.47it/s] 35%|███▌      | 7/20 [00:04<00:07,  1.63it/s] 40%|████      | 8/20 [00:05<00:07,  1.70it/s] 45%|████▌     | 9/20 [00:05<00:06,  1.64it/s] 50%|█████     | 10/20 [00:06<00:06,  1.44it/s] 55%|█████▌    | 11/20 [00:07<00:05,  1.54it/s] 60%|██████    | 12/20 [00:07<00:04,  1.64it/s] 65%|██████▌   | 13/20 [00:08<00:04,  1.69it/s] 70%|███████   | 14/20 [00:08<00:03,  1.74it/s] 75%|███████▌  | 15/20 [00:09<00:02,  1.77it/s] 80%|████████  | 16/20 [00:09<00:02,  1.81it/s] 85%|████████▌ | 17/20 [00:10<00:01,  1.84it/s] 90%|█████████ | 18/20 [00:10<00:01,  1.86it/s] 95%|█████████▌| 19/20 [00:11<00:00,  1.84it/s]100%|██████████| 20/20 [00:12<00:00,  1.86it/s]100%|██████████| 20/20 [00:12<00:00,  1.66it/s]
+wandb: Tracking run with wandb version 0.30.0
+wandb: W&B syncing is set to `offline` in this directory. Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
+wandb: Run data is saved locally in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_051635-tm20y1ao
+wandb: View this run in the terminal with `wandb leet`
+{'Total': 585665, 'Trainable': 585665, 'Percent': 1.0}
+intra_flatten  :  Flatten(start_dim=2, end_dim=-1)
+intra_embed  :  Linear(in_features=900, out_features=64, bias=True)
+intra_MLP  :  ModuleList(
+  (0-4): 5 x MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=64, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (out_linear): Linear(in_features=64, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+inter_flatten  :  Sequential(
+  (0): Flatten(start_dim=1, end_dim=-1)
+  (1): Linear(in_features=6400, out_features=64, bias=True)
+)
+inter_MLP  :  ModuleList(
+  (0-8): 9 x MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=64, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (out_linear): Linear(in_features=64, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+head_output  :  Linear(in_features=64, out_features=1, bias=True)
+Trainable parameters are: ['intra_embed.weight', 'intra_embed.bias', 'intra_MLP.0.in_linear.weight', 'intra_MLP.0.in_linear.bias', 'intra_MLP.0.out_linear.weight', 'intra_MLP.0.out_linear.bias', 'intra_MLP.0.ln.weight', 'intra_MLP.0.ln.bias', 'intra_MLP.1.in_linear.weight', 'intra_MLP.1.in_linear.bias', 'intra_MLP.1.out_linear.weight', 'intra_MLP.1.out_linear.bias', 'intra_MLP.1.ln.weight', 'intra_MLP.1.ln.bias', 'intra_MLP.2.in_linear.weight', 'intra_MLP.2.in_linear.bias', 'intra_MLP.2.out_linear.weight', 'intra_MLP.2.out_linear.bias', 'intra_MLP.2.ln.weight', 'intra_MLP.2.ln.bias', 'intra_MLP.3.in_linear.weight', 'intra_MLP.3.in_linear.bias', 'intra_MLP.3.out_linear.weight', 'intra_MLP.3.out_linear.bias', 'intra_MLP.3.ln.weight', 'intra_MLP.3.ln.bias', 'intra_MLP.4.in_linear.weight', 'intra_MLP.4.in_linear.bias', 'intra_MLP.4.out_linear.weight', 'intra_MLP.4.out_linear.bias', 'intra_MLP.4.ln.weight', 'intra_MLP.4.ln.bias', 'inter_flatten.1.weight', 'inter_flatten.1.bias', 'inter_MLP.0.in_linear.weight', 'inter_MLP.0.in_linear.bias', 'inter_MLP.0.out_linear.weight', 'inter_MLP.0.out_linear.bias', 'inter_MLP.0.ln.weight', 'inter_MLP.0.ln.bias', 'inter_MLP.1.in_linear.weight', 'inter_MLP.1.in_linear.bias', 'inter_MLP.1.out_linear.weight', 'inter_MLP.1.out_linear.bias', 'inter_MLP.1.ln.weight', 'inter_MLP.1.ln.bias', 'inter_MLP.2.in_linear.weight', 'inter_MLP.2.in_linear.bias', 'inter_MLP.2.out_linear.weight', 'inter_MLP.2.out_linear.bias', 'inter_MLP.2.ln.weight', 'inter_MLP.2.ln.bias', 'inter_MLP.3.in_linear.weight', 'inter_MLP.3.in_linear.bias', 'inter_MLP.3.out_linear.weight', 'inter_MLP.3.out_linear.bias', 'inter_MLP.3.ln.weight', 'inter_MLP.3.ln.bias', 'inter_MLP.4.in_linear.weight', 'inter_MLP.4.in_linear.bias', 'inter_MLP.4.out_linear.weight', 'inter_MLP.4.out_linear.bias', 'inter_MLP.4.ln.weight', 'inter_MLP.4.ln.bias', 'inter_MLP.5.in_linear.weight', 'inter_MLP.5.in_linear.bias', 'inter_MLP.5.out_linear.weight', 'inter_MLP.5.out_linear.bias', 'inter_MLP.5.ln.weight', 'inter_MLP.5.ln.bias', 'inter_MLP.6.in_linear.weight', 'inter_MLP.6.in_linear.bias', 'inter_MLP.6.out_linear.weight', 'inter_MLP.6.out_linear.bias', 'inter_MLP.6.ln.weight', 'inter_MLP.6.ln.bias', 'inter_MLP.7.in_linear.weight', 'inter_MLP.7.in_linear.bias', 'inter_MLP.7.out_linear.weight', 'inter_MLP.7.out_linear.bias', 'inter_MLP.7.ln.weight', 'inter_MLP.7.ln.bias', 'inter_MLP.8.in_linear.weight', 'inter_MLP.8.in_linear.bias', 'inter_MLP.8.out_linear.weight', 'inter_MLP.8.out_linear.bias', 'inter_MLP.8.ln.weight', 'inter_MLP.8.ln.bias', 'head_output.weight', 'head_output.bias']
+	iteras: 5, epoch: 1 | loss:1.5903435 | label_loss: 1.5903435 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.2039s/iter; left time: 937.1343s
+	iteras: 10, epoch: 1 | loss:0.7450988 | label_loss: 0.7450988 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0335s/iter; left time: 153.9178s
+	iteras: 15, epoch: 1 | loss:1.0704606 | label_loss: 1.0704606 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0346s/iter; left time: 158.6184s
+	iteras: 20, epoch: 1 | loss:1.2225929 | label_loss: 1.2225929 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0341s/iter; left time: 156.0551s
+	iteras: 25, epoch: 1 | loss:1.0147375 | label_loss: 1.0147375 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0346s/iter; left time: 158.2817s
+	iteras: 30, epoch: 1 | loss:0.9205009 | label_loss: 0.9205009 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0341s/iter; left time: 155.9189s
+	iteras: 35, epoch: 1 | loss:1.2907331 | label_loss: 1.2907331 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0347s/iter; left time: 158.5236s
+	iteras: 40, epoch: 1 | loss:0.8552650 | label_loss: 0.8552650 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0326s/iter; left time: 148.6826s
+	iteras: 45, epoch: 1 | loss:0.9860655 | label_loss: 0.9860655 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0286s/iter; left time: 130.1631s
+Epoch: 1 cost time: 2.146167755126953
+0it [00:00, ?it/s]1it [00:00,  3.95it/s]5it [00:00, 16.36it/s]9it [00:00, 23.78it/s]14it [00:00, 31.76it/s]16it [00:00, 25.59it/s]
+0it [00:00, ?it/s]1it [00:00,  4.18it/s]5it [00:00, 17.12it/s]8it [00:00, 20.90it/s]13it [00:00, 29.36it/s]16it [00:00, 25.14it/s]
+Epoch: 1 | Train Loss: 1.05484| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 400.6640099 | Train MAPE: 1.3489510 | Vali RMSE: 407.5729798| Vali MAE: 329.2365787| Vali MAPE: 1.2190704| Test RMSE: 391.2515491| Test MAE: 304.4690119 | Test MAPE: 1.3039263
+[2026-09-13 05:16:40,242] [INFO] [real_accelerator.py:203:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Warning: The default cache directory for DeepSpeed Triton autotune, /usr4/dl523/dgordon/.triton/autotune, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path.
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2021/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_Znion_s2021!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 2 | loss:1.2578626 | label_loss: 1.2578626 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.7048s/iter; left time: 3206.9165s
+	iteras: 10, epoch: 2 | loss:0.7640578 | label_loss: 0.7640578 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0334s/iter; left time: 151.6795s
+	iteras: 15, epoch: 2 | loss:0.8723459 | label_loss: 0.8723459 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0346s/iter; left time: 157.0984s
+	iteras: 20, epoch: 2 | loss:0.8636879 | label_loss: 0.8636879 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0344s/iter; left time: 156.0822s
+	iteras: 25, epoch: 2 | loss:1.0454499 | label_loss: 1.0454499 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0345s/iter; left time: 156.2184s
+	iteras: 30, epoch: 2 | loss:0.9133223 | label_loss: 0.9133223 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0343s/iter; left time: 155.3218s
+	iteras: 35, epoch: 2 | loss:0.9602119 | label_loss: 0.9602119 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0347s/iter; left time: 156.9096s
+	iteras: 40, epoch: 2 | loss:1.0566107 | label_loss: 1.0566107 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0340s/iter; left time: 153.5643s
+	iteras: 45, epoch: 2 | loss:1.0914319 | label_loss: 1.0914319 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0280s/iter; left time: 126.5053s
+Epoch: 2 cost time: 1.8097896575927734
+0it [00:00, ?it/s]1it [00:00,  4.18it/s]5it [00:00, 17.03it/s]9it [00:00, 24.64it/s]15it [00:00, 34.27it/s]16it [00:00, 26.50it/s]
+0it [00:00, ?it/s]1it [00:00,  3.98it/s]4it [00:00, 13.34it/s]8it [00:00, 20.62it/s]13it [00:00, 28.71it/s]16it [00:00, 23.76it/s]
+Epoch: 2 | Train Loss: 1.01001| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 392.0580089 | Train MAPE: 1.3252624 | Vali RMSE: 407.5034705| Vali MAE: 335.9975095| Vali MAPE: 1.2821825| Test RMSE: 394.0029554| Test MAE: 313.7071119 | Test MAPE: 1.3764331
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 3 | loss:1.1072888 | label_loss: 1.1072888 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3545s/iter; left time: 1596.8710s
+	iteras: 10, epoch: 3 | loss:1.3555532 | label_loss: 1.3555532 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0332s/iter; left time: 149.2315s
+	iteras: 15, epoch: 3 | loss:1.0749582 | label_loss: 1.0749582 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0351s/iter; left time: 157.5921s
+	iteras: 20, epoch: 3 | loss:1.0023863 | label_loss: 1.0023863 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0346s/iter; left time: 155.3210s
+	iteras: 25, epoch: 3 | loss:0.6860712 | label_loss: 0.6860712 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0352s/iter; left time: 158.0167s
+	iteras: 30, epoch: 3 | loss:0.9870679 | label_loss: 0.9870679 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0352s/iter; left time: 157.6703s
+	iteras: 35, epoch: 3 | loss:0.9199054 | label_loss: 0.9199054 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0340s/iter; left time: 152.3051s
+	iteras: 40, epoch: 3 | loss:0.9452685 | label_loss: 0.9452685 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0341s/iter; left time: 152.3356s
+	iteras: 45, epoch: 3 | loss:1.0624285 | label_loss: 1.0624285 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0278s/iter; left time: 124.1283s
+Epoch: 3 cost time: 1.815417766571045
+0it [00:00, ?it/s]1it [00:00,  4.15it/s]5it [00:00, 16.99it/s]9it [00:00, 24.52it/s]14it [00:00, 32.69it/s]16it [00:00, 26.38it/s]
+0it [00:00, ?it/s]1it [00:00,  4.16it/s]5it [00:00, 17.05it/s]9it [00:00, 24.15it/s]14it [00:00, 30.89it/s]16it [00:00, 25.46it/s]
+Epoch: 3 | Train Loss: 1.00546| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 391.1741443 | Train MAPE: 1.3378205 | Vali RMSE: 407.4470766| Vali MAE: 332.1301781| Vali MAPE: 1.2474922| Test RMSE: 392.4177606| Test MAE: 308.6997956 | Test MAPE: 1.3371369
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 4 | loss:1.0408640 | label_loss: 1.0408640 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3446s/iter; left time: 1536.0840s
+	iteras: 10, epoch: 4 | loss:1.2829183 | label_loss: 1.2829183 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0357s/iter; left time: 158.9655s
+	iteras: 15, epoch: 4 | loss:0.9358124 | label_loss: 0.9358124 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0392s/iter; left time: 174.2011s
+	iteras: 20, epoch: 4 | loss:1.2176344 | label_loss: 1.2176344 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0408s/iter; left time: 181.2094s
+	iteras: 25, epoch: 4 | loss:1.1973726 | label_loss: 1.1973726 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0389s/iter; left time: 172.5630s
+	iteras: 30, epoch: 4 | loss:0.8374291 | label_loss: 0.8374291 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0382s/iter; left time: 169.2336s
+	iteras: 35, epoch: 4 | loss:1.1416404 | label_loss: 1.1416404 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0343s/iter; left time: 151.7024s
+	iteras: 40, epoch: 4 | loss:0.9310282 | label_loss: 0.9310282 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0333s/iter; left time: 147.3187s
+	iteras: 45, epoch: 4 | loss:1.3921621 | label_loss: 1.3921621 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0283s/iter; left time: 125.1699s
+Epoch: 4 cost time: 1.9035446643829346
+0it [00:00, ?it/s]1it [00:00,  3.96it/s]4it [00:00, 13.15it/s]8it [00:00, 21.34it/s]13it [00:00, 29.92it/s]16it [00:00, 24.74it/s]
+0it [00:00, ?it/s]1it [00:00,  4.28it/s]5it [00:00, 17.46it/s]9it [00:00, 24.93it/s]13it [00:00, 29.69it/s]16it [00:00, 25.45it/s]
+Epoch: 4 | Train Loss: 1.00929| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 391.9183544 | Train MAPE: 1.3216858 | Vali RMSE: 408.0068637| Vali MAE: 324.4595286| Vali MAPE: 1.1712358| Test RMSE: 389.4997433| Test MAE: 297.3020324 | Test MAPE: 1.2476757
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2021/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_Znion_s2021!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 5 | loss:1.0089679 | label_loss: 1.0089679 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3590s/iter; left time: 1583.7215s
+	iteras: 10, epoch: 5 | loss:0.8874767 | label_loss: 0.8874767 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0335s/iter; left time: 147.4397s
+	iteras: 15, epoch: 5 | loss:0.9103521 | label_loss: 0.9103521 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0349s/iter; left time: 153.5725s
+	iteras: 20, epoch: 5 | loss:1.1065390 | label_loss: 1.1065390 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0343s/iter; left time: 150.6573s
+	iteras: 25, epoch: 5 | loss:0.9489514 | label_loss: 0.9489514 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0351s/iter; left time: 154.1809s
+	iteras: 30, epoch: 5 | loss:0.8880452 | label_loss: 0.8880452 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0359s/iter; left time: 157.6827s
+	iteras: 35, epoch: 5 | loss:1.0031648 | label_loss: 1.0031648 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0352s/iter; left time: 154.3077s
+	iteras: 40, epoch: 5 | loss:0.9207636 | label_loss: 0.9207636 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0328s/iter; left time: 143.6090s
+	iteras: 45, epoch: 5 | loss:1.1001397 | label_loss: 1.1001397 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0287s/iter; left time: 125.5597s
+Epoch: 5 cost time: 1.8192501068115234
+0it [00:00, ?it/s]1it [00:00,  4.10it/s]5it [00:00, 16.88it/s]9it [00:00, 23.03it/s]14it [00:00, 30.03it/s]16it [00:00, 24.84it/s]
+0it [00:00, ?it/s]1it [00:00,  4.01it/s]5it [00:00, 16.68it/s]9it [00:00, 24.25it/s]14it [00:00, 32.45it/s]16it [00:00, 25.97it/s]
+Epoch: 5 | Train Loss: 1.00592| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 391.2622048 | Train MAPE: 1.3285648 | Vali RMSE: 407.5017787| Vali MAE: 336.5520551| Vali MAPE: 1.2875205| Test RMSE: 394.2398433| Test MAE: 314.4967882 | Test MAPE: 1.3826284
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 6 | loss:1.1347139 | label_loss: 1.1347139 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3561s/iter; left time: 1554.7686s
+	iteras: 10, epoch: 6 | loss:1.2551725 | label_loss: 1.2551725 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0378s/iter; left time: 164.8935s
+	iteras: 15, epoch: 6 | loss:1.0945599 | label_loss: 1.0945599 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0403s/iter; left time: 175.4992s
+	iteras: 20, epoch: 6 | loss:0.9293754 | label_loss: 0.9293754 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0402s/iter; left time: 174.8693s
+	iteras: 25, epoch: 6 | loss:1.0927423 | label_loss: 1.0927423 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0383s/iter; left time: 166.4944s
+	iteras: 30, epoch: 6 | loss:0.8409661 | label_loss: 0.8409661 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0388s/iter; left time: 168.2482s
+	iteras: 35, epoch: 6 | loss:0.7219073 | label_loss: 0.7219073 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0395s/iter; left time: 171.2348s
+	iteras: 40, epoch: 6 | loss:1.0704596 | label_loss: 1.0704596 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0360s/iter; left time: 155.9398s
+	iteras: 45, epoch: 6 | loss:0.8685336 | label_loss: 0.8685336 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0317s/iter; left time: 136.9755s
+Epoch: 6 cost time: 2.004801034927368
+0it [00:00, ?it/s]1it [00:00,  3.99it/s]5it [00:00, 16.86it/s]10it [00:00, 26.26it/s]16it [00:00, 33.60it/s]16it [00:00, 26.23it/s]
+0it [00:00, ?it/s]1it [00:00,  4.12it/s]5it [00:00, 16.85it/s]9it [00:00, 24.22it/s]13it [00:00, 29.12it/s]16it [00:00, 25.26it/s]
+Epoch: 6 | Train Loss: 1.00250| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 390.5972500 | Train MAPE: 1.3299186 | Vali RMSE: 407.4064909| Vali MAE: 332.9675177| Vali MAPE: 1.2562614| Test RMSE: 392.7903020| Test MAE: 310.0251911 | Test MAPE: 1.3475721
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 7 | loss:1.0343376 | label_loss: 1.0343376 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3487s/iter; left time: 1506.4485s
+	iteras: 10, epoch: 7 | loss:0.6553786 | label_loss: 0.6553786 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0333s/iter; left time: 143.9046s
+	iteras: 15, epoch: 7 | loss:0.9475274 | label_loss: 0.9475274 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0382s/iter; left time: 164.6414s
+	iteras: 20, epoch: 7 | loss:0.9255149 | label_loss: 0.9255149 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0388s/iter; left time: 167.2212s
+	iteras: 25, epoch: 7 | loss:0.9781832 | label_loss: 0.9781832 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0379s/iter; left time: 163.1632s
+	iteras: 30, epoch: 7 | loss:1.0461705 | label_loss: 1.0461705 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0381s/iter; left time: 163.6244s
+	iteras: 35, epoch: 7 | loss:1.0126435 | label_loss: 1.0126435 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0380s/iter; left time: 163.1872s
+	iteras: 40, epoch: 7 | loss:1.0187118 | label_loss: 1.0187118 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0368s/iter; left time: 157.7749s
+	iteras: 45, epoch: 7 | loss:0.9215645 | label_loss: 0.9215645 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0303s/iter; left time: 129.8295s
+Epoch: 7 cost time: 1.9296002388000488
+0it [00:00, ?it/s]1it [00:00,  4.02it/s]5it [00:00, 16.50it/s]9it [00:00, 24.14it/s]14it [00:00, 32.16it/s]16it [00:00, 25.88it/s]
+0it [00:00, ?it/s]1it [00:00,  4.15it/s]5it [00:00, 17.04it/s]9it [00:00, 24.77it/s]14it [00:00, 32.72it/s]16it [00:00, 26.42it/s]
+Epoch: 7 | Train Loss: 1.00288| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 390.6714698 | Train MAPE: 1.3316802 | Vali RMSE: 408.6654333| Vali MAE: 320.1371200| Vali MAPE: 1.1282056| Test RMSE: 388.2331446| Test MAE: 290.8479152 | Test MAPE: 1.1971112
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2021/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_Znion_s2021!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 8 | loss:0.8519293 | label_loss: 0.8519293 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3519s/iter; left time: 1504.0742s
+	iteras: 10, epoch: 8 | loss:0.7496755 | label_loss: 0.7496755 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0372s/iter; left time: 159.0151s
+	iteras: 15, epoch: 8 | loss:0.7878447 | label_loss: 0.7878447 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0393s/iter; left time: 167.5279s
+	iteras: 20, epoch: 8 | loss:0.8471109 | label_loss: 0.8471109 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0383s/iter; left time: 163.1615s
+	iteras: 25, epoch: 8 | loss:0.9530177 | label_loss: 0.9530177 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0395s/iter; left time: 167.8226s
+	iteras: 30, epoch: 8 | loss:0.9832891 | label_loss: 0.9832891 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0383s/iter; left time: 162.8696s
+	iteras: 35, epoch: 8 | loss:1.0197328 | label_loss: 1.0197328 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0384s/iter; left time: 163.0331s
+	iteras: 40, epoch: 8 | loss:1.2556925 | label_loss: 1.2556925 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0374s/iter; left time: 158.6375s
+	iteras: 45, epoch: 8 | loss:0.7449158 | label_loss: 0.7449158 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0305s/iter; left time: 129.2145s
+Epoch: 8 cost time: 1.9823131561279297
+0it [00:00, ?it/s]1it [00:00,  4.10it/s]6it [00:00, 19.59it/s]11it [00:00, 28.05it/s]16it [00:00, 34.09it/s]16it [00:00, 26.99it/s]
+0it [00:00, ?it/s]1it [00:00,  4.09it/s]5it [00:00, 16.86it/s]9it [00:00, 24.37it/s]14it [00:00, 32.39it/s]16it [00:00, 26.15it/s]
+Epoch: 8 | Train Loss: 1.00670| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 391.4135879 | Train MAPE: 1.3258714 | Vali RMSE: 407.5394203| Vali MAE: 338.5760676| Vali MAPE: 1.3047255| Test RMSE: 395.0434826| Test MAE: 316.9065603 | Test MAPE: 1.4016474
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 9 | loss:1.1262461 | label_loss: 1.1262461 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3402s/iter; left time: 1438.2374s
+	iteras: 10, epoch: 9 | loss:1.3626835 | label_loss: 1.3626835 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0331s/iter; left time: 139.8876s
+	iteras: 15, epoch: 9 | loss:1.2110953 | label_loss: 1.2110953 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0342s/iter; left time: 144.3320s
+	iteras: 20, epoch: 9 | loss:0.9922143 | label_loss: 0.9922143 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0342s/iter; left time: 144.2335s
+	iteras: 25, epoch: 9 | loss:1.3372582 | label_loss: 1.3372582 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0346s/iter; left time: 145.4673s
+	iteras: 30, epoch: 9 | loss:0.9307012 | label_loss: 0.9307012 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0344s/iter; left time: 144.4495s
+	iteras: 35, epoch: 9 | loss:0.8632303 | label_loss: 0.8632303 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0346s/iter; left time: 145.1970s
+	iteras: 40, epoch: 9 | loss:0.8277925 | label_loss: 0.8277925 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0334s/iter; left time: 139.8819s
+	iteras: 45, epoch: 9 | loss:1.0010619 | label_loss: 1.0010619 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0282s/iter; left time: 117.9143s
+Epoch: 9 cost time: 1.7980895042419434
+0it [00:00, ?it/s]1it [00:00,  3.85it/s]5it [00:00, 14.89it/s]9it [00:00, 20.88it/s]14it [00:00, 28.33it/s]16it [00:00, 22.96it/s]
+0it [00:00, ?it/s]1it [00:00,  3.94it/s]5it [00:00, 16.81it/s]10it [00:00, 25.93it/s]15it [00:00, 33.24it/s]16it [00:00, 25.64it/s]
+Epoch: 9 | Train Loss: 1.00433| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 390.9534772 | Train MAPE: 1.3244056 | Vali RMSE: 407.4760760| Vali MAE: 328.2414468| Vali MAPE: 1.2099476| Test RMSE: 390.8194349| Test MAE: 303.0803889 | Test MAPE: 1.2933088
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 10 | loss:1.1301157 | label_loss: 1.1301157 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3691s/iter; left time: 1543.5782s
+	iteras: 10, epoch: 10 | loss:0.9398234 | label_loss: 0.9398234 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0385s/iter; left time: 160.8259s
+	iteras: 15, epoch: 10 | loss:0.9686793 | label_loss: 0.9686793 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0381s/iter; left time: 158.9801s
+	iteras: 20, epoch: 10 | loss:1.3673508 | label_loss: 1.3673508 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0399s/iter; left time: 166.1285s
+	iteras: 25, epoch: 10 | loss:0.9998657 | label_loss: 0.9998657 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0398s/iter; left time: 165.7440s
+	iteras: 30, epoch: 10 | loss:0.8650826 | label_loss: 0.8650826 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0395s/iter; left time: 164.4001s
+	iteras: 35, epoch: 10 | loss:1.1014539 | label_loss: 1.1014539 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0389s/iter; left time: 161.7189s
+	iteras: 40, epoch: 10 | loss:1.0297529 | label_loss: 1.0297529 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0384s/iter; left time: 159.3434s
+	iteras: 45, epoch: 10 | loss:0.8395230 | label_loss: 0.8395230 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0312s/iter; left time: 129.4306s
+Epoch: 10 cost time: 2.020564556121826
+0it [00:00, ?it/s]1it [00:00,  3.90it/s]6it [00:00, 18.96it/s]11it [00:00, 27.58it/s]16it [00:00, 33.25it/s]16it [00:00, 26.23it/s]
+0it [00:00, ?it/s]1it [00:00,  3.90it/s]5it [00:00, 16.35it/s]9it [00:00, 22.84it/s]14it [00:00, 30.79it/s]16it [00:00, 24.64it/s]
+Epoch: 10 | Train Loss: 1.00319| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 390.7307457 | Train MAPE: 1.3280369 | Vali RMSE: 407.1567625| Vali MAE: 339.5332817| Vali MAPE: 1.3131147| Test RMSE: 395.2876843| Test MAE: 317.8372673 | Test MAPE: 1.4101743
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 11 | loss:0.9250709 | label_loss: 0.9250709 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3562s/iter; left time: 1473.1508s
+	iteras: 10, epoch: 11 | loss:0.9112830 | label_loss: 0.9112830 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0383s/iter; left time: 158.3388s
+	iteras: 15, epoch: 11 | loss:1.0047690 | label_loss: 1.0047690 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0393s/iter; left time: 162.0942s
+	iteras: 20, epoch: 11 | loss:0.9648330 | label_loss: 0.9648330 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0391s/iter; left time: 161.0736s
+	iteras: 25, epoch: 11 | loss:1.0334797 | label_loss: 1.0334797 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0339s/iter; left time: 139.6122s
+	iteras: 30, epoch: 11 | loss:1.1505723 | label_loss: 1.1505723 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0334s/iter; left time: 137.4554s
+	iteras: 35, epoch: 11 | loss:0.9936649 | label_loss: 0.9936649 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0401s/iter; left time: 164.4738s
+	iteras: 40, epoch: 11 | loss:1.0895822 | label_loss: 1.0895822 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0370s/iter; left time: 151.6691s
+	iteras: 45, epoch: 11 | loss:0.8431140 | label_loss: 0.8431140 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0327s/iter; left time: 133.7816s
+Epoch: 11 cost time: 1.9672670364379883
+0it [00:00, ?it/s]1it [00:00,  3.91it/s]6it [00:00, 19.04it/s]10it [00:00, 24.26it/s]15it [00:00, 30.80it/s]16it [00:00, 24.50it/s]
+0it [00:00, ?it/s]1it [00:00,  4.03it/s]5it [00:00, 16.91it/s]9it [00:00, 24.66it/s]14it [00:00, 31.20it/s]16it [00:00, 25.29it/s]
+Epoch: 11 | Train Loss: 0.99617| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 389.3629875 | Train MAPE: 1.3252390 | Vali RMSE: 405.2286219| Vali MAE: 331.2295906| Vali MAPE: 1.2466025| Test RMSE: 391.8168716| Test MAE: 307.5001584 | Test MAPE: 1.3339180
+EarlyStopping counter: 4 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 12 | loss:0.7767113 | label_loss: 0.7767113 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3576s/iter; left time: 1462.4154s
+	iteras: 10, epoch: 12 | loss:0.7974790 | label_loss: 0.7974790 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0352s/iter; left time: 143.5985s
+	iteras: 15, epoch: 12 | loss:0.9355796 | label_loss: 0.9355796 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0351s/iter; left time: 143.3007s
+	iteras: 20, epoch: 12 | loss:1.4125085 | label_loss: 1.4125085 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0337s/iter; left time: 137.1262s
+	iteras: 25, epoch: 12 | loss:1.1969147 | label_loss: 1.1969147 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0332s/iter; left time: 135.1722s
+	iteras: 30, epoch: 12 | loss:0.9258422 | label_loss: 0.9258422 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0361s/iter; left time: 146.8617s
+	iteras: 35, epoch: 12 | loss:0.6874599 | label_loss: 0.6874599 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0405s/iter; left time: 164.3507s
+	iteras: 40, epoch: 12 | loss:0.9544333 | label_loss: 0.9544333 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0376s/iter; left time: 152.2731s
+	iteras: 45, epoch: 12 | loss:0.7549868 | label_loss: 0.7549868 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0315s/iter; left time: 127.3769s
+Epoch: 12 cost time: 1.886143445968628
+0it [00:00, ?it/s]1it [00:00,  3.98it/s]6it [00:00, 19.32it/s]10it [00:00, 24.42it/s]15it [00:00, 31.44it/s]16it [00:00, 24.99it/s]
+0it [00:00, ?it/s]1it [00:00,  4.00it/s]5it [00:00, 16.23it/s]9it [00:00, 23.62it/s]14it [00:00, 30.96it/s]16it [00:00, 24.87it/s]
+Epoch: 12 | Train Loss: 0.98272| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 386.7247509 | Train MAPE: 1.2664359 | Vali RMSE: 413.1998918| Vali MAE: 279.6457209| Vali MAPE: 0.8284076| Test RMSE: 393.5123542| Test MAE: 246.9206245 | Test MAPE: 0.8738795
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2021/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_Znion_s2021!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 13 | loss:0.9512880 | label_loss: 0.9512880 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3703s/iter; left time: 1497.3569s
+	iteras: 10, epoch: 13 | loss:0.9283855 | label_loss: 0.9283855 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0382s/iter; left time: 154.1247s
+	iteras: 15, epoch: 13 | loss:0.9305851 | label_loss: 0.9305851 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0380s/iter; left time: 153.3132s
+	iteras: 20, epoch: 13 | loss:0.9646495 | label_loss: 0.9646495 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0388s/iter; left time: 156.3417s
+	iteras: 25, epoch: 13 | loss:0.9687949 | label_loss: 0.9687949 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0392s/iter; left time: 157.6520s
+	iteras: 30, epoch: 13 | loss:0.8255602 | label_loss: 0.8255602 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0394s/iter; left time: 158.4111s
+	iteras: 35, epoch: 13 | loss:0.7272146 | label_loss: 0.7272146 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0386s/iter; left time: 155.0993s
+	iteras: 40, epoch: 13 | loss:1.0134780 | label_loss: 1.0134780 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0375s/iter; left time: 150.4732s
+	iteras: 45, epoch: 13 | loss:1.0386193 | label_loss: 1.0386193 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0312s/iter; left time: 124.8063s
+Epoch: 13 cost time: 2.0201730728149414
+0it [00:00, ?it/s]1it [00:00,  4.06it/s]5it [00:00, 17.05it/s]10it [00:00, 26.28it/s]15it [00:00, 32.28it/s]16it [00:00, 25.48it/s]
+0it [00:00, ?it/s]1it [00:00,  3.92it/s]6it [00:00, 19.32it/s]10it [00:00, 25.70it/s]15it [00:00, 32.07it/s]16it [00:00, 25.36it/s]
+Epoch: 13 | Train Loss: 0.96437| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 383.0976151 | Train MAPE: 1.2010111 | Vali RMSE: 412.8437619| Vali MAE: 364.0613344| Vali MAPE: 1.5038712| Test RMSE: 410.7665371| Test MAE: 350.0526587 | Test MAPE: 1.6365678
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 14 | loss:1.3820256 | label_loss: 1.3820256 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3516s/iter; left time: 1405.8658s
+	iteras: 10, epoch: 14 | loss:1.0395271 | label_loss: 1.0395271 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0372s/iter; left time: 148.4580s
+	iteras: 15, epoch: 14 | loss:0.8173709 | label_loss: 0.8173709 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0376s/iter; left time: 149.9560s
+	iteras: 20, epoch: 14 | loss:0.6832493 | label_loss: 0.6832493 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0389s/iter; left time: 154.8072s
+	iteras: 25, epoch: 14 | loss:0.7447166 | label_loss: 0.7447166 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0392s/iter; left time: 155.7438s
+	iteras: 30, epoch: 14 | loss:0.7921422 | label_loss: 0.7921422 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0401s/iter; left time: 159.4889s
+	iteras: 35, epoch: 14 | loss:0.5653580 | label_loss: 0.5653580 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0386s/iter; left time: 153.0141s
+	iteras: 40, epoch: 14 | loss:0.5087253 | label_loss: 0.5087253 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0382s/iter; left time: 151.2862s
+	iteras: 45, epoch: 14 | loss:0.5793132 | label_loss: 0.5793132 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0311s/iter; left time: 123.0656s
+Epoch: 14 cost time: 1.9755923748016357
+0it [00:00, ?it/s]1it [00:00,  3.94it/s]6it [00:00, 19.53it/s]11it [00:00, 28.42it/s]16it [00:00, 33.97it/s]16it [00:00, 26.84it/s]
+0it [00:00, ?it/s]1it [00:00,  4.08it/s]5it [00:00, 17.05it/s]9it [00:00, 24.74it/s]14it [00:00, 32.73it/s]16it [00:00, 26.24it/s]
+Epoch: 14 | Train Loss: 0.77866| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 344.2392238 | Train MAPE: 1.0825048 | Vali RMSE: 410.5962511| Vali MAE: 272.7588864| Vali MAPE: 0.7867098| Test RMSE: 416.7264480| Test MAE: 258.2833790 | Test MAPE: 0.8873000
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2021/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_Znion_s2021!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 15 | loss:0.6920012 | label_loss: 0.6920012 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3455s/iter; left time: 1365.3892s
+	iteras: 10, epoch: 15 | loss:0.4630829 | label_loss: 0.4630829 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0367s/iter; left time: 144.9396s
+	iteras: 15, epoch: 15 | loss:0.4911339 | label_loss: 0.4911339 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0386s/iter; left time: 152.3242s
+	iteras: 20, epoch: 15 | loss:0.9997729 | label_loss: 0.9997729 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0404s/iter; left time: 159.1056s
+	iteras: 25, epoch: 15 | loss:0.7612880 | label_loss: 0.7612880 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0387s/iter; left time: 152.0846s
+	iteras: 30, epoch: 15 | loss:0.6567249 | label_loss: 0.6567249 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0391s/iter; left time: 153.6035s
+	iteras: 35, epoch: 15 | loss:0.6884819 | label_loss: 0.6884819 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0391s/iter; left time: 153.5233s
+	iteras: 40, epoch: 15 | loss:0.7232515 | label_loss: 0.7232515 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0370s/iter; left time: 145.0024s
+	iteras: 45, epoch: 15 | loss:0.5486619 | label_loss: 0.5486619 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0314s/iter; left time: 122.9021s
+Epoch: 15 cost time: 1.9756436347961426
+0it [00:00, ?it/s]1it [00:00,  3.91it/s]6it [00:00, 19.48it/s]11it [00:00, 28.43it/s]16it [00:00, 34.08it/s]16it [00:00, 26.85it/s]
+0it [00:00, ?it/s]1it [00:00,  4.04it/s]5it [00:00, 16.49it/s]9it [00:00, 23.80it/s]14it [00:00, 31.56it/s]16it [00:00, 25.49it/s]
+Epoch: 15 | Train Loss: 0.72450| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 332.0529317 | Train MAPE: 0.9947149 | Vali RMSE: 419.0811355| Vali MAE: 281.6930822| Vali MAPE: 0.8066015| Test RMSE: 407.3117665| Test MAE: 252.1954333 | Test MAPE: 0.8936075
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 16 | loss:0.6149237 | label_loss: 0.6149237 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3517s/iter; left time: 1373.9196s
+	iteras: 10, epoch: 16 | loss:0.5921935 | label_loss: 0.5921935 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0361s/iter; left time: 140.7722s
+	iteras: 15, epoch: 16 | loss:0.4275920 | label_loss: 0.4275920 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0377s/iter; left time: 146.8500s
+	iteras: 20, epoch: 16 | loss:0.6194694 | label_loss: 0.6194694 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0370s/iter; left time: 144.1146s
+	iteras: 25, epoch: 16 | loss:0.5841581 | label_loss: 0.5841581 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0357s/iter; left time: 138.5930s
+	iteras: 30, epoch: 16 | loss:1.2314198 | label_loss: 1.2314198 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0371s/iter; left time: 143.8477s
+	iteras: 35, epoch: 16 | loss:0.9080578 | label_loss: 0.9080578 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0383s/iter; left time: 148.6313s
+	iteras: 40, epoch: 16 | loss:0.9287156 | label_loss: 0.9287156 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0360s/iter; left time: 139.1907s
+	iteras: 45, epoch: 16 | loss:1.0424769 | label_loss: 1.0424769 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0304s/iter; left time: 117.5789s
+Epoch: 16 cost time: 1.9547953605651855
+0it [00:00, ?it/s]1it [00:00,  3.93it/s]6it [00:00, 19.20it/s]11it [00:00, 28.07it/s]16it [00:00, 33.78it/s]16it [00:00, 26.63it/s]
+0it [00:00, ?it/s]1it [00:00,  4.01it/s]5it [00:00, 16.47it/s]9it [00:00, 23.61it/s]14it [00:00, 31.45it/s]16it [00:00, 25.39it/s]
+Epoch: 16 | Train Loss: 0.71056| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 328.8410863 | Train MAPE: 0.9474263 | Vali RMSE: 412.1069223| Vali MAE: 347.5611829| Vali MAPE: 1.3343696| Test RMSE: 406.3244667| Test MAE: 323.4513932 | Test MAPE: 1.4399754
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 17 | loss:0.9016957 | label_loss: 0.9016957 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3517s/iter; left time: 1357.4139s
+	iteras: 10, epoch: 17 | loss:0.6794225 | label_loss: 0.6794225 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0382s/iter; left time: 147.3082s
+	iteras: 15, epoch: 17 | loss:0.6143765 | label_loss: 0.6143765 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0398s/iter; left time: 153.0526s
+	iteras: 20, epoch: 17 | loss:0.5378233 | label_loss: 0.5378233 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0396s/iter; left time: 152.2671s
+	iteras: 25, epoch: 17 | loss:0.6240734 | label_loss: 0.6240734 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0395s/iter; left time: 151.8391s
+	iteras: 30, epoch: 17 | loss:0.6888451 | label_loss: 0.6888451 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0403s/iter; left time: 154.4089s
+	iteras: 35, epoch: 17 | loss:0.4209420 | label_loss: 0.4209420 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0397s/iter; left time: 151.8771s
+	iteras: 40, epoch: 17 | loss:0.4528218 | label_loss: 0.4528218 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0373s/iter; left time: 142.8081s
+	iteras: 45, epoch: 17 | loss:0.4221407 | label_loss: 0.4221407 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0332s/iter; left time: 126.9485s
+Epoch: 17 cost time: 2.0302276611328125
+0it [00:00, ?it/s]1it [00:00,  3.94it/s]6it [00:00, 19.36it/s]10it [00:00, 24.41it/s]15it [00:00, 30.72it/s]16it [00:00, 24.60it/s]
+0it [00:00, ?it/s]1it [00:00,  4.13it/s]6it [00:00, 19.08it/s]10it [00:00, 24.79it/s]15it [00:00, 31.61it/s]16it [00:00, 25.16it/s]
+Epoch: 17 | Train Loss: 0.63869| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 311.7690518 | Train MAPE: 0.9169774 | Vali RMSE: 378.0415204| Vali MAE: 256.9905326| Vali MAPE: 0.8075388| Test RMSE: 379.4582721| Test MAE: 253.2831855 | Test MAPE: 0.9790894
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 18 | loss:0.3803172 | label_loss: 0.3803172 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3618s/iter; left time: 1379.8657s
+	iteras: 10, epoch: 18 | loss:0.5748388 | label_loss: 0.5748388 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0384s/iter; left time: 146.1150s
+	iteras: 15, epoch: 18 | loss:0.4809520 | label_loss: 0.4809520 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0387s/iter; left time: 147.0467s
+	iteras: 20, epoch: 18 | loss:0.4603827 | label_loss: 0.4603827 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0387s/iter; left time: 146.8981s
+	iteras: 25, epoch: 18 | loss:0.5619274 | label_loss: 0.5619274 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0394s/iter; left time: 149.4789s
+	iteras: 30, epoch: 18 | loss:0.4697855 | label_loss: 0.4697855 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0385s/iter; left time: 145.7409s
+	iteras: 35, epoch: 18 | loss:0.6064605 | label_loss: 0.6064605 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0380s/iter; left time: 143.8767s
+	iteras: 40, epoch: 18 | loss:0.4827551 | label_loss: 0.4827551 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0360s/iter; left time: 135.9015s
+	iteras: 45, epoch: 18 | loss:0.4459873 | label_loss: 0.4459873 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0321s/iter; left time: 121.1656s
+Epoch: 18 cost time: 1.9904298782348633
+0it [00:00, ?it/s]1it [00:00,  4.16it/s]6it [00:00, 20.01it/s]10it [00:00, 25.66it/s]15it [00:00, 31.96it/s]16it [00:00, 25.60it/s]
+0it [00:00, ?it/s]1it [00:00,  4.00it/s]6it [00:00, 19.37it/s]10it [00:00, 25.34it/s]15it [00:00, 31.86it/s]16it [00:00, 25.28it/s]
+Epoch: 18 | Train Loss: 0.48752| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 272.3843460 | Train MAPE: 0.7381831 | Vali RMSE: 390.4977812| Vali MAE: 266.6950312| Vali MAPE: 0.8210301| Test RMSE: 412.7200856| Test MAE: 268.6130245 | Test MAPE: 0.9904488
+EarlyStopping counter: 4 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 19 | loss:0.4169314 | label_loss: 0.4169314 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3523s/iter; left time: 1327.5738s
+	iteras: 10, epoch: 19 | loss:0.5879552 | label_loss: 0.5879552 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0380s/iter; left time: 143.0387s
+	iteras: 15, epoch: 19 | loss:0.4431642 | label_loss: 0.4431642 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0384s/iter; left time: 144.3423s
+	iteras: 20, epoch: 19 | loss:0.4123121 | label_loss: 0.4123121 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0389s/iter; left time: 145.9511s
+	iteras: 25, epoch: 19 | loss:0.3551142 | label_loss: 0.3551142 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0387s/iter; left time: 145.0003s
+	iteras: 30, epoch: 19 | loss:0.4528206 | label_loss: 0.4528206 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0382s/iter; left time: 142.9114s
+	iteras: 35, epoch: 19 | loss:0.2548151 | label_loss: 0.2548151 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0372s/iter; left time: 138.8881s
+	iteras: 40, epoch: 19 | loss:0.3919062 | label_loss: 0.3919062 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0367s/iter; left time: 137.1494s
+	iteras: 45, epoch: 19 | loss:0.4445434 | label_loss: 0.4445434 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0313s/iter; left time: 116.6616s
+Epoch: 19 cost time: 1.9574506282806396
+0it [00:00, ?it/s]1it [00:00,  3.98it/s]5it [00:00, 16.86it/s]10it [00:00, 27.39it/s]15it [00:00, 33.39it/s]16it [00:00, 25.97it/s]
+0it [00:00, ?it/s]1it [00:00,  3.97it/s]5it [00:00, 16.08it/s]9it [00:00, 23.39it/s]14it [00:00, 30.64it/s]16it [00:00, 24.78it/s]
+wandb: 
+wandb: Run history:
+wandb:      epoch ▁▁▂▂▂▃▃▄▄▄▅▅▅▆▆▇▇▇██
+wandb:  test_MAPE ▅▆▅▄▆▅▄▆▅▆▅▁█▁▁▆▂▂▂▁
+wandb:  test_RMSE ▃▄▃▃▄▄▃▄▃▄▃▄▇█▆▆▁▇▄█
+wandb:  test_acc1 ▂▂▂▂▂▂▁▂▂▂▂▄▁█▅▁▇▆▇█
+wandb:  test_acc2 ▂▃▃▁▃▃▁▃▂▃▃▄▂█▅▂▅▇▇█
+wandb: train_loss █▇▇▇▇▇▇▇▇▇▇▇▇▅▄▄▃▂▁▁
+wandb:  vali_MAPE ▅▆▅▅▆▆▄▆▅▆▅▁█▁▁▆▁▁▁▁
+wandb:  vali_RMSE ▆▆▆▆▆▆▆▆▆▆▆▇▇▇█▇▁▃▂▇
+wandb:  vali_acc1 ▂▂▂▂▂▂▂▂▂▂▂▄▁▆▄▁▇▇█▆
+wandb:  vali_acc2 ▃▃▃▃▃▃▃▃▃▃▃▄▁█▄▁████
+wandb: 
+wandb: Run summary:
+wandb:      epoch 19
+wandb:  test_MAPE 0.8873
+wandb:  test_RMSE 416.72645
+wandb:  test_acc1 25
+wandb:  test_acc2 16.75
+wandb: train_loss 0.44126
+wandb:  vali_MAPE 0.78671
+wandb:  vali_RMSE 410.59625
+wandb:  vali_acc1 15.25
+wandb:  vali_acc2 11.9
+wandb: 
+wandb: You can sync this run to the cloud by running:
+wandb: wandb sync /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_051635-tm20y1ao
+wandb: Find logs at: ./wandb/offline-run-20260913_051635-tm20y1ao/logs
+Epoch: 19 | Train Loss: 0.44126| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 259.1409434 | Train MAPE: 0.6965700 | Vali RMSE: 383.2356232| Vali MAE: 256.5234380| Vali MAPE: 0.8216866| Test RMSE: 397.6290468| Test MAE: 255.5671238 | Test MAPE: 0.9537926
+EarlyStopping counter: 5 out of 5
+Early stopping
+Best model performance: Test MAE: 258.2834 | Test RMSE: 416.7264 | Test MAPE: 0.8873 | Test 15%-accuracy: 25.0000 | Test 10%-accuracy: 16.7500 | Val MAE: 272.7589 | Val RMSE: 410.5963 | Val MAPE: 0.7867 | Val 15%-accuracy: 15.2500 | Val 10%-accuracy: 11.9000 
+Best model performance: Test Seen MAPE: 0.8113 | Test Unseen MAPE: 1.3182
+Best model performance: Test Seen 15%-accuracy: 25.5882 | Test Unseen 15%-accuracy: 21.6667
+Best model performance: Test Seen 10%-accuracy: 17.7647 | Test Unseen 10%-accuracy: 11.0000
+/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2021/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin_lossMSE_wd0.0_wlFalse_bs128_s2021-CPMLP_Znion_s2021
+=== CPMLP | dataset=ZN-coin42 seed=42 ===
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+{'task_name': 'classification', 'is_training': 1, 'model_id': 'CPMLP', 'model_comment': 'CPMLP_Znion_s42', 'model': 'CPMLP', 'seed': 42, 'charge_discharge_length': 300, 'dataset': 'ZN-coin42', 'data': 'Dataset_original', 'root_path': './dataset', 'data_path': 'ETTh1.csv', 'features': 'MS', 'target': 'OT', 'loader': 'modal', 'freq': 'h', 'checkpoints': '/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed42', 'early_cycle_threshold': 100, 'seq_len': 1, 'pred_len': 5, 'label_len': 50, 'seasonal_patterns': 'Monthly', 'enc_in': 3, 'dec_in': 1, 'c_out': 1, 'd_model': 64, 'n_heads': 8, 'lstm_layers': 2, 'e_layers': 5, 'd_layers': 9, 'd_ff': 64, 'moving_avg': 25, 'factor': 3, 'dropout': 0.1, 'embed': 'timeF', 'activation': 'relu', 'output_attention': False, 'patch_len': 10, 'stride': 10, 'patch_len2': 10, 'stride2': 10, 'prompt_domain': 0, 'output_num': 1, 'class_num': 8, 'prediction_mode': 'regression', 'geo_bin_tol': 0.15, 'geo_bin_min': 1.0, 'geo_bin_max': 3842.0, 'weighted_loss': False, 'weighted_sampling': False, 'num_workers': 4, 'itr': 1, 'train_epochs': 100, 'least_epochs': 5, 'batch_size': 128, 'patience': 5, 'learning_rate': 0.0005, 'wd': 0.0, 'des': 'Exp', 'loss': 'MSE', 'lradj': 'constant', 'pct_start': 0.2, 'use_amp': False, 'percent': 100, 'accumulation_steps': 1, 'mlp': 0, 'alpha1': 0.15, 'alpha2': 0.1}
+Loading training samples......
+  0%|          | 0/60 [00:00<?, ?it/s]  2%|▏         | 1/60 [00:00<00:33,  1.76it/s]  3%|▎         | 2/60 [00:01<00:32,  1.79it/s]  5%|▌         | 3/60 [00:01<00:30,  1.90it/s]  7%|▋         | 4/60 [00:02<00:29,  1.92it/s]  8%|▊         | 5/60 [00:02<00:28,  1.90it/s] 10%|█         | 6/60 [00:03<00:28,  1.90it/s] 12%|█▏        | 7/60 [00:03<00:27,  1.91it/s] 13%|█▎        | 8/60 [00:04<00:26,  1.93it/s] 15%|█▌        | 9/60 [00:04<00:25,  1.97it/s] 17%|█▋        | 10/60 [00:05<00:25,  1.96it/s] 18%|█▊        | 11/60 [00:05<00:24,  1.99it/s] 20%|██        | 12/60 [00:06<00:24,  2.00it/s] 22%|██▏       | 13/60 [00:06<00:26,  1.75it/s] 23%|██▎       | 14/60 [00:07<00:25,  1.84it/s] 25%|██▌       | 15/60 [00:07<00:24,  1.86it/s] 27%|██▋       | 16/60 [00:08<00:23,  1.89it/s] 28%|██▊       | 17/60 [00:08<00:22,  1.92it/s] 30%|███       | 18/60 [00:09<00:21,  1.91it/s] 32%|███▏      | 19/60 [00:09<00:21,  1.92it/s] 33%|███▎      | 20/60 [00:10<00:20,  1.93it/s] 35%|███▌      | 21/60 [00:10<00:20,  1.95it/s] 37%|███▋      | 22/60 [00:11<00:19,  1.94it/s] 38%|███▊      | 23/60 [00:12<00:18,  1.96it/s] 40%|████      | 24/60 [00:12<00:18,  1.98it/s] 42%|████▏     | 25/60 [00:13<00:17,  1.98it/s] 43%|████▎     | 26/60 [00:13<00:17,  1.94it/s] 45%|████▌     | 27/60 [00:14<00:16,  1.96it/s] 47%|████▋     | 28/60 [00:14<00:15,  2.03it/s] 48%|████▊     | 29/60 [00:14<00:14,  2.07it/s] 50%|█████     | 30/60 [00:15<00:14,  2.11it/s] 52%|█████▏    | 31/60 [00:16<00:15,  1.84it/s] 53%|█████▎    | 32/60 [00:16<00:14,  1.93it/s] 55%|█████▌    | 33/60 [00:17<00:13,  1.93it/s] 57%|█████▋    | 34/60 [00:17<00:14,  1.83it/s] 58%|█████▊    | 35/60 [00:18<00:14,  1.75it/s] 60%|██████    | 36/60 [00:19<00:14,  1.64it/s] 62%|██████▏   | 37/60 [00:19<00:13,  1.65it/s] 63%|██████▎   | 38/60 [00:20<00:15,  1.43it/s] 65%|██████▌   | 39/60 [00:21<00:15,  1.32it/s] 67%|██████▋   | 40/60 [00:22<00:16,  1.25it/s] 68%|██████▊   | 41/60 [00:23<00:15,  1.20it/s] 70%|███████   | 42/60 [00:24<00:14,  1.21it/s] 72%|███████▏  | 43/60 [00:24<00:14,  1.21it/s] 73%|███████▎  | 44/60 [00:26<00:14,  1.10it/s] 75%|███████▌  | 45/60 [00:26<00:13,  1.13it/s] 77%|███████▋  | 46/60 [00:27<00:11,  1.23it/s] 78%|███████▊  | 47/60 [00:28<00:10,  1.22it/s] 80%|████████  | 48/60 [00:29<00:09,  1.23it/s] 82%|████████▏ | 49/60 [00:29<00:09,  1.21it/s] 83%|████████▎ | 50/60 [00:30<00:08,  1.21it/s] 85%|████████▌ | 51/60 [00:31<00:07,  1.19it/s] 87%|████████▋ | 52/60 [00:32<00:06,  1.19it/s] 88%|████████▊ | 53/60 [00:33<00:05,  1.35it/s] 90%|█████████ | 54/60 [00:33<00:04,  1.40it/s] 92%|█████████▏| 55/60 [00:34<00:03,  1.44it/s] 93%|█████████▎| 56/60 [00:34<00:02,  1.54it/s] 95%|█████████▌| 57/60 [00:35<00:02,  1.40it/s] 97%|█████████▋| 58/60 [00:36<00:01,  1.44it/s] 98%|█████████▊| 59/60 [00:37<00:00,  1.46it/s]100%|██████████| 60/60 [00:37<00:00,  1.45it/s]100%|██████████| 60/60 [00:37<00:00,  1.59it/s]
+Loading vali samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:09,  1.93it/s] 10%|█         | 2/20 [00:01<00:10,  1.67it/s] 15%|█▌        | 3/20 [00:02<00:12,  1.35it/s] 20%|██        | 4/20 [00:02<00:10,  1.58it/s] 25%|██▌       | 5/20 [00:03<00:10,  1.42it/s] 30%|███       | 6/20 [00:03<00:08,  1.64it/s] 35%|███▌      | 7/20 [00:04<00:07,  1.72it/s] 40%|████      | 8/20 [00:04<00:06,  1.80it/s] 45%|████▌     | 9/20 [00:05<00:07,  1.53it/s] 50%|█████     | 10/20 [00:06<00:06,  1.58it/s] 55%|█████▌    | 11/20 [00:06<00:05,  1.57it/s] 60%|██████    | 12/20 [00:07<00:04,  1.70it/s] 65%|██████▌   | 13/20 [00:08<00:04,  1.61it/s] 70%|███████   | 14/20 [00:08<00:03,  1.61it/s] 75%|███████▌  | 15/20 [00:09<00:02,  1.72it/s] 80%|████████  | 16/20 [00:09<00:02,  1.81it/s] 85%|████████▌ | 17/20 [00:10<00:01,  1.75it/s] 90%|█████████ | 18/20 [00:10<00:01,  1.81it/s] 95%|█████████▌| 19/20 [00:11<00:00,  1.86it/s]100%|██████████| 20/20 [00:11<00:00,  1.75it/s]100%|██████████| 20/20 [00:11<00:00,  1.67it/s]
+Loading test samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:10,  1.79it/s] 10%|█         | 2/20 [00:01<00:09,  1.86it/s] 15%|█▌        | 3/20 [00:01<00:08,  1.98it/s] 20%|██        | 4/20 [00:02<00:08,  1.87it/s] 25%|██▌       | 5/20 [00:02<00:07,  1.92it/s] 30%|███       | 6/20 [00:03<00:07,  1.94it/s] 35%|███▌      | 7/20 [00:03<00:06,  1.96it/s] 40%|████      | 8/20 [00:04<00:06,  1.99it/s] 45%|████▌     | 9/20 [00:04<00:05,  2.02it/s] 50%|█████     | 10/20 [00:05<00:06,  1.47it/s] 55%|█████▌    | 11/20 [00:06<00:06,  1.35it/s] 60%|██████    | 12/20 [00:07<00:05,  1.50it/s] 65%|██████▌   | 13/20 [00:07<00:05,  1.40it/s] 70%|███████   | 14/20 [00:08<00:03,  1.56it/s] 75%|███████▌  | 15/20 [00:08<00:02,  1.70it/s] 80%|████████  | 16/20 [00:09<00:02,  1.79it/s] 85%|████████▌ | 17/20 [00:09<00:01,  1.87it/s] 90%|█████████ | 18/20 [00:10<00:01,  1.56it/s] 95%|█████████▌| 19/20 [00:11<00:00,  1.43it/s]100%|██████████| 20/20 [00:12<00:00,  1.32it/s]100%|██████████| 20/20 [00:12<00:00,  1.61it/s]
+wandb: Tracking run with wandb version 0.30.0
+wandb: W&B syncing is set to `offline` in this directory. Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
+wandb: Run data is saved locally in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_051901-bgy9wp25
+wandb: View this run in the terminal with `wandb leet`
+{'Total': 585665, 'Trainable': 585665, 'Percent': 1.0}
+intra_flatten  :  Flatten(start_dim=2, end_dim=-1)
+intra_embed  :  Linear(in_features=900, out_features=64, bias=True)
+intra_MLP  :  ModuleList(
+  (0-4): 5 x MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=64, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (out_linear): Linear(in_features=64, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+inter_flatten  :  Sequential(
+  (0): Flatten(start_dim=1, end_dim=-1)
+  (1): Linear(in_features=6400, out_features=64, bias=True)
+)
+inter_MLP  :  ModuleList(
+  (0-8): 9 x MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=64, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (out_linear): Linear(in_features=64, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+head_output  :  Linear(in_features=64, out_features=1, bias=True)
+Trainable parameters are: ['intra_embed.weight', 'intra_embed.bias', 'intra_MLP.0.in_linear.weight', 'intra_MLP.0.in_linear.bias', 'intra_MLP.0.out_linear.weight', 'intra_MLP.0.out_linear.bias', 'intra_MLP.0.ln.weight', 'intra_MLP.0.ln.bias', 'intra_MLP.1.in_linear.weight', 'intra_MLP.1.in_linear.bias', 'intra_MLP.1.out_linear.weight', 'intra_MLP.1.out_linear.bias', 'intra_MLP.1.ln.weight', 'intra_MLP.1.ln.bias', 'intra_MLP.2.in_linear.weight', 'intra_MLP.2.in_linear.bias', 'intra_MLP.2.out_linear.weight', 'intra_MLP.2.out_linear.bias', 'intra_MLP.2.ln.weight', 'intra_MLP.2.ln.bias', 'intra_MLP.3.in_linear.weight', 'intra_MLP.3.in_linear.bias', 'intra_MLP.3.out_linear.weight', 'intra_MLP.3.out_linear.bias', 'intra_MLP.3.ln.weight', 'intra_MLP.3.ln.bias', 'intra_MLP.4.in_linear.weight', 'intra_MLP.4.in_linear.bias', 'intra_MLP.4.out_linear.weight', 'intra_MLP.4.out_linear.bias', 'intra_MLP.4.ln.weight', 'intra_MLP.4.ln.bias', 'inter_flatten.1.weight', 'inter_flatten.1.bias', 'inter_MLP.0.in_linear.weight', 'inter_MLP.0.in_linear.bias', 'inter_MLP.0.out_linear.weight', 'inter_MLP.0.out_linear.bias', 'inter_MLP.0.ln.weight', 'inter_MLP.0.ln.bias', 'inter_MLP.1.in_linear.weight', 'inter_MLP.1.in_linear.bias', 'inter_MLP.1.out_linear.weight', 'inter_MLP.1.out_linear.bias', 'inter_MLP.1.ln.weight', 'inter_MLP.1.ln.bias', 'inter_MLP.2.in_linear.weight', 'inter_MLP.2.in_linear.bias', 'inter_MLP.2.out_linear.weight', 'inter_MLP.2.out_linear.bias', 'inter_MLP.2.ln.weight', 'inter_MLP.2.ln.bias', 'inter_MLP.3.in_linear.weight', 'inter_MLP.3.in_linear.bias', 'inter_MLP.3.out_linear.weight', 'inter_MLP.3.out_linear.bias', 'inter_MLP.3.ln.weight', 'inter_MLP.3.ln.bias', 'inter_MLP.4.in_linear.weight', 'inter_MLP.4.in_linear.bias', 'inter_MLP.4.out_linear.weight', 'inter_MLP.4.out_linear.bias', 'inter_MLP.4.ln.weight', 'inter_MLP.4.ln.bias', 'inter_MLP.5.in_linear.weight', 'inter_MLP.5.in_linear.bias', 'inter_MLP.5.out_linear.weight', 'inter_MLP.5.out_linear.bias', 'inter_MLP.5.ln.weight', 'inter_MLP.5.ln.bias', 'inter_MLP.6.in_linear.weight', 'inter_MLP.6.in_linear.bias', 'inter_MLP.6.out_linear.weight', 'inter_MLP.6.out_linear.bias', 'inter_MLP.6.ln.weight', 'inter_MLP.6.ln.bias', 'inter_MLP.7.in_linear.weight', 'inter_MLP.7.in_linear.bias', 'inter_MLP.7.out_linear.weight', 'inter_MLP.7.out_linear.bias', 'inter_MLP.7.ln.weight', 'inter_MLP.7.ln.bias', 'inter_MLP.8.in_linear.weight', 'inter_MLP.8.in_linear.bias', 'inter_MLP.8.out_linear.weight', 'inter_MLP.8.out_linear.bias', 'inter_MLP.8.ln.weight', 'inter_MLP.8.ln.bias', 'head_output.weight', 'head_output.bias']
+	iteras: 5, epoch: 1 | loss:0.6544855 | label_loss: 0.6544855 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.1754s/iter; left time: 806.2220s
+	iteras: 10, epoch: 1 | loss:0.9714241 | label_loss: 0.9714241 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0377s/iter; left time: 173.2914s
+	iteras: 15, epoch: 1 | loss:1.0687426 | label_loss: 1.0687426 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0370s/iter; left time: 169.6645s
+	iteras: 20, epoch: 1 | loss:1.0879292 | label_loss: 1.0879292 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0382s/iter; left time: 174.9437s
+	iteras: 25, epoch: 1 | loss:1.1651511 | label_loss: 1.1651511 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0386s/iter; left time: 176.5416s
+	iteras: 30, epoch: 1 | loss:1.0088871 | label_loss: 1.0088871 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0388s/iter; left time: 177.2829s
+	iteras: 35, epoch: 1 | loss:1.1166663 | label_loss: 1.1166663 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0371s/iter; left time: 169.3674s
+	iteras: 40, epoch: 1 | loss:0.8630012 | label_loss: 0.8630012 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0368s/iter; left time: 167.8761s
+	iteras: 45, epoch: 1 | loss:1.1799810 | label_loss: 1.1799810 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0305s/iter; left time: 139.0448s
+Epoch: 1 cost time: 2.1644034385681152
+0it [00:00, ?it/s]1it [00:00,  4.06it/s]5it [00:00, 17.10it/s]10it [00:00, 26.51it/s]16it [00:00, 33.85it/s]16it [00:00, 26.49it/s]
+0it [00:00, ?it/s]1it [00:00,  3.99it/s]5it [00:00, 16.98it/s]10it [00:00, 26.57it/s]15it [00:00, 32.78it/s]15it [00:00, 25.52it/s]
+Epoch: 1 | Train Loss: 1.02705| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 413.2653913 | Train MAPE: 1.3108455 | Vali RMSE: 342.7443893| Vali MAE: 267.8729372| Vali MAPE: 1.2596330| Test RMSE: 402.2603407| Test MAE: 337.4398787 | Test MAPE: 1.5253879
+[2026-09-13 05:19:05,448] [INFO] [real_accelerator.py:203:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Warning: The default cache directory for DeepSpeed Triton autotune, /usr4/dl523/dgordon/.triton/autotune, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path.
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed42/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_Znion_s42!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 2 | loss:0.9145029 | label_loss: 0.9145029 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.6781s/iter; left time: 3085.1459s
+	iteras: 10, epoch: 2 | loss:1.2755377 | label_loss: 1.2755377 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0330s/iter; left time: 149.8762s
+	iteras: 15, epoch: 2 | loss:0.8470439 | label_loss: 0.8470439 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0343s/iter; left time: 155.8302s
+	iteras: 20, epoch: 2 | loss:0.8402842 | label_loss: 0.8402842 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0340s/iter; left time: 154.1509s
+	iteras: 25, epoch: 2 | loss:1.0640664 | label_loss: 1.0640664 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0378s/iter; left time: 171.1155s
+	iteras: 30, epoch: 2 | loss:1.1833537 | label_loss: 1.1833537 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0371s/iter; left time: 167.9888s
+	iteras: 35, epoch: 2 | loss:1.1957090 | label_loss: 1.1957090 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0402s/iter; left time: 181.7404s
+	iteras: 40, epoch: 2 | loss:0.8813512 | label_loss: 0.8813512 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0354s/iter; left time: 159.8276s
+	iteras: 45, epoch: 2 | loss:0.7746132 | label_loss: 0.7746132 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0288s/iter; left time: 130.0612s
+Epoch: 2 cost time: 1.8644559383392334
+0it [00:00, ?it/s]1it [00:00,  4.20it/s]6it [00:00, 19.83it/s]11it [00:00, 27.90it/s]16it [00:00, 33.56it/s]16it [00:00, 26.87it/s]
+0it [00:00, ?it/s]1it [00:00,  4.09it/s]5it [00:00, 16.57it/s]9it [00:00, 23.37it/s]14it [00:00, 30.70it/s]15it [00:00, 23.89it/s]
+Epoch: 2 | Train Loss: 1.00324| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 408.4474388 | Train MAPE: 1.2952154 | Vali RMSE: 346.2712134| Vali MAE: 277.7112673| Vali MAPE: 1.3331496| Test RMSE: 403.9055399| Test MAE: 343.4986687 | Test MAPE: 1.6002906
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 3 | loss:0.8158244 | label_loss: 0.8158244 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3435s/iter; left time: 1547.0368s
+	iteras: 10, epoch: 3 | loss:1.1390531 | label_loss: 1.1390531 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0327s/iter; left time: 146.9406s
+	iteras: 15, epoch: 3 | loss:0.7662792 | label_loss: 0.7662792 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0336s/iter; left time: 151.0599s
+	iteras: 20, epoch: 3 | loss:0.9420959 | label_loss: 0.9420959 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0338s/iter; left time: 151.6577s
+	iteras: 25, epoch: 3 | loss:0.7372388 | label_loss: 0.7372388 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0336s/iter; left time: 150.8392s
+	iteras: 30, epoch: 3 | loss:1.0498767 | label_loss: 1.0498767 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0343s/iter; left time: 153.5904s
+	iteras: 35, epoch: 3 | loss:1.2165880 | label_loss: 1.2165880 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0335s/iter; left time: 150.0467s
+	iteras: 40, epoch: 3 | loss:1.1823661 | label_loss: 1.1823661 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0342s/iter; left time: 152.8130s
+	iteras: 45, epoch: 3 | loss:1.0500181 | label_loss: 1.0500181 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0298s/iter; left time: 132.9707s
+Epoch: 3 cost time: 1.8030285835266113
+0it [00:00, ?it/s]1it [00:00,  4.04it/s]5it [00:00, 16.65it/s]9it [00:00, 24.19it/s]14it [00:00, 32.12it/s]16it [00:00, 25.88it/s]
+0it [00:00, ?it/s]1it [00:00,  4.12it/s]4it [00:00, 13.40it/s]8it [00:00, 20.77it/s]13it [00:00, 28.50it/s]15it [00:00, 22.88it/s]
+Epoch: 3 | Train Loss: 1.00453| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 408.7089466 | Train MAPE: 1.3247188 | Vali RMSE: 337.6110527| Vali MAE: 249.0518852| Vali MAPE: 1.1023871| Test RMSE: 400.9575144| Test MAE: 323.7529497 | Test MAPE: 1.3566667
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed42/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_Znion_s42!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 4 | loss:0.8549371 | label_loss: 0.8549371 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3638s/iter; left time: 1621.6950s
+	iteras: 10, epoch: 4 | loss:0.9131420 | label_loss: 0.9131420 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0334s/iter; left time: 148.6978s
+	iteras: 15, epoch: 4 | loss:1.1101360 | label_loss: 1.1101360 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0340s/iter; left time: 151.3990s
+	iteras: 20, epoch: 4 | loss:0.9872020 | label_loss: 0.9872020 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0342s/iter; left time: 151.8351s
+	iteras: 25, epoch: 4 | loss:0.8477306 | label_loss: 0.8477306 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0376s/iter; left time: 167.0387s
+	iteras: 30, epoch: 4 | loss:1.1528808 | label_loss: 1.1528808 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0396s/iter; left time: 175.4341s
+	iteras: 35, epoch: 4 | loss:1.1508523 | label_loss: 1.1508523 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0398s/iter; left time: 176.3101s
+	iteras: 40, epoch: 4 | loss:1.0048926 | label_loss: 1.0048926 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0369s/iter; left time: 163.1676s
+	iteras: 45, epoch: 4 | loss:1.1529316 | label_loss: 1.1529316 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0315s/iter; left time: 139.2850s
+Epoch: 4 cost time: 1.9214367866516113
+0it [00:00, ?it/s]1it [00:00,  3.96it/s]5it [00:00, 16.91it/s]10it [00:00, 26.32it/s]16it [00:00, 33.54it/s]16it [00:00, 26.20it/s]
+0it [00:00, ?it/s]1it [00:00,  4.03it/s]5it [00:00, 16.70it/s]9it [00:00, 24.52it/s]14it [00:00, 32.66it/s]15it [00:00, 25.00it/s]
+Epoch: 4 | Train Loss: 1.00244| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 408.2845784 | Train MAPE: 1.2937246 | Vali RMSE: 342.7655199| Vali MAE: 267.9102863| Vali MAPE: 1.2602650| Test RMSE: 402.2561505| Test MAE: 337.4943160 | Test MAPE: 1.5261183
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 5 | loss:1.0775265 | label_loss: 1.0775265 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3431s/iter; left time: 1513.6290s
+	iteras: 10, epoch: 5 | loss:1.0928309 | label_loss: 1.0928309 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0365s/iter; left time: 160.8848s
+	iteras: 15, epoch: 5 | loss:1.1110834 | label_loss: 1.1110834 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0354s/iter; left time: 155.7062s
+	iteras: 20, epoch: 5 | loss:0.9188018 | label_loss: 0.9188018 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0376s/iter; left time: 165.1127s
+	iteras: 25, epoch: 5 | loss:0.9129257 | label_loss: 0.9129257 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0374s/iter; left time: 164.1609s
+	iteras: 30, epoch: 5 | loss:0.8837784 | label_loss: 0.8837784 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0384s/iter; left time: 168.4622s
+	iteras: 35, epoch: 5 | loss:0.9268097 | label_loss: 0.9268097 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0373s/iter; left time: 163.5767s
+	iteras: 40, epoch: 5 | loss:0.9046469 | label_loss: 0.9046469 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0378s/iter; left time: 165.4776s
+	iteras: 45, epoch: 5 | loss:1.0813582 | label_loss: 1.0813582 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0308s/iter; left time: 134.6581s
+Epoch: 5 cost time: 1.9312047958374023
+0it [00:00, ?it/s]1it [00:00,  3.92it/s]5it [00:00, 16.25it/s]9it [00:00, 23.44it/s]14it [00:00, 31.12it/s]16it [00:00, 25.07it/s]
+0it [00:00, ?it/s]1it [00:00,  3.92it/s]5it [00:00, 16.43it/s]9it [00:00, 24.26it/s]14it [00:00, 32.52it/s]15it [00:00, 24.78it/s]
+Epoch: 5 | Train Loss: 1.00288| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 408.3728357 | Train MAPE: 1.2898261 | Vali RMSE: 345.3066718| Vali MAE: 275.2239219| Vali MAPE: 1.3146671| Test RMSE: 403.4156139| Test MAE: 341.9695873 | Test MAPE: 1.5814386
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 6 | loss:0.9758234 | label_loss: 0.9758234 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3504s/iter; left time: 1529.7326s
+	iteras: 10, epoch: 6 | loss:0.7819574 | label_loss: 0.7819574 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0352s/iter; left time: 153.7157s
+	iteras: 15, epoch: 6 | loss:1.0936031 | label_loss: 1.0936031 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0391s/iter; left time: 170.3019s
+	iteras: 20, epoch: 6 | loss:0.9489323 | label_loss: 0.9489323 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0392s/iter; left time: 170.7666s
+	iteras: 25, epoch: 6 | loss:0.9972415 | label_loss: 0.9972415 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0395s/iter; left time: 171.5302s
+	iteras: 30, epoch: 6 | loss:1.1542938 | label_loss: 1.1542938 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0389s/iter; left time: 168.8994s
+	iteras: 35, epoch: 6 | loss:1.0493357 | label_loss: 1.0493357 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0394s/iter; left time: 170.8940s
+	iteras: 40, epoch: 6 | loss:1.0455492 | label_loss: 1.0455492 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0364s/iter; left time: 157.5286s
+	iteras: 45, epoch: 6 | loss:0.9938889 | label_loss: 0.9938889 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0286s/iter; left time: 123.6709s
+Epoch: 6 cost time: 1.960829734802246
+0it [00:00, ?it/s]1it [00:00,  4.16it/s]5it [00:00, 16.96it/s]9it [00:00, 24.48it/s]14it [00:00, 32.08it/s]16it [00:00, 26.06it/s]
+0it [00:00, ?it/s]1it [00:00,  4.11it/s]5it [00:00, 16.57it/s]9it [00:00, 24.29it/s]14it [00:00, 32.33it/s]15it [00:00, 24.81it/s]
+Epoch: 6 | Train Loss: 1.00850| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 409.5170472 | Train MAPE: 1.3115990 | Vali RMSE: 340.5987520| Vali MAE: 261.5269245| Vali MAPE: 1.2078099| Test RMSE: 401.3987137| Test MAE: 332.9076980 | Test MAPE: 1.4699437
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 7 | loss:1.0155495 | label_loss: 1.0155495 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3447s/iter; left time: 1488.9359s
+	iteras: 10, epoch: 7 | loss:1.1185405 | label_loss: 1.1185405 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0334s/iter; left time: 144.2686s
+	iteras: 15, epoch: 7 | loss:1.0740820 | label_loss: 1.0740820 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0342s/iter; left time: 147.3681s
+	iteras: 20, epoch: 7 | loss:0.9586765 | label_loss: 0.9586765 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0339s/iter; left time: 145.7918s
+	iteras: 25, epoch: 7 | loss:1.0071080 | label_loss: 1.0071080 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0345s/iter; left time: 148.1693s
+	iteras: 30, epoch: 7 | loss:1.0873332 | label_loss: 1.0873332 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0347s/iter; left time: 148.9034s
+	iteras: 35, epoch: 7 | loss:1.0664421 | label_loss: 1.0664421 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0375s/iter; left time: 160.9900s
+	iteras: 40, epoch: 7 | loss:1.2323606 | label_loss: 1.2323606 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0371s/iter; left time: 158.9442s
+	iteras: 45, epoch: 7 | loss:0.6533988 | label_loss: 0.6533988 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0315s/iter; left time: 134.8449s
+Epoch: 7 cost time: 1.8671488761901855
+0it [00:00, ?it/s]1it [00:00,  3.92it/s]6it [00:00, 19.08it/s]11it [00:00, 27.32it/s]16it [00:00, 33.31it/s]16it [00:00, 26.27it/s]
+0it [00:00, ?it/s]1it [00:00,  3.86it/s]5it [00:00, 16.06it/s]9it [00:00, 22.10it/s]14it [00:00, 29.90it/s]15it [00:00, 23.22it/s]
+Epoch: 7 | Train Loss: 1.00410| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 408.6218621 | Train MAPE: 1.3206745 | Vali RMSE: 337.2186751| Vali MAE: 246.7972893| Vali MAPE: 1.0836461| Test RMSE: 400.9429085| Test MAE: 322.0154878 | Test MAPE: 1.3359727
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed42/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_Znion_s42!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 8 | loss:1.3090975 | label_loss: 1.3090975 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3571s/iter; left time: 1526.3184s
+	iteras: 10, epoch: 8 | loss:0.8535041 | label_loss: 0.8535041 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0332s/iter; left time: 141.6485s
+	iteras: 15, epoch: 8 | loss:1.3326998 | label_loss: 1.3326998 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0348s/iter; left time: 148.3783s
+	iteras: 20, epoch: 8 | loss:0.9569716 | label_loss: 0.9569716 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0343s/iter; left time: 146.2707s
+	iteras: 25, epoch: 8 | loss:0.8149750 | label_loss: 0.8149750 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0346s/iter; left time: 147.0495s
+	iteras: 30, epoch: 8 | loss:1.0559132 | label_loss: 1.0559132 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0346s/iter; left time: 146.9158s
+	iteras: 35, epoch: 8 | loss:0.7866395 | label_loss: 0.7866395 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0341s/iter; left time: 144.5747s
+	iteras: 40, epoch: 8 | loss:0.8895127 | label_loss: 0.8895127 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0334s/iter; left time: 141.5343s
+	iteras: 45, epoch: 8 | loss:0.8862065 | label_loss: 0.8862065 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0285s/iter; left time: 120.6477s
+Epoch: 8 cost time: 1.8041765689849854
+0it [00:00, ?it/s]1it [00:00,  4.07it/s]5it [00:00, 16.89it/s]8it [00:00, 20.77it/s]13it [00:00, 28.75it/s]16it [00:00, 24.33it/s]
+0it [00:00, ?it/s]1it [00:00,  4.12it/s]5it [00:00, 17.02it/s]9it [00:00, 24.84it/s]15it [00:00, 32.83it/s]15it [00:00, 25.39it/s]
+Epoch: 8 | Train Loss: 1.00563| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 408.9328737 | Train MAPE: 1.2807567 | Vali RMSE: 343.3736323| Vali MAE: 269.9258019| Vali MAPE: 1.2753572| Test RMSE: 402.4243448| Test MAE: 338.6016965 | Test MAPE: 1.5407380
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 9 | loss:0.7751253 | label_loss: 0.7751253 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3572s/iter; left time: 1510.1404s
+	iteras: 10, epoch: 9 | loss:1.0490746 | label_loss: 1.0490746 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0369s/iter; left time: 155.7938s
+	iteras: 15, epoch: 9 | loss:0.7671045 | label_loss: 0.7671045 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0383s/iter; left time: 161.5596s
+	iteras: 20, epoch: 9 | loss:0.8334134 | label_loss: 0.8334134 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0383s/iter; left time: 161.3948s
+	iteras: 25, epoch: 9 | loss:0.9014302 | label_loss: 0.9014302 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0387s/iter; left time: 162.6534s
+	iteras: 30, epoch: 9 | loss:1.2062044 | label_loss: 1.2062044 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0378s/iter; left time: 159.0096s
+	iteras: 35, epoch: 9 | loss:1.2985275 | label_loss: 1.2985275 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0381s/iter; left time: 160.0271s
+	iteras: 40, epoch: 9 | loss:0.8773243 | label_loss: 0.8773243 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0365s/iter; left time: 153.0976s
+	iteras: 45, epoch: 9 | loss:0.7113584 | label_loss: 0.7113584 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0307s/iter; left time: 128.5213s
+Epoch: 9 cost time: 1.99519681930542
+0it [00:00, ?it/s]1it [00:00,  4.02it/s]5it [00:00, 16.35it/s]8it [00:00, 20.74it/s]12it [00:00, 26.62it/s]16it [00:00, 24.10it/s]
+0it [00:00, ?it/s]1it [00:00,  4.02it/s]5it [00:00, 16.67it/s]9it [00:00, 24.35it/s]15it [00:00, 32.43it/s]15it [00:00, 25.06it/s]
+Epoch: 9 | Train Loss: 0.99702| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 407.1788669 | Train MAPE: 1.3050980 | Vali RMSE: 342.3970109| Vali MAE: 267.0758372| Vali MAPE: 1.2543713| Test RMSE: 401.8951949| Test MAE: 336.7162928 | Test MAPE: 1.5184326
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 10 | loss:0.9687508 | label_loss: 0.9687508 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3551s/iter; left time: 1485.1818s
+	iteras: 10, epoch: 10 | loss:1.1266420 | label_loss: 1.1266420 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0338s/iter; left time: 141.1781s
+	iteras: 15, epoch: 10 | loss:0.5610238 | label_loss: 0.5610238 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0347s/iter; left time: 144.8454s
+	iteras: 20, epoch: 10 | loss:1.0205503 | label_loss: 1.0205503 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0345s/iter; left time: 143.5695s
+	iteras: 25, epoch: 10 | loss:1.0045409 | label_loss: 1.0045409 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0355s/iter; left time: 147.7075s
+	iteras: 30, epoch: 10 | loss:1.1377676 | label_loss: 1.1377676 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0375s/iter; left time: 155.9103s
+	iteras: 35, epoch: 10 | loss:0.8698508 | label_loss: 0.8698508 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0376s/iter; left time: 155.9819s
+	iteras: 40, epoch: 10 | loss:0.9541965 | label_loss: 0.9541965 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0348s/iter; left time: 144.1183s
+	iteras: 45, epoch: 10 | loss:1.0841321 | label_loss: 1.0841321 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0296s/iter; left time: 122.4831s
+Epoch: 10 cost time: 1.8601784706115723
+0it [00:00, ?it/s]1it [00:00,  3.88it/s]5it [00:00, 16.65it/s]10it [00:00, 26.03it/s]16it [00:00, 33.35it/s]16it [00:00, 25.95it/s]
+0it [00:00, ?it/s]1it [00:00,  4.03it/s]5it [00:00, 16.62it/s]9it [00:00, 24.23it/s]15it [00:00, 32.45it/s]15it [00:00, 25.09it/s]
+Epoch: 10 | Train Loss: 1.00209| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 408.2127444 | Train MAPE: 1.2944409 | Vali RMSE: 338.9490590| Vali MAE: 256.8143117| Vali MAPE: 1.1706221| Test RMSE: 400.2868969| Test MAE: 328.8350718 | Test MAPE: 1.4254200
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 11 | loss:0.6293179 | label_loss: 0.6293179 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3463s/iter; left time: 1432.2269s
+	iteras: 10, epoch: 11 | loss:1.1257075 | label_loss: 1.1257075 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0366s/iter; left time: 150.9991s
+	iteras: 15, epoch: 11 | loss:1.0200472 | label_loss: 1.0200472 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0374s/iter; left time: 154.1224s
+	iteras: 20, epoch: 11 | loss:1.0535278 | label_loss: 1.0535278 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0362s/iter; left time: 149.0092s
+	iteras: 25, epoch: 11 | loss:1.1423392 | label_loss: 1.1423392 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0387s/iter; left time: 159.3381s
+	iteras: 30, epoch: 11 | loss:1.0202863 | label_loss: 1.0202863 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0373s/iter; left time: 153.1963s
+	iteras: 35, epoch: 11 | loss:1.1184500 | label_loss: 1.1184500 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0372s/iter; left time: 152.5645s
+	iteras: 40, epoch: 11 | loss:1.0695019 | label_loss: 1.0695019 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0344s/iter; left time: 141.1336s
+	iteras: 45, epoch: 11 | loss:0.9331689 | label_loss: 0.9331689 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0315s/iter; left time: 129.1627s
+Epoch: 11 cost time: 1.942392349243164
+0it [00:00, ?it/s]1it [00:00,  4.03it/s]5it [00:00, 16.72it/s]9it [00:00, 22.76it/s]14it [00:00, 30.13it/s]16it [00:00, 24.73it/s]
+0it [00:00, ?it/s]1it [00:00,  4.23it/s]5it [00:00, 17.22it/s]9it [00:00, 25.03it/s]14it [00:00, 32.46it/s]15it [00:00, 25.05it/s]
+Epoch: 11 | Train Loss: 1.00493| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 408.7904277 | Train MAPE: 1.3060028 | Vali RMSE: 348.5416501| Vali MAE: 283.4401414| Vali MAPE: 1.3751427| Test RMSE: 405.0162450| Test MAE: 346.7988147 | Test MAPE: 1.6420055
+EarlyStopping counter: 4 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 12 | loss:0.7316691 | label_loss: 0.7316691 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3510s/iter; left time: 1435.5400s
+	iteras: 10, epoch: 12 | loss:1.1026154 | label_loss: 1.1026154 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0334s/iter; left time: 136.5703s
+	iteras: 15, epoch: 12 | loss:0.8506063 | label_loss: 0.8506063 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0341s/iter; left time: 138.9605s
+	iteras: 20, epoch: 12 | loss:0.7641801 | label_loss: 0.7641801 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0345s/iter; left time: 140.6135s
+	iteras: 25, epoch: 12 | loss:0.8968471 | label_loss: 0.8968471 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0351s/iter; left time: 142.9402s
+	iteras: 30, epoch: 12 | loss:1.0745943 | label_loss: 1.0745943 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0348s/iter; left time: 141.5194s
+	iteras: 35, epoch: 12 | loss:1.1516030 | label_loss: 1.1516030 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0356s/iter; left time: 144.5608s
+	iteras: 40, epoch: 12 | loss:0.8708843 | label_loss: 0.8708843 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0333s/iter; left time: 135.0788s
+	iteras: 45, epoch: 12 | loss:0.8035740 | label_loss: 0.8035740 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0309s/iter; left time: 125.0967s
+Epoch: 12 cost time: 1.8297288417816162
+0it [00:00, ?it/s]1it [00:00,  4.01it/s]5it [00:00, 16.78it/s]9it [00:00, 24.29it/s]14it [00:00, 32.48it/s]16it [00:00, 26.03it/s]
+0it [00:00, ?it/s]1it [00:00,  3.99it/s]4it [00:00, 12.96it/s]8it [00:00, 19.97it/s]13it [00:00, 27.90it/s]15it [00:00, 22.51it/s]
+wandb: 
+wandb: Run history:
+wandb:      epoch ▁▂▂▃▃▄▅▅▆▆▇▇█
+wandb:  test_MAPE ▅▇▁▅▇▄▁▆▅▃█▆▁
+wandb:  test_RMSE ▄▆▂▄▆▃▂▄▃▁█▄▂
+wandb:  test_acc1 ██▄███▁█████▁
+wandb:  test_acc2 ██▁███▁██▁██▁
+wandb: train_loss █▂▃▂▂▄▃▃▁▂▃▃▃
+wandb:  vali_MAPE ▅▇▁▅▇▄▁▆▅▃█▆▁
+wandb:  vali_RMSE ▄▇▁▄▆▃▁▅▄▂█▅▁
+wandb:  vali_acc1 ▂▁█▁▁█▄▁▁█▁▁▄
+wandb:  vali_acc2 █████████▁███
+wandb: 
+wandb: Run summary:
+wandb:      epoch 12
+wandb:  test_MAPE 1.33597
+wandb:  test_RMSE 400.94291
+wandb:  test_acc1 0
+wandb:  test_acc2 0
+wandb: train_loss 1.00601
+wandb:  vali_MAPE 1.08365
+wandb:  vali_RMSE 337.21868
+wandb:  vali_acc1 12.35
+wandb:  vali_acc2 10
+wandb: 
+wandb: You can sync this run to the cloud by running:
+wandb: wandb sync /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_051901-bgy9wp25
+wandb: Find logs at: ./wandb/offline-run-20260913_051901-bgy9wp25/logs
+Epoch: 12 | Train Loss: 1.00601| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 409.0095491 | Train MAPE: 1.3142850 | Vali RMSE: 343.6403773| Vali MAE: 270.8079937| Vali MAPE: 1.2819315| Test RMSE: 402.4956933| Test MAE: 339.0646181 | Test MAPE: 1.5470338
+EarlyStopping counter: 5 out of 5
+Early stopping
+Best model performance: Test MAE: 322.0155 | Test RMSE: 400.9429 | Test MAPE: 1.3360 | Test 15%-accuracy: 0.0000 | Test 10%-accuracy: 0.0000 | Val MAE: 246.7973 | Val RMSE: 337.2187 | Val MAPE: 1.0836 | Val 15%-accuracy: 12.3500 | Val 10%-accuracy: 10.0000 
+Best model performance: Test Seen MAPE: 1.1897 | Test Unseen MAPE: 1.7454
+Best model performance: Test Seen 15%-accuracy: 0.0000 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 0.0000 | Test Unseen 10%-accuracy: 0.0000
+/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed42/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin42_lossMSE_wd0.0_wlFalse_bs128_s42-CPMLP_Znion_s42
+=== CPMLP | dataset=ZN-coin2024 seed=2024 ===
+The following values were not passed to `accelerate launch` and had defaults used instead:
+	`--num_machines` was set to a value of `1`
+	`--mixed_precision` was set to a value of `'no'`
+	`--dynamo_backend` was set to a value of `'no'`
+To avoid this warning pass in values for each of the problematic parameters or run `accelerate config`.
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+{'task_name': 'classification', 'is_training': 1, 'model_id': 'CPMLP', 'model_comment': 'CPMLP_Znion_s2024', 'model': 'CPMLP', 'seed': 2024, 'charge_discharge_length': 300, 'dataset': 'ZN-coin2024', 'data': 'Dataset_original', 'root_path': './dataset', 'data_path': 'ETTh1.csv', 'features': 'MS', 'target': 'OT', 'loader': 'modal', 'freq': 'h', 'checkpoints': '/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2024', 'early_cycle_threshold': 100, 'seq_len': 1, 'pred_len': 5, 'label_len': 50, 'seasonal_patterns': 'Monthly', 'enc_in': 3, 'dec_in': 1, 'c_out': 1, 'd_model': 64, 'n_heads': 8, 'lstm_layers': 2, 'e_layers': 5, 'd_layers': 9, 'd_ff': 64, 'moving_avg': 25, 'factor': 3, 'dropout': 0.1, 'embed': 'timeF', 'activation': 'relu', 'output_attention': False, 'patch_len': 10, 'stride': 10, 'patch_len2': 10, 'stride2': 10, 'prompt_domain': 0, 'output_num': 1, 'class_num': 8, 'prediction_mode': 'regression', 'geo_bin_tol': 0.15, 'geo_bin_min': 1.0, 'geo_bin_max': 3842.0, 'weighted_loss': False, 'weighted_sampling': False, 'num_workers': 4, 'itr': 1, 'train_epochs': 100, 'least_epochs': 5, 'batch_size': 128, 'patience': 5, 'learning_rate': 0.0005, 'wd': 0.0, 'des': 'Exp', 'loss': 'MSE', 'lradj': 'constant', 'pct_start': 0.2, 'use_amp': False, 'percent': 100, 'accumulation_steps': 1, 'mlp': 0, 'alpha1': 0.15, 'alpha2': 0.1}
+Loading training samples......
+  0%|          | 0/60 [00:00<?, ?it/s]  2%|▏         | 1/60 [00:00<00:34,  1.69it/s]  3%|▎         | 2/60 [00:01<00:32,  1.79it/s]  5%|▌         | 3/60 [00:01<00:30,  1.85it/s]  7%|▋         | 4/60 [00:02<00:28,  1.94it/s]  8%|▊         | 5/60 [00:02<00:27,  2.00it/s] 10%|█         | 6/60 [00:03<00:26,  2.04it/s] 12%|█▏        | 7/60 [00:03<00:26,  2.02it/s] 13%|█▎        | 8/60 [00:04<00:26,  1.96it/s] 15%|█▌        | 9/60 [00:04<00:26,  1.95it/s] 17%|█▋        | 10/60 [00:05<00:25,  1.96it/s] 18%|█▊        | 11/60 [00:05<00:24,  1.98it/s] 20%|██        | 12/60 [00:06<00:23,  2.01it/s] 22%|██▏       | 13/60 [00:06<00:27,  1.71it/s] 23%|██▎       | 14/60 [00:07<00:25,  1.81it/s] 25%|██▌       | 15/60 [00:07<00:24,  1.86it/s] 27%|██▋       | 16/60 [00:08<00:22,  1.92it/s] 28%|██▊       | 17/60 [00:08<00:22,  1.95it/s] 30%|███       | 18/60 [00:09<00:21,  1.99it/s] 32%|███▏      | 19/60 [00:09<00:20,  2.01it/s] 33%|███▎      | 20/60 [00:10<00:19,  2.02it/s] 35%|███▌      | 21/60 [00:10<00:19,  2.00it/s] 37%|███▋      | 22/60 [00:11<00:19,  2.00it/s] 38%|███▊      | 23/60 [00:11<00:18,  2.02it/s] 40%|████      | 24/60 [00:12<00:17,  2.02it/s] 42%|████▏     | 25/60 [00:12<00:17,  2.01it/s] 43%|████▎     | 26/60 [00:13<00:17,  1.97it/s] 45%|████▌     | 27/60 [00:13<00:16,  1.98it/s] 47%|████▋     | 28/60 [00:14<00:16,  1.97it/s] 48%|████▊     | 29/60 [00:14<00:15,  1.97it/s] 50%|█████     | 30/60 [00:15<00:14,  2.03it/s] 52%|█████▏    | 31/60 [00:16<00:16,  1.71it/s] 53%|█████▎    | 32/60 [00:16<00:15,  1.80it/s] 55%|█████▌    | 33/60 [00:17<00:14,  1.85it/s] 57%|█████▋    | 34/60 [00:17<00:13,  1.90it/s] 58%|█████▊    | 35/60 [00:18<00:12,  2.02it/s] 60%|██████    | 36/60 [00:18<00:12,  1.99it/s] 62%|██████▏   | 37/60 [00:18<00:11,  2.06it/s] 63%|██████▎   | 38/60 [00:19<00:10,  2.12it/s] 65%|██████▌   | 39/60 [00:19<00:10,  2.05it/s] 67%|██████▋   | 40/60 [00:20<00:10,  1.91it/s] 68%|██████▊   | 41/60 [00:21<00:10,  1.82it/s] 70%|███████   | 42/60 [00:21<00:10,  1.70it/s] 72%|███████▏  | 43/60 [00:22<00:11,  1.46it/s] 73%|███████▎  | 44/60 [00:23<00:12,  1.33it/s] 75%|███████▌  | 45/60 [00:24<00:11,  1.26it/s] 77%|███████▋  | 46/60 [00:25<00:11,  1.21it/s] 78%|███████▊  | 47/60 [00:26<00:11,  1.11it/s] 80%|████████  | 48/60 [00:27<00:10,  1.14it/s] 82%|████████▏ | 49/60 [00:28<00:09,  1.16it/s] 83%|████████▎ | 50/60 [00:29<00:08,  1.17it/s] 85%|████████▌ | 51/60 [00:29<00:07,  1.18it/s] 87%|████████▋ | 52/60 [00:30<00:06,  1.19it/s] 88%|████████▊ | 53/60 [00:31<00:05,  1.28it/s] 90%|█████████ | 54/60 [00:32<00:04,  1.28it/s] 92%|█████████▏| 55/60 [00:32<00:04,  1.25it/s] 93%|█████████▎| 56/60 [00:33<00:03,  1.21it/s] 95%|█████████▌| 57/60 [00:34<00:02,  1.25it/s] 97%|█████████▋| 58/60 [00:35<00:01,  1.34it/s] 98%|█████████▊| 59/60 [00:35<00:00,  1.40it/s]100%|██████████| 60/60 [00:36<00:00,  1.52it/s]100%|██████████| 60/60 [00:36<00:00,  1.65it/s]
+Loading vali samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:12,  1.55it/s] 10%|█         | 2/20 [00:01<00:09,  1.84it/s] 15%|█▌        | 3/20 [00:01<00:08,  1.94it/s] 20%|██        | 4/20 [00:02<00:10,  1.56it/s] 25%|██▌       | 5/20 [00:02<00:08,  1.72it/s] 30%|███       | 6/20 [00:03<00:09,  1.50it/s] 35%|███▌      | 7/20 [00:04<00:07,  1.63it/s] 40%|████      | 8/20 [00:04<00:06,  1.75it/s] 45%|████▌     | 9/20 [00:05<00:07,  1.49it/s] 50%|█████     | 10/20 [00:06<00:06,  1.63it/s] 55%|█████▌    | 11/20 [00:07<00:06,  1.31it/s] 60%|██████    | 12/20 [00:07<00:05,  1.35it/s] 65%|██████▌   | 13/20 [00:08<00:04,  1.44it/s] 70%|███████   | 14/20 [00:08<00:03,  1.57it/s] 75%|███████▌  | 15/20 [00:09<00:02,  1.72it/s] 80%|████████  | 16/20 [00:10<00:02,  1.48it/s] 85%|████████▌ | 17/20 [00:11<00:02,  1.38it/s] 90%|█████████ | 18/20 [00:11<00:01,  1.44it/s] 95%|█████████▌| 19/20 [00:12<00:00,  1.60it/s]100%|██████████| 20/20 [00:12<00:00,  1.63it/s]100%|██████████| 20/20 [00:12<00:00,  1.56it/s]
+Loading test samples......
+  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:00<00:11,  1.64it/s] 10%|█         | 2/20 [00:01<00:09,  1.91it/s] 15%|█▌        | 3/20 [00:01<00:09,  1.72it/s] 20%|██        | 4/20 [00:02<00:10,  1.48it/s] 25%|██▌       | 5/20 [00:03<00:10,  1.47it/s] 30%|███       | 6/20 [00:03<00:08,  1.65it/s] 35%|███▌      | 7/20 [00:04<00:08,  1.62it/s] 40%|████      | 8/20 [00:04<00:06,  1.77it/s] 45%|████▌     | 9/20 [00:05<00:06,  1.71it/s] 50%|█████     | 10/20 [00:06<00:06,  1.66it/s] 55%|█████▌    | 11/20 [00:06<00:05,  1.63it/s] 60%|██████    | 12/20 [00:07<00:04,  1.74it/s] 65%|██████▌   | 13/20 [00:08<00:04,  1.50it/s] 70%|███████   | 14/20 [00:08<00:03,  1.63it/s] 75%|███████▌  | 15/20 [00:09<00:02,  1.68it/s] 80%|████████  | 16/20 [00:09<00:02,  1.70it/s] 85%|████████▌ | 17/20 [00:10<00:02,  1.48it/s] 90%|█████████ | 18/20 [00:11<00:01,  1.62it/s] 95%|█████████▌| 19/20 [00:11<00:00,  1.76it/s]100%|██████████| 20/20 [00:12<00:00,  1.52it/s]100%|██████████| 20/20 [00:12<00:00,  1.62it/s]
+wandb: Tracking run with wandb version 0.30.0
+wandb: W&B syncing is set to `offline` in this directory. Run `wandb online` or set WANDB_MODE=online to enable cloud syncing.
+wandb: Run data is saved locally in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_052102-igaww9pv
+wandb: View this run in the terminal with `wandb leet`
+{'Total': 585665, 'Trainable': 585665, 'Percent': 1.0}
+intra_flatten  :  Flatten(start_dim=2, end_dim=-1)
+intra_embed  :  Linear(in_features=900, out_features=64, bias=True)
+intra_MLP  :  ModuleList(
+  (0-4): 5 x MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=64, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (out_linear): Linear(in_features=64, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+inter_flatten  :  Sequential(
+  (0): Flatten(start_dim=1, end_dim=-1)
+  (1): Linear(in_features=6400, out_features=64, bias=True)
+)
+inter_MLP  :  ModuleList(
+  (0-8): 9 x MLPBlock(
+    (in_linear): Linear(in_features=64, out_features=64, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (out_linear): Linear(in_features=64, out_features=64, bias=True)
+    (ln): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+  )
+)
+head_output  :  Linear(in_features=64, out_features=1, bias=True)
+Trainable parameters are: ['intra_embed.weight', 'intra_embed.bias', 'intra_MLP.0.in_linear.weight', 'intra_MLP.0.in_linear.bias', 'intra_MLP.0.out_linear.weight', 'intra_MLP.0.out_linear.bias', 'intra_MLP.0.ln.weight', 'intra_MLP.0.ln.bias', 'intra_MLP.1.in_linear.weight', 'intra_MLP.1.in_linear.bias', 'intra_MLP.1.out_linear.weight', 'intra_MLP.1.out_linear.bias', 'intra_MLP.1.ln.weight', 'intra_MLP.1.ln.bias', 'intra_MLP.2.in_linear.weight', 'intra_MLP.2.in_linear.bias', 'intra_MLP.2.out_linear.weight', 'intra_MLP.2.out_linear.bias', 'intra_MLP.2.ln.weight', 'intra_MLP.2.ln.bias', 'intra_MLP.3.in_linear.weight', 'intra_MLP.3.in_linear.bias', 'intra_MLP.3.out_linear.weight', 'intra_MLP.3.out_linear.bias', 'intra_MLP.3.ln.weight', 'intra_MLP.3.ln.bias', 'intra_MLP.4.in_linear.weight', 'intra_MLP.4.in_linear.bias', 'intra_MLP.4.out_linear.weight', 'intra_MLP.4.out_linear.bias', 'intra_MLP.4.ln.weight', 'intra_MLP.4.ln.bias', 'inter_flatten.1.weight', 'inter_flatten.1.bias', 'inter_MLP.0.in_linear.weight', 'inter_MLP.0.in_linear.bias', 'inter_MLP.0.out_linear.weight', 'inter_MLP.0.out_linear.bias', 'inter_MLP.0.ln.weight', 'inter_MLP.0.ln.bias', 'inter_MLP.1.in_linear.weight', 'inter_MLP.1.in_linear.bias', 'inter_MLP.1.out_linear.weight', 'inter_MLP.1.out_linear.bias', 'inter_MLP.1.ln.weight', 'inter_MLP.1.ln.bias', 'inter_MLP.2.in_linear.weight', 'inter_MLP.2.in_linear.bias', 'inter_MLP.2.out_linear.weight', 'inter_MLP.2.out_linear.bias', 'inter_MLP.2.ln.weight', 'inter_MLP.2.ln.bias', 'inter_MLP.3.in_linear.weight', 'inter_MLP.3.in_linear.bias', 'inter_MLP.3.out_linear.weight', 'inter_MLP.3.out_linear.bias', 'inter_MLP.3.ln.weight', 'inter_MLP.3.ln.bias', 'inter_MLP.4.in_linear.weight', 'inter_MLP.4.in_linear.bias', 'inter_MLP.4.out_linear.weight', 'inter_MLP.4.out_linear.bias', 'inter_MLP.4.ln.weight', 'inter_MLP.4.ln.bias', 'inter_MLP.5.in_linear.weight', 'inter_MLP.5.in_linear.bias', 'inter_MLP.5.out_linear.weight', 'inter_MLP.5.out_linear.bias', 'inter_MLP.5.ln.weight', 'inter_MLP.5.ln.bias', 'inter_MLP.6.in_linear.weight', 'inter_MLP.6.in_linear.bias', 'inter_MLP.6.out_linear.weight', 'inter_MLP.6.out_linear.bias', 'inter_MLP.6.ln.weight', 'inter_MLP.6.ln.bias', 'inter_MLP.7.in_linear.weight', 'inter_MLP.7.in_linear.bias', 'inter_MLP.7.out_linear.weight', 'inter_MLP.7.out_linear.bias', 'inter_MLP.7.ln.weight', 'inter_MLP.7.ln.bias', 'inter_MLP.8.in_linear.weight', 'inter_MLP.8.in_linear.bias', 'inter_MLP.8.out_linear.weight', 'inter_MLP.8.out_linear.bias', 'inter_MLP.8.ln.weight', 'inter_MLP.8.ln.bias', 'head_output.weight', 'head_output.bias']
+	iteras: 5, epoch: 1 | loss:1.0278612 | label_loss: 1.0278612 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.1782s/iter; left time: 819.1788s
+	iteras: 10, epoch: 1 | loss:1.2701068 | label_loss: 1.2701068 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0373s/iter; left time: 171.0710s
+	iteras: 15, epoch: 1 | loss:1.1239578 | label_loss: 1.1239578 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0381s/iter; left time: 174.7535s
+	iteras: 20, epoch: 1 | loss:0.9828520 | label_loss: 0.9828520 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0380s/iter; left time: 173.8668s
+	iteras: 25, epoch: 1 | loss:1.0491930 | label_loss: 1.0491930 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0387s/iter; left time: 177.1606s
+	iteras: 30, epoch: 1 | loss:1.0527585 | label_loss: 1.0527585 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0382s/iter; left time: 174.4899s
+	iteras: 35, epoch: 1 | loss:0.8772395 | label_loss: 0.8772395 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0384s/iter; left time: 175.1098s
+	iteras: 40, epoch: 1 | loss:0.8545415 | label_loss: 0.8545415 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0367s/iter; left time: 167.3646s
+	iteras: 45, epoch: 1 | loss:0.9132014 | label_loss: 0.9132014 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0307s/iter; left time: 139.9705s
+Epoch: 1 cost time: 2.179783344268799
+0it [00:00, ?it/s]1it [00:00,  3.98it/s]5it [00:00, 16.05it/s]9it [00:00, 22.71it/s]14it [00:00, 29.88it/s]16it [00:00, 24.44it/s]
+0it [00:00, ?it/s]1it [00:00,  4.02it/s]5it [00:00, 16.91it/s]9it [00:00, 24.54it/s]14it [00:00, 31.64it/s]16it [00:00, 25.69it/s]
+Epoch: 1 | Train Loss: 1.07202| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 412.1255499 | Train MAPE: 1.2847469 | Vali RMSE: 432.4868493| Vali MAE: 312.8025882| Vali MAPE: 0.8610592| Test RMSE: 348.8193961| Test MAE: 270.8520103 | Test MAPE: 1.0157406
+[2026-09-13 05:21:06,726] [INFO] [real_accelerator.py:203:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Warning: The default cache directory for DeepSpeed Triton autotune, /usr4/dl523/dgordon/.triton/autotune, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path.
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2024/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_Znion_s2024!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 2 | loss:1.0483258 | label_loss: 1.0483258 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.7277s/iter; left time: 3311.2042s
+	iteras: 10, epoch: 2 | loss:1.0194504 | label_loss: 1.0194504 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0336s/iter; left time: 152.7649s
+	iteras: 15, epoch: 2 | loss:0.8742275 | label_loss: 0.8742275 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0385s/iter; left time: 174.8665s
+	iteras: 20, epoch: 2 | loss:1.2289762 | label_loss: 1.2289762 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0407s/iter; left time: 184.7839s
+	iteras: 25, epoch: 2 | loss:0.9880489 | label_loss: 0.9880489 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0392s/iter; left time: 177.3914s
+	iteras: 30, epoch: 2 | loss:0.7878224 | label_loss: 0.7878224 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0392s/iter; left time: 177.3622s
+	iteras: 35, epoch: 2 | loss:0.9874696 | label_loss: 0.9874696 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0388s/iter; left time: 175.3769s
+	iteras: 40, epoch: 2 | loss:1.1583633 | label_loss: 1.1583633 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0375s/iter; left time: 169.5127s
+	iteras: 45, epoch: 2 | loss:0.9650574 | label_loss: 0.9650574 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0311s/iter; left time: 140.2704s
+Epoch: 2 cost time: 2.019425630569458
+0it [00:00, ?it/s]1it [00:00,  3.83it/s]6it [00:00, 18.73it/s]10it [00:00, 25.38it/s]16it [00:00, 33.22it/s]16it [00:00, 25.88it/s]
+0it [00:00, ?it/s]1it [00:00,  4.11it/s]5it [00:00, 16.94it/s]9it [00:00, 24.43it/s]14it [00:00, 32.20it/s]16it [00:00, 25.99it/s]
+Epoch: 2 | Train Loss: 1.00678| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 399.3884099 | Train MAPE: 1.2365161 | Vali RMSE: 421.6333407| Vali MAE: 320.0065058| Vali MAPE: 0.9936778| Test RMSE: 346.0128773| Test MAE: 278.5575037 | Test MAPE: 1.1700411
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 3 | loss:1.1854242 | label_loss: 1.1854242 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3542s/iter; left time: 1595.4136s
+	iteras: 10, epoch: 3 | loss:0.8223953 | label_loss: 0.8223953 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0394s/iter; left time: 177.0789s
+	iteras: 15, epoch: 3 | loss:0.7353283 | label_loss: 0.7353283 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0400s/iter; left time: 179.8299s
+	iteras: 20, epoch: 3 | loss:1.1093591 | label_loss: 1.1093591 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0381s/iter; left time: 170.9359s
+	iteras: 25, epoch: 3 | loss:1.2411406 | label_loss: 1.2411406 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0390s/iter; left time: 174.6675s
+	iteras: 30, epoch: 3 | loss:1.1419368 | label_loss: 1.1419368 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0380s/iter; left time: 170.2678s
+	iteras: 35, epoch: 3 | loss:1.0433408 | label_loss: 1.0433408 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0417s/iter; left time: 186.6406s
+	iteras: 40, epoch: 3 | loss:0.9703353 | label_loss: 0.9703353 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0371s/iter; left time: 165.7329s
+	iteras: 45, epoch: 3 | loss:0.8984916 | label_loss: 0.8984916 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0318s/iter; left time: 141.8387s
+Epoch: 3 cost time: 2.038837194442749
+0it [00:00, ?it/s]1it [00:00,  3.74it/s]5it [00:00, 15.31it/s]9it [00:00, 22.03it/s]14it [00:00, 29.48it/s]16it [00:00, 23.61it/s]
+0it [00:00, ?it/s]1it [00:00,  3.94it/s]5it [00:00, 16.85it/s]9it [00:00, 24.20it/s]14it [00:00, 30.72it/s]16it [00:00, 24.91it/s]
+Epoch: 3 | Train Loss: 1.00883| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 399.7944181 | Train MAPE: 1.2449474 | Vali RMSE: 430.4645454| Vali MAE: 313.5175700| Vali MAPE: 0.8807445| Test RMSE: 347.9631744| Test MAE: 271.5673289 | Test MAPE: 1.0386013
+EarlyStopping counter: 0 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 4 | loss:0.9600927 | label_loss: 0.9600927 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3664s/iter; left time: 1633.6021s
+	iteras: 10, epoch: 4 | loss:0.8020300 | label_loss: 0.8020300 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0382s/iter; left time: 170.0831s
+	iteras: 15, epoch: 4 | loss:0.8645529 | label_loss: 0.8645529 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0398s/iter; left time: 177.0324s
+	iteras: 20, epoch: 4 | loss:1.0648507 | label_loss: 1.0648507 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0409s/iter; left time: 181.7867s
+	iteras: 25, epoch: 4 | loss:0.9806269 | label_loss: 0.9806269 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0401s/iter; left time: 177.8296s
+	iteras: 30, epoch: 4 | loss:1.1153054 | label_loss: 1.1153054 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0406s/iter; left time: 180.0965s
+	iteras: 35, epoch: 4 | loss:0.8379157 | label_loss: 0.8379157 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0385s/iter; left time: 170.4853s
+	iteras: 40, epoch: 4 | loss:0.9349458 | label_loss: 0.9349458 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0376s/iter; left time: 166.2198s
+	iteras: 45, epoch: 4 | loss:1.1187671 | label_loss: 1.1187671 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0322s/iter; left time: 142.4206s
+Epoch: 4 cost time: 2.016700506210327
+0it [00:00, ?it/s]1it [00:00,  3.94it/s]5it [00:00, 16.75it/s]9it [00:00, 23.29it/s]14it [00:00, 30.02it/s]16it [00:00, 24.39it/s]
+0it [00:00, ?it/s]1it [00:00,  3.94it/s]6it [00:00, 19.08it/s]10it [00:00, 24.48it/s]15it [00:00, 31.17it/s]16it [00:00, 24.60it/s]
+Epoch: 4 | Train Loss: 1.00855| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 399.7387517 | Train MAPE: 1.2409982 | Vali RMSE: 434.9634327| Vali MAE: 311.9564105| Vali MAPE: 0.8377882| Test RMSE: 349.9459025| Test MAE: 269.9783425 | Test MAPE: 0.9886653
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2024/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_Znion_s2024!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 5 | loss:1.0247270 | label_loss: 1.0247270 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3728s/iter; left time: 1644.5921s
+	iteras: 10, epoch: 5 | loss:1.1297255 | label_loss: 1.1297255 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0385s/iter; left time: 169.6309s
+	iteras: 15, epoch: 5 | loss:1.0302334 | label_loss: 1.0302334 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0391s/iter; left time: 171.9695s
+	iteras: 20, epoch: 5 | loss:0.9179561 | label_loss: 0.9179561 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0394s/iter; left time: 173.1450s
+	iteras: 25, epoch: 5 | loss:1.0313015 | label_loss: 1.0313015 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0391s/iter; left time: 171.6077s
+	iteras: 30, epoch: 5 | loss:0.9369280 | label_loss: 0.9369280 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0398s/iter; left time: 174.6540s
+	iteras: 35, epoch: 5 | loss:0.8281878 | label_loss: 0.8281878 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0393s/iter; left time: 172.2764s
+	iteras: 40, epoch: 5 | loss:0.9256052 | label_loss: 0.9256052 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0370s/iter; left time: 161.8826s
+	iteras: 45, epoch: 5 | loss:1.1207798 | label_loss: 1.1207798 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0316s/iter; left time: 138.1815s
+Epoch: 5 cost time: 2.021965980529785
+0it [00:00, ?it/s]1it [00:00,  3.96it/s]6it [00:00, 19.41it/s]10it [00:00, 24.86it/s]15it [00:00, 31.41it/s]16it [00:00, 24.94it/s]
+0it [00:00, ?it/s]1it [00:00,  3.91it/s]5it [00:00, 16.38it/s]9it [00:00, 22.80it/s]14it [00:00, 30.39it/s]16it [00:00, 24.45it/s]
+Epoch: 5 | Train Loss: 1.00937| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 399.9022614 | Train MAPE: 1.2498287 | Vali RMSE: 445.7634764| Vali MAE: 311.8248848| Vali MAPE: 0.7589463| Test RMSE: 356.1603168| Test MAE: 266.7777383 | Test MAPE: 0.8866826
+The checkpoint is saved in /projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2024/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_Znion_s2024!
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 6 | loss:1.3162823 | label_loss: 1.3162823 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3674s/iter; left time: 1604.0916s
+	iteras: 10, epoch: 6 | loss:0.8395999 | label_loss: 0.8395999 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0365s/iter; left time: 159.2529s
+	iteras: 15, epoch: 6 | loss:0.8749766 | label_loss: 0.8749766 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0368s/iter; left time: 160.3457s
+	iteras: 20, epoch: 6 | loss:1.3235215 | label_loss: 1.3235215 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0386s/iter; left time: 168.0122s
+	iteras: 25, epoch: 6 | loss:0.8980781 | label_loss: 0.8980781 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0385s/iter; left time: 167.1172s
+	iteras: 30, epoch: 6 | loss:1.2694904 | label_loss: 1.2694904 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0375s/iter; left time: 162.9663s
+	iteras: 35, epoch: 6 | loss:0.8667415 | label_loss: 0.8667415 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0381s/iter; left time: 165.2924s
+	iteras: 40, epoch: 6 | loss:0.9394871 | label_loss: 0.9394871 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0372s/iter; left time: 161.3223s
+	iteras: 45, epoch: 6 | loss:1.3060799 | label_loss: 1.3060799 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0320s/iter; left time: 138.3871s
+Epoch: 6 cost time: 1.9713013172149658
+0it [00:00, ?it/s]1it [00:00,  3.71it/s]5it [00:00, 16.02it/s]9it [00:00, 23.18it/s]14it [00:00, 30.13it/s]16it [00:00, 24.21it/s]
+0it [00:00, ?it/s]1it [00:00,  3.94it/s]6it [00:00, 19.19it/s]10it [00:00, 24.68it/s]15it [00:00, 31.39it/s]16it [00:00, 24.86it/s]
+Epoch: 6 | Train Loss: 1.00544| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 399.1226763 | Train MAPE: 1.2408856 | Vali RMSE: 430.1585213| Vali MAE: 313.6200265| Vali MAPE: 0.8837517| Test RMSE: 347.8375571| Test MAE: 271.6680335 | Test MAPE: 1.0421013
+EarlyStopping counter: 1 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 7 | loss:1.2460101 | label_loss: 1.2460101 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3645s/iter; left time: 1574.6404s
+	iteras: 10, epoch: 7 | loss:1.0721397 | label_loss: 1.0721397 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0370s/iter; left time: 159.6891s
+	iteras: 15, epoch: 7 | loss:0.9671768 | label_loss: 0.9671768 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0362s/iter; left time: 155.9174s
+	iteras: 20, epoch: 7 | loss:0.8500284 | label_loss: 0.8500284 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0384s/iter; left time: 165.2898s
+	iteras: 25, epoch: 7 | loss:0.9163917 | label_loss: 0.9163917 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0371s/iter; left time: 159.3823s
+	iteras: 30, epoch: 7 | loss:1.0295596 | label_loss: 1.0295596 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0379s/iter; left time: 162.7863s
+	iteras: 35, epoch: 7 | loss:1.2149400 | label_loss: 1.2149400 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0376s/iter; left time: 161.1845s
+	iteras: 40, epoch: 7 | loss:1.1995187 | label_loss: 1.1995187 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0370s/iter; left time: 158.5881s
+	iteras: 45, epoch: 7 | loss:0.9177036 | label_loss: 0.9177036 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0317s/iter; left time: 135.7607s
+Epoch: 7 cost time: 1.9453537464141846
+0it [00:00, ?it/s]1it [00:00,  3.93it/s]5it [00:00, 16.87it/s]10it [00:00, 27.13it/s]16it [00:00, 33.88it/s]16it [00:00, 26.44it/s]
+0it [00:00, ?it/s]1it [00:00,  4.12it/s]4it [00:00, 13.69it/s]8it [00:00, 20.66it/s]12it [00:00, 26.53it/s]16it [00:00, 30.40it/s]16it [00:00, 23.45it/s]
+Epoch: 7 | Train Loss: 1.00540| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 399.1140129 | Train MAPE: 1.2436544 | Vali RMSE: 423.3073676| Vali MAE: 318.2482186| Vali MAPE: 0.9674867| Test RMSE: 346.0540833| Test MAE: 276.8050417 | Test MAPE: 1.1400335
+EarlyStopping counter: 2 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 8 | loss:0.8640549 | label_loss: 0.8640549 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3597s/iter; left time: 1537.3277s
+	iteras: 10, epoch: 8 | loss:0.9990586 | label_loss: 0.9990586 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0351s/iter; left time: 149.9699s
+	iteras: 15, epoch: 8 | loss:0.9464622 | label_loss: 0.9464622 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0379s/iter; left time: 161.8072s
+	iteras: 20, epoch: 8 | loss:1.0869093 | label_loss: 1.0869093 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0374s/iter; left time: 159.0756s
+	iteras: 25, epoch: 8 | loss:1.1367216 | label_loss: 1.1367216 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0387s/iter; left time: 164.7850s
+	iteras: 30, epoch: 8 | loss:0.8251489 | label_loss: 0.8251489 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0367s/iter; left time: 155.7483s
+	iteras: 35, epoch: 8 | loss:1.1240402 | label_loss: 1.1240402 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0389s/iter; left time: 165.2419s
+	iteras: 40, epoch: 8 | loss:1.2228713 | label_loss: 1.2228713 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0364s/iter; left time: 154.3751s
+	iteras: 45, epoch: 8 | loss:1.1104714 | label_loss: 1.1104714 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0312s/iter; left time: 132.1867s
+Epoch: 8 cost time: 1.9454560279846191
+0it [00:00, ?it/s]1it [00:00,  3.91it/s]6it [00:00, 19.09it/s]10it [00:00, 24.57it/s]15it [00:00, 31.34it/s]16it [00:00, 24.77it/s]
+0it [00:00, ?it/s]1it [00:00,  4.06it/s]6it [00:00, 19.78it/s]10it [00:00, 26.44it/s]16it [00:00, 33.92it/s]16it [00:00, 26.76it/s]
+Epoch: 8 | Train Loss: 1.00731| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 399.4927335 | Train MAPE: 1.2419756 | Vali RMSE: 430.0290450| Vali MAE: 313.6265940| Vali MAPE: 0.8847229| Test RMSE: 347.7652526| Test MAE: 271.6691472 | Test MAPE: 1.0432633
+EarlyStopping counter: 3 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 9 | loss:0.9135160 | label_loss: 0.9135160 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3540s/iter; left time: 1496.7606s
+	iteras: 10, epoch: 9 | loss:1.0418129 | label_loss: 1.0418129 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0349s/iter; left time: 147.3005s
+	iteras: 15, epoch: 9 | loss:0.9899431 | label_loss: 0.9899431 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0356s/iter; left time: 150.2090s
+	iteras: 20, epoch: 9 | loss:1.1978292 | label_loss: 1.1978292 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0356s/iter; left time: 150.0788s
+	iteras: 25, epoch: 9 | loss:0.9013758 | label_loss: 0.9013758 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0361s/iter; left time: 151.9630s
+	iteras: 30, epoch: 9 | loss:0.9315628 | label_loss: 0.9315628 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0372s/iter; left time: 156.4365s
+	iteras: 35, epoch: 9 | loss:1.0862672 | label_loss: 1.0862672 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0398s/iter; left time: 166.9081s
+	iteras: 40, epoch: 9 | loss:0.9133607 | label_loss: 0.9133607 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0375s/iter; left time: 157.2879s
+	iteras: 45, epoch: 9 | loss:0.8569563 | label_loss: 0.8569563 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0317s/iter; left time: 132.7028s
+Epoch: 9 cost time: 1.9502220153808594
+0it [00:00, ?it/s]1it [00:00,  3.92it/s]5it [00:00, 16.83it/s]9it [00:00, 23.44it/s]14it [00:00, 30.41it/s]16it [00:00, 24.63it/s]
+0it [00:00, ?it/s]1it [00:00,  3.89it/s]6it [00:00, 19.08it/s]11it [00:00, 27.90it/s]16it [00:00, 33.32it/s]16it [00:00, 26.33it/s]
+Epoch: 9 | Train Loss: 1.00113| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 398.2664018 | Train MAPE: 1.2387870 | Vali RMSE: 427.7382692| Vali MAE: 314.5234149| Vali MAPE: 0.9091322| Test RMSE: 346.9879988| Test MAE: 272.8923856 | Test MAPE: 1.0724821
+EarlyStopping counter: 4 out of 5
+constant| Updating learning rate to 0.0005
+	iteras: 5, epoch: 10 | loss:1.1823474 | label_loss: 1.1823474 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.3623s/iter; left time: 1515.0788s
+	iteras: 10, epoch: 10 | loss:1.1328276 | label_loss: 1.1328276 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0377s/iter; left time: 157.5242s
+	iteras: 15, epoch: 10 | loss:0.9243549 | label_loss: 0.9243549 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0392s/iter; left time: 163.6326s
+	iteras: 20, epoch: 10 | loss:1.0551779 | label_loss: 1.0551779 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0386s/iter; left time: 160.9391s
+	iteras: 25, epoch: 10 | loss:0.8428366 | label_loss: 0.8428366 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0401s/iter; left time: 166.7499s
+	iteras: 30, epoch: 10 | loss:1.0137188 | label_loss: 1.0137188 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0384s/iter; left time: 159.6325s
+	iteras: 35, epoch: 10 | loss:1.0364113 | label_loss: 1.0364113 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0396s/iter; left time: 164.5975s
+	iteras: 40, epoch: 10 | loss:1.0018351 | label_loss: 1.0018351 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0368s/iter; left time: 152.4734s
+	iteras: 45, epoch: 10 | loss:1.0787182 | label_loss: 1.0787182 | cl_loss: 0.0000000 | lc_loss: 0.0000000
+	speed: 0.0316s/iter; left time: 130.6988s
+Epoch: 10 cost time: 2.036099433898926
+0it [00:00, ?it/s]1it [00:00,  3.77it/s]6it [00:00, 18.56it/s]10it [00:00, 24.30it/s]15it [00:00, 31.61it/s]16it [00:00, 24.57it/s]
+0it [00:00, ?it/s]1it [00:00,  3.97it/s]5it [00:00, 15.87it/s]9it [00:00, 22.62it/s]14it [00:00, 29.97it/s]16it [00:00, 24.18it/s]
+wandb: 
+wandb: Run history:
+wandb:      epoch ▁▂▂▃▄▅▅▆▇▇█
+wandb:  test_MAPE ▄█▅▄▁▅▇▅▆▅▁
+wandb:  test_RMSE ▃▁▂▄█▂▁▂▂▂█
+wandb:  test_acc1 ▅█▆▃▁▆█▆▆▆▁
+wandb:  test_acc2 ▃█▃▃▁▃█▃▆▃▁
+wandb: train_loss █▂▂▂▂▁▁▂▁▁▁
+wandb:  vali_MAPE ▄█▅▃▁▅▇▅▅▄▁
+wandb:  vali_RMSE ▄▁▄▅█▃▁▃▃▄█
+wandb:  vali_acc1 ▅▅▅▅▁▅█▅▅▅▁
+wandb:  vali_acc2 █▁██▁█▁███▁
+wandb: 
+wandb: Run summary:
+wandb:      epoch 10
+wandb:  test_MAPE 0.88668
+wandb:  test_RMSE 356.16032
+wandb:  test_acc1 1.55
+wandb:  test_acc2 0
+wandb: train_loss 1.00535
+wandb:  vali_MAPE 0.75895
+wandb:  vali_RMSE 445.76348
+wandb:  vali_acc1 5
+wandb:  vali_acc2 5
+wandb: 
+wandb: You can sync this run to the cloud by running:
+wandb: wandb sync /projectnb/nsf-energize/dgordon/Projects/BatteryLife/wandb/offline-run-20260913_052102-igaww9pv
+wandb: Find logs at: ./wandb/offline-run-20260913_052102-igaww9pv/logs
+Epoch: 10 | Train Loss: 1.00535| Train cl loss: 0.00000| Train lc loss: 0.00000 | Train RMSE: 399.1046189 | Train MAPE: 1.2497029 | Vali RMSE: 431.0308318| Vali MAE: 313.2664563| Vali MAPE: 0.8747656| Test RMSE: 348.1753486| Test MAE: 271.3128441 | Test MAPE: 1.0317049
+EarlyStopping counter: 5 out of 5
+Early stopping
+Best model performance: Test MAE: 266.7777 | Test RMSE: 356.1603 | Test MAPE: 0.8867 | Test 15%-accuracy: 1.5500 | Test 10%-accuracy: 0.0000 | Val MAE: 311.8249 | Val RMSE: 445.7635 | Val MAPE: 0.7589 | Val 15%-accuracy: 5.0000 | Val 10%-accuracy: 5.0000 
+Best model performance: Test Seen MAPE: 0.9017 | Test Unseen MAPE: 0.8589
+Best model performance: Test Seen 15%-accuracy: 0.0000 | Test Unseen 15%-accuracy: 4.4286
+Best model performance: Test Seen 10%-accuracy: 0.0000 | Test Unseen 10%-accuracy: 0.0000
+/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNION_seed2024/CPMLP_sl1_lr0.0005_dm64_nh8_el5_dl9_df64_lradjconstant_datasetZN-coin2024_lossMSE_wd0.0_wlFalse_bs128_s2024-CPMLP_Znion_s2024
+=== Best model performance lines across all 3 seeds ===
+Best model performance: Test MAE: 258.2834 | Test RMSE: 416.7264 | Test MAPE: 0.8873 | Test 15%-accuracy: 25.0000 | Test 10%-accuracy: 16.7500 | Val MAE: 272.7589 | Val RMSE: 410.5963 | Val MAPE: 0.7867 | Val 15%-accuracy: 15.2500 | Val 10%-accuracy: 11.9000 
+Best model performance: Test Seen MAPE: 0.8113 | Test Unseen MAPE: 1.3182
+Best model performance: Test Seen 15%-accuracy: 25.5882 | Test Unseen 15%-accuracy: 21.6667
+Best model performance: Test Seen 10%-accuracy: 17.7647 | Test Unseen 10%-accuracy: 11.0000
+Best model performance: Test MAE: 266.7777 | Test RMSE: 356.1603 | Test MAPE: 0.8867 | Test 15%-accuracy: 1.5500 | Test 10%-accuracy: 0.0000 | Val MAE: 311.8249 | Val RMSE: 445.7635 | Val MAPE: 0.7589 | Val 15%-accuracy: 5.0000 | Val 10%-accuracy: 5.0000 
+Best model performance: Test Seen MAPE: 0.9017 | Test Unseen MAPE: 0.8589
+Best model performance: Test Seen 15%-accuracy: 0.0000 | Test Unseen 15%-accuracy: 4.4286
+Best model performance: Test Seen 10%-accuracy: 0.0000 | Test Unseen 10%-accuracy: 0.0000
+Best model performance: Test MAE: 322.0155 | Test RMSE: 400.9429 | Test MAPE: 1.3360 | Test 15%-accuracy: 0.0000 | Test 10%-accuracy: 0.0000 | Val MAE: 246.7973 | Val RMSE: 337.2187 | Val MAPE: 1.0836 | Val 15%-accuracy: 12.3500 | Val 10%-accuracy: 10.0000 
+Best model performance: Test Seen MAPE: 1.1897 | Test Unseen MAPE: 1.7454
+Best model performance: Test Seen 15%-accuracy: 0.0000 | Test Unseen 15%-accuracy: 0.0000
+Best model performance: Test Seen 10%-accuracy: 0.0000 | Test Unseen 10%-accuracy: 0.0000
