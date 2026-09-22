@@ -31,7 +31,7 @@ ckpt="/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/CPMLP_ZNI
 log="${RESULTS_DIR}/CPMLP_znion_accumtest_seed${seed}.log"
 mkdir -p "$ckpt"
 
-CUDA_VISIBLE_DEVICES=0 accelerate launch --num_processes 1 --main_process_port 20436 run_main.py \
+accelerate launch --num_processes 1 --main_process_port 20436 run_main.py \
   --task_name classification --data Dataset_original --is_training 1 --root_path ./dataset \
   --model_id CPMLP --model CPMLP --features MS --seq_len 1 --label_len 50 --factor 3 \
   --enc_in 3 --dec_in 1 --c_out 1 --des 'Exp' --itr 1 --seed "$seed" \

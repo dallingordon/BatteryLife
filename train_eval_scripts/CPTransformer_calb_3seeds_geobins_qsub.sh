@@ -26,7 +26,7 @@ run_cptransformer () {
   mkdir -p "$ckpt"
   echo "=== CPTransformer geo_bins | dataset=$dataset seed=$seed bs=$batch_size d_model=$d_model d_ff=$d_ff e_layers=$e_layers d_layers=$d_layers dropout=$dropout lr=$lr ==="
 
-  CUDA_VISIBLE_DEVICES=0 accelerate launch --num_processes 1 --main_process_port 25219 run_main.py \
+  accelerate launch --num_processes 1 --main_process_port 25219 run_main.py \
     --task_name classification \
     --data Dataset_original \
     --is_training 1 \

@@ -25,7 +25,7 @@ run_cpmlp () {
   local log="${RESULTS_DIR}/CPMLP_${dataset}_seed${seed}.log"
   mkdir -p "$ckpt"
   echo "=== CPMLP | dataset=$dataset seed=$seed bs=$batch_size d_model=$d_model d_ff=$d_ff e_layers=$e_layers d_layers=$d_layers dropout=$dropout lr=$lr ==="
-  CUDA_VISIBLE_DEVICES=0 accelerate launch --num_processes 1 --main_process_port 20435 run_main.py \
+  accelerate launch --num_processes 1 --main_process_port 20435 run_main.py \
     --task_name classification --data Dataset_original --is_training 1 --root_path ./dataset \
     --model_id CPMLP --model CPMLP --features MS --seq_len 1 --label_len 50 --factor 3 \
     --enc_in 3 --dec_in 1 --c_out 1 --des 'Exp' --itr 1 --seed "$seed" \

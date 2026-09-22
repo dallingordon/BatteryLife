@@ -143,3 +143,43 @@ STILL PARKED
 - Finer conditioning granularity (source-dataset id, cathode type) -- see 9/19 note above, unchanged.
 - Full-timescale (Mamba) dataloader work -- untouched this session, see 9/19 section above; precompute status
   as of 9/19 was ~400/664 cells done, needs a rerun in a job with longer h_rt.
+
+--- Stage 1 (dropout x wd sweep) submitted 9/22 ---
+qsub'd via submit_dropout_wd_sweep.sh: 32 jobs, SCC job ids 7692641-7692672 (cpmlp_pool_* / cptransformer_pool_*,
+chem_fusion=none, chem_loss_alpha=0, sweeping DROPOUT {0,0.05,0.1} x WD {0,1e-4,1e-3}, (0,0.0) baseline skipped).
+
+TODO: once stage 1 results are in, pick the winning (dropout, wd) by macro val MAPE, then submit stage 2 (the
+early/late conditioning + chem_loss_alpha sweep, NOT yet submitted -- this is where early_concat gets tested):
+  DROPOUT=<winner> WD=<winner> bash train_eval_scripts/submit_pooled_sweep.sh
+
+--- Full-timescale precompute finished, loader verified (9/22) ---
+Reran `python precompute_full_cells.py --root_path ./dataset --workers 4` in a live qrsh session (the 9/19 attempt
+had died at ~400/664 cells when that session hit its time limit). This time it completed cleanly: 664/664 cells
+processed in 125s total elapsed (the ~400 already-cached cells from the interrupted run were skipped near-instantly;
+real work was the remaining ~264, starting around CALCE/SNL/MICH/CALB/ZN-coin/NA-ion).
+
+Final status: {'ok': 657, 'no_cycles': 2, 'no_label': 5} -- same flavor of exclusions the baseline already drops.
+483,599 total cycles stored across the 657 ok cells, longest single cell 4998 cycles. Cache size 1.74 GB.
+
+Two cells truncated early during the cache build:
+  SNL_18650_NCA_25C_0-100_0.5-0.5C_b.pkl: stopped at cycle 136 of 179 (IndexError: index -1 out of bounds, empty
+    charge/discharge segment on that cycle)
+  SNL_18650_NCA_25C_20-80_0.5-0.5C_c.pkl: stopped at cycle 191 of 791 (same IndexError)
+Not fatal -- meta.json records truncated_at_cycle and the loader just uses what's cached -- but worth a look before
+these two cells matter for real training, since the range read for them is shorter than eol would suggest.
+
+Ran the two verification scripts against the finished cache:
+  python check_full_equivalence.py        -- passed
+  python smoke_test_full.py --full_prefixes_per_cell 50   -- passed (shapes, epoch redraw, full pass over one
+    epoch: "loaded 300 samples OK (stopped at 300)")
+
+This closes out the full-timescale loader work item from the 9/19 section above (dataloader + cache + equivalence
+checks are done and verified end to end).
+
+NEXT (in order)
+1. Commit the full-timescale loader code (data_provider/data_loader_full.py, precompute_full_cells.py,
+   check_full_equivalence.py, smoke_test_full.py) + these notes -- nothing from this work is committed yet.
+2. Start the Mamba model + training loop against Dataset_full_timescale. Plan as of 9/19: CLS-token-style single
+   prediction per prefix first (same one-label-per-sequence shape as current models), per-step prediction deferred
+   as a training-loop question for later. P100 kernel compatibility for the Mamba CUDA kernels and an S4 ablation
+   are later concerns, not blockers for the first pass.
