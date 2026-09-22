@@ -41,6 +41,14 @@ class Dataset_pooled(Dataset_original):
         super().__init__(args, flag=flag, **kwargs)
         self.total_chemistry_ids = np.array([dataset_id_to_chemistry_id(i) for i in self.total_dataset_ids], dtype=np.int64)
 
+        chem_loss_alpha = getattr(args, 'chem_loss_alpha', 0.0)
+        if chem_loss_alpha and flag == 'train':
+            # Multiplies whatever self.weights already is (all-ones unless --weighted_loss is also on) by a
+            # per-chemistry volume-balancing factor, so the two weighting schemes compose rather than conflict.
+            counts_by_id = np.array([self.chemistry_counts()[c] for c in CHEMISTRIES], dtype=np.float64)
+            self.weights = np.asarray(self.weights, dtype=np.float64) * self.volume_weights(
+                self.total_chemistry_ids, counts_by_id, chem_loss_alpha)
+
     def __getitem__(self, index):
         sample = super().__getitem__(index)
         sample['chemistry_id'] = int(self.total_chemistry_ids[index])
@@ -49,6 +57,26 @@ class Dataset_pooled(Dataset_original):
     def chemistry_counts(self):
         """{chemistry name: number of samples} (samples, not cells: one cell yields many samples)."""
         return {c: int((self.total_chemistry_ids == i).sum()) for i, c in enumerate(CHEMISTRIES)}
+
+    @staticmethod
+    def volume_weights(chemistry_ids, counts_by_id, alpha):
+        """
+        Per-sample loss weight for --chem_loss_alpha: w = N_c^-alpha where N_c is chemistry c's pooled train
+        sample count, rescaled so mean(w) == 1 over the given chemistry_ids (keeps loss scale / effective lr
+        comparable to alpha=0). Pure function of counts/ids so it's testable without a real dataset.
+        :param chemistry_ids: int array [N], index into CHEMISTRIES per sample.
+        :param counts_by_id: array [num_chem], sample count for each chemistry id (0-indexed, same order as CHEMISTRIES).
+        :param alpha: 0 = unweighted (all ones); 1 = chemistries contribute equally; 0.5 = softer sqrt balancing.
+        """
+        counts_by_id = np.asarray(counts_by_id, dtype=np.float64)
+        chemistry_ids = np.asarray(chemistry_ids)
+        present = np.unique(chemistry_ids)
+        assert np.all(counts_by_id[present] > 0), \
+            'volume_weights: every chemistry that appears in chemistry_ids must have a positive count ' \
+            '(a chemistry left out entirely via --pooled_chemistries is fine -- it never appears in chemistry_ids)'
+        per_sample_count = counts_by_id[chemistry_ids]
+        w = per_sample_count ** (-alpha)
+        return w / w.mean()
 
 
 def my_collate_fn_pooled(samples):

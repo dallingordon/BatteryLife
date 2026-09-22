@@ -123,10 +123,18 @@ parser.add_argument('--pooled_split_seed', type=int, default=2021, choices=[2021
                     help='which data split CALB / Zn-ion / Na-ion use (as the paper\'s seed does); Li-ion has one split')
 
 # chemistry conditioning for pooled training (CPMLP / CPTransformer only)
-parser.add_argument('--chem_fusion', type=str, default='none', choices=['none', 'late_mlp'],
-                    help='none (default): model unchanged. late_mlp: output head = MLP over [features ; chemistry embedding]. Requires --pooled.')
+parser.add_argument('--chem_fusion', type=str, default='none', choices=['none', 'late_mlp', 'early_concat'],
+                    help='none (default): model unchanged. late_mlp: output head = MLP over [features ; chemistry embedding]. '
+                         'early_concat: chemistry embedding concatenated onto the raw per-cycle-step input before the '
+                         'model\'s first layer, so every downstream layer sees it. Requires --pooled.')
 parser.add_argument('--chem_embed_dim', type=int, default=16,
-                    help='chemistry embedding size for --chem_fusion late_mlp. 0 = same MLP head with NO chemistry input (capacity control).')
+                    help='chemistry embedding size for --chem_fusion late_mlp / early_concat. 0 = same architecture with NO chemistry input (capacity control).')
+parser.add_argument('--chem_loss_alpha', type=float, default=0.0,
+                    help='per-chemistry loss weighting for pooled training (default 0.0 = off, i.e. unweighted). '
+                         'Each training sample in chemistry c is weighted by N_c^-alpha (N_c = pooled train sample count '
+                         'for that chemistry), rescaled so the mean weight over the training set is 1. alpha=1: chemistries '
+                         'contribute equally to the loss; alpha=0.5: softer sqrt balancing. Orthogonal to --chem_fusion and '
+                         'to --weighted_loss (multiplies with it; --weighted_loss defaults to all-ones when off). Requires --pooled.')
 
 # optimization
 parser.add_argument('--weighted_loss', action='store_true', default=False, help='use weighted loss')
@@ -162,6 +170,8 @@ if args.pooled:
 if args.chem_fusion != 'none':
     assert args.pooled, '--chem_fusion needs --pooled (chemistry ids come from the pooled loader)'
     assert args.model in ('CPMLP', 'CPTransformer'), f'--chem_fusion is only implemented for CPMLP / CPTransformer, not {args.model}'
+if args.chem_loss_alpha:
+    assert args.pooled, '--chem_loss_alpha needs --pooled (chemistry ids / counts come from the pooled loader)'
 args.chem_num = len(CHEMISTRIES)
 
 geo_bins = None

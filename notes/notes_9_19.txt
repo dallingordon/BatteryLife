@@ -46,3 +46,100 @@ first (small chemistries: "we try"; S4 ablation and P100 kernel compatibility ar
   and Stanford_2 (129 usable / 181 labeled; "complete Stanford" - probably OVERLAPS the 41 Stanford cells in MIX_large,
   so check for test-set leakage before using it as extra training data).
 Status: revisit the Mamba dataloader after the pooled sweep is submitted.
+
+
+=== Full-timescale (Mamba) dataloader: built, end of session 9/19 ===
+
+WHAT EXISTS (committed; already pulled on SCC since precompute ran there)
+- data_provider/data_loader_full.py    Dataset_full_timescale + my_collate_fn_full + cache builder
+- data_provider/data_factory.py        + data_provider_full(args, chemistries, split_seed)
+- precompute_full_cells.py             builds the on-disk cycle cache (separate step)
+- check_full_equivalence.py            real-data check vs the baseline loader (NOT RUN YET)
+- smoke_test_full.py                   prints shapes / per-chemistry shares (NOT RUN YET)
+Only tested on synthetic fake pkls so far (cache contents, prefix rules, K cap, epoch redraw, collate).
+
+DESIGN (as agreed)
+- Same pooled train cells + chemistry id + same exclusions (no label, no pkl, eol <= 100).
+- Prefixes 1..min(stored cycles, eol-1) per cell (not capped at 100).
+- --full_max_cycles N      longest prefix used. empty = no max.
+- --full_prefixes_per_cell K   at most K random prefixes per cell per epoch, redrawn each epoch (seeded by seed+epoch),
+                            chemistry-agnostic. empty = drop nothing. Cells with < K prefixes contribute all.
+- Batch size 1, NO padding. Batch layout = pooled 8-tuple (curves [1,L,3,300], mask [1,L] all ones, labels, life_class,
+  scaled_life_class, weights, seen_unseen, chemistry_ids). Assert in collate if batch > 1.
+- Call data_set.set_epoch(e) before iterating each epoch (prints per-chemistry samples / cycle-steps / shares).
+- Val/test unchanged: existing per-chemistry Dataset_pooled loaders, prefixes 1..100, published cells.
+- Cache = <root_path>/full_cycle_cache/<cell>.npy ([n_cycles,3,300] float32, cycles 1..eol-1) + <cell>.meta.json.
+  max_cycles applied at load time, so changing it never needs a rebuild. Loader errors with the exact command if cache missing.
+- Curves use the baseline's own get_charge_discharge_curves, one cycle at a time (same per-cycle code, O(N) not O(N^2)).
+- Unusable cycle (exception / NaN / no rows): cache for that cell STOPS before it, recorded in meta
+  (truncated_at_cycle, reason); precompute prints these at the end. Worth a look once it finishes.
+- label scaler is fit on the included cells' eol, i.e. the same cells Dataset_pooled(train) fits on. Hand it to val/test loaders.
+- Not wired into run_main.py (no Mamba model / training loop yet). --weighted_loss not supported by this loader.
+
+PRECOMPUTE STATUS (interrupted)
+- Ran: python precompute_full_cells.py --root_path ./dataset --workers 4
+- 664 training cells (union of train lists across split seeds 2021/42/2024; the 2021 pooled train set alone is 612).
+- Reached ~400/664 cells in 455 s, then the qrsh session hit its time limit. Order was RWTH, HUST, MATR, Stanford, Tongji,
+  ISU-ILCC (in progress). Long HUST cells were slowest (~8-10 s each); one ISU-ILCC cell took 18.7 s.
+- Safe to just rerun the same command: finished cells are skipped, .npy is written via tmp+rename and the .meta.json last,
+  so a cell killed mid-write is redone. Cells not reached yet: rest of ISU-ILCC + everything after (XJTU, MICH, SNL,
+  UL-PUR, CALB, ZN-coin, NA-ion, ... whatever follows in the list).
+- Do it in a job or a longer session next time: qsub a CPU-only job (or qrsh with a longer h_rt) so it can't be cut off.
+
+NEXT (in order)
+1. Rerun precompute until it prints the final summary (status counts, cycles stored, truncated cells, cache size in GB).
+2. python check_full_equivalence.py     (first 100 cycles == baseline read_cell_df incl. a Zn charge-first cell; counts + scaler
+                                         match Dataset_pooled for CALB/Zn/Na at max_cycles=100)
+3. python smoke_test_full.py --full_prefixes_per_cell 50      (shapes, shares, epoch redraw)
+4. Commit the notes + any fixes that come out of the checks.
+5. Then: Mamba model + training loop (CLS token at final position, single prediction per prefix; per-step prediction later,
+   training-loop concern). P100 compatibility of the Mamba kernels and the S4 ablation are still later concerns.
+
+STILL PARKED
+- --chem_loss_alpha (per-chemistry loss weighting), finer conditioning (cathode / source dataset), Stanford_2 leakage check before use.
+- The 8 pooled sweep jobs (7651962-7651969) were in the queue last I looked; results not collected yet.
+
+=== notes 9/22 ===
+
+--- early_concat fusion + chem_loss_alpha: implemented ---
+early_concat (chemistry embedding concatenated onto the raw flattened input, before the model's first layer,
+so every downstream layer sees it -- not just the head like late_mlp) finished end to end for both CPMLP and
+CPTransformer: ChemEarlyEmbed (layers/ChemHead.py), model wiring, --chem_fusion CLI choice, test_chem_models.py
+coverage (determinism, chemistry changes output, per-row independence, gradient flow, embed_dim=0 capacity
+control has IDENTICAL param count to chem_fusion=none). CPMLP's half of this already existed uncommitted from
+an earlier session; CPTransformer + CLI + tests were the gap, now closed.
+
+--chem_loss_alpha (the per-chemistry loss-volume-weighting idea parked above on 9/19) also implemented:
+Dataset_pooled.volume_weights staticmethod, weight = N_c^-alpha rescaled to mean 1, composes with
+--weighted_loss rather than overriding it. Verified with a standalone numpy test against the real shipped
+function (extracted source + exec'd, since no torch in this shell): alpha=0 no-op, alpha=1 exactly equalizes
+total loss mass per chemistry, alpha=0.5 in between, --pooled_chemistries subset case doesn't spuriously trip
+the "every chemistry needs positive count" assert. Not yet run on real data/GPU.
+
+--- Regularization gap found, staged dropout/wd sweep built ---
+Checked what regularization pooled training actually had: --dropout was hardcoded to 0 in the qsub scripts
+(the Li-ion row's tuned value -- CALB/Zn-ion/Na-ion's own tuned dropout was actually 0.05-0.1) and --wd was
+never set (default 0.0). Only real regularization in effect was early stopping (patience 5 for pooled vs 10
+default). A model trained on 4x the data with an 84%-Li-ion imbalance is a different regularization regime
+than any single per-chemistry baseline, so this was worth sweeping rather than assuming.
+
+Decided against a full factorial (dropout x wd x fusion x alpha ~= 150-300 jobs) in favor of a STAGED search:
+  Stage 1 (submit_dropout_wd_sweep.sh, new): DROPOUT {0, 0.05, 0.1} x WD {0, 1e-4, 1e-3}, chem_fusion=none,
+    chem_loss_alpha=0. Skips the (0, 0.0) cell -- that's the existing 9/19-9/20 baseline. 32 jobs.
+  Stage 2 (submit_pooled_sweep.sh, rewritten): chem_fusion {none, late_mlp16, early_concat16} x chem_loss_alpha
+    {0, 0.5, 1.0}, with DROPOUT/WD passed in as fixed env vars set to stage 1's winner
+    (e.g. DROPOUT=0.1 WD=0.0001 bash train_eval_scripts/submit_pooled_sweep.sh). 36 jobs (44 w/ WITH_CONTROL=1).
+Both DRY_RUN-verified (job counts, naming). Nothing submitted yet, nothing committed yet.
+
+NEXT (in order)
+1. git add -A && git commit, push, pull on SCC.
+2. python test_chem_models.py on SCC (torch venv active) -- verify fusion changes before spending GPU time.
+3. bash train_eval_scripts/pooled_quick_test.sh -- quick sanity pass (all variants incl. early_concat, 2 epochs).
+4. Once quick test passes: bash train_eval_scripts/submit_dropout_wd_sweep.sh (stage 1, 32 jobs).
+5. After stage 1 results: DROPOUT=<winner> WD=<winner> bash train_eval_scripts/submit_pooled_sweep.sh (stage 2).
+
+STILL PARKED
+- late_linear variant (concat -> single linear = per-chemistry offset only).
+- Finer conditioning granularity (source-dataset id, cathode type) -- see 9/19 note above, unchanged.
+- Full-timescale (Mamba) dataloader work -- untouched this session, see 9/19 section above; precompute status
+  as of 9/19 was ~400/664 cells done, needs a rerun in a job with longer h_rt.

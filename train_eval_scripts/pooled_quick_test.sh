@@ -5,7 +5,7 @@
 cd "$(dirname "$0")/.." || exit 1
 for model in CPMLP CPTransformer; do
   for mode in regression geo_bins; do
-    for v in none:0 late_mlp:16 late_mlp:0; do
+    for v in none:0 late_mlp:16 late_mlp:0 early_concat:16 early_concat:0; do
       fusion=${v%%:*}; emb=${v##*:}
       echo "################ $model | $mode | fusion=$fusion E=$emb"
       EPOCHS=2 SEEDS=2021 POOLED_CHEMS="CALB Zn-ion Na-ion" PRED_MODE=$mode CHEM_FUSION=$fusion CHEM_EMBED_DIM=$emb \

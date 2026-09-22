@@ -58,5 +58,35 @@ for name, mod, head in [('CPMLP', CPMLP, 'head_output'), ('CPTransformer', CPTra
     assert torch.equal(c(x, mask), c(x, mask, chemistry_ids=ids_a)), 'embed_dim=0 must ignore chemistry'
 
     n_base = sum(p.numel() for p in base.parameters()); n_m = sum(p.numel() for p in m.parameters()); n_c = sum(p.numel() for p in c.parameters())
-    print(f'{name}: OK | params baseline={n_base:,}  late_mlp(E=16)={n_m:,}  late_mlp(E=0 control)={n_c:,}')
+
+    # ---- early_concat with embedding: chem embedding concatenated onto the raw input, before the first layer ----
+    e = mod.Model(cfg('early_concat', embed=16)).eval()
+    assert e.chem_early_embed is not None and e.chem_early_embed.embedding is not None
+    assert isinstance(getattr(e, head), torch.nn.Linear), 'early_concat must leave the output head as a plain Linear (fusion happens at the input, not the head)'
+    ya, yb = e(x, mask, chemistry_ids=ids_a), e(x, mask, chemistry_ids=ids_b)
+    assert ya.shape == (B, OUT)
+    assert torch.equal(ya, e(x, mask, chemistry_ids=ids_a)), 'deterministic in eval mode'
+    assert not torch.allclose(ya, yb), 'different chemistry ids must change the output'
+    same = e(x, mask, chemistry_ids=torch.zeros(B, dtype=torch.long))
+    assert torch.allclose(same[0], e(x[:1], mask[:1], chemistry_ids=torch.zeros(1, dtype=torch.long))[0], atol=1e-5), 'rows are independent'
+    try:
+        e(x, mask); raise SystemExit(f'{name}: early_concat missing chemistry_ids should raise')
+    except ValueError:
+        pass
+    e.train()
+    e(x, mask, chemistry_ids=ids_a).sum().backward()
+    g = e.chem_early_embed.embedding.weight.grad
+    assert g is not None and g.abs().sum() > 0, 'early_concat embedding must receive gradient'
+    assert mod.Model(cfg('early_concat', embed=16, out=1)).eval()(x, mask, chemistry_ids=ids_a).shape == (B, 1)
+
+    # ---- early_concat, embed 0: true capacity control, architecture IDENTICAL to chem_fusion='none' ----
+    ec = mod.Model(cfg('early_concat', embed=0)).eval()
+    assert ec.chem_early_embed is not None and ec.chem_early_embed.embedding is None
+    assert torch.equal(ec(x, mask), ec(x, mask, chemistry_ids=ids_a)), 'embed_dim=0 must ignore chemistry'
+    n_ec_base = sum(p.numel() for p in ec.parameters())
+    assert n_ec_base == n_base, 'early_concat embed_dim=0 must have IDENTICAL param count to chem_fusion=none (true capacity control)'
+
+    n_e = sum(p.numel() for p in e.parameters())
+    print(f'{name}: OK | params baseline={n_base:,}  late_mlp(E=16)={n_m:,}  late_mlp(E=0 control)={n_c:,}  '
+          f'early_concat(E=16)={n_e:,}  early_concat(E=0 control)={n_ec_base:,}')
 print('ALL OK')
