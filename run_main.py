@@ -349,7 +349,10 @@ for ii in range(args.itr):
             trained_parameters.append(p)
 
     accelerator.print(f'Trainable parameters are: {trained_parameters_names}')
-    model_optim = optim.Adam(trained_parameters, lr=args.learning_rate)
+    # --wd was parsed but never passed to the optimizer before 9/22 (every WD value trained like WD=0).
+    # Adam's weight_decay = L2 penalty added to the gradient; with wd=0 this is identical to the old line.
+    model_optim = optim.Adam(trained_parameters, lr=args.learning_rate, weight_decay=args.wd)
+    accelerator.print(f'optimizer: Adam lr={args.learning_rate} weight_decay={args.wd}')
     
     if args.lradj == 'COS':
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(model_optim, T_max=20, eta_min=1e-8)

@@ -251,3 +251,15 @@ Pick up here (login node steps don't need the GPU):
   qsub -v MAMBA_LAYER=mamba_init train_eval_scripts/CPMamba_full_qsub.sh
 Alternative if qrsh keeps stalling: wrap `python test_cpmamba.py --gpu && bash train_eval_scripts/mamba_quick_test.sh`
 in a qsub batch job (gpu_c=7.0) instead of an interactive session.
+
+--- BUG: --wd was a no-op (found 9/22 night) ---
+run_main.py parsed --wd but only used it in the checkpoint name; the optimizer was optim.Adam(params, lr=...) with no
+weight_decay, and ds_config has no optimizer block. Runs are deterministic, so every WD=1e-4/1e-3 stage-1 job exactly
+reproduced its WD=0 twin (identical metrics to 4 decimals in results_summary.csv).
+Fix: optim.Adam(..., weight_decay=args.wd) + startup print "optimizer: Adam lr=... weight_decay=...". Kept Adam's coupled
+L2 (not AdamW): at lr=5e-5 AdamW's decoupled decay with wd<=1e-3 would be ~5e-8/step, i.e. still effectively nothing.
+Identical to before at wd=0, so all wd=0 results (baselines, 9/19 sweep, dropout-only cells) stay valid.
+qdel'd the 20 redundant queued/running wd!=0 jobs; kept the 6 useful d{0.05,0.1}_w0 jobs (7695757, 60, 65, 68, 73, 76).
+Stage-1 dropout result so far: CPMLP regression best at dropout 0 (macro test MAPE 0.313 / 0.381 / 0.417 at 0 / 0.05 / 0.1).
+Resubmit the wd half of the grid with the fix: WDS="1e-4 1e-3" bash train_eval_scripts/submit_dropout_wd_sweep.sh (24 jobs).
+Old no-op wd logs moved to results_logs/wd_noop_9_22/ so collect_results.py doesn't mix them in.
