@@ -35,7 +35,9 @@ for model in CPMLP CPTransformer; do
         [ "$fusion" != "none" ] && name="${name}${emb}"
         { [ "$alpha" != "0" ] && [ "$alpha" != "0.0" ]; } && name="${name}_a${alpha}"
         name="${name}${extra_tag}"
-        cmd="qsub -N $name -o ${name}.qlog -v PRED_MODE=$mode,CHEM_FUSION=$fusion,CHEM_EMBED_DIM=$emb,CHEM_LOSS_ALPHA=$alpha,DROPOUT=$DROPOUT,WD=$WD $script"
+        # short job name (qstat shows 10 chars): <M|T><r|g><n|l|e><emb>a<alpha>, e.g. Mge16a5 = CPMLP geo_bins early_concat16 alpha0.5
+        short="${model:2:1}${mode:0:1}${fusion:0:1}$([ "$fusion" != none ] && echo "$emb")a$(echo "$alpha" | sed 's/^0\.//; s/\.0$//')"
+        cmd="qsub -N $short -o ${name}.qlog -v PRED_MODE=$mode,CHEM_FUSION=$fusion,CHEM_EMBED_DIM=$emb,CHEM_LOSS_ALPHA=$alpha,DROPOUT=$DROPOUT,WD=$WD $script"
         echo "$cmd"
         [ -z "$DRY_RUN" ] && $cmd
       done
@@ -45,7 +47,8 @@ for model in CPMLP CPTransformer; do
       for v in late_mlp:0 early_concat:0; do
         fusion=${v%%:*}; emb=${v##*:}
         name="${lc}_pool_${mode}_${fusion}${emb}${extra_tag}"
-        cmd="qsub -N $name -o ${name}.qlog -v PRED_MODE=$mode,CHEM_FUSION=$fusion,CHEM_EMBED_DIM=$emb,CHEM_LOSS_ALPHA=0,DROPOUT=$DROPOUT,WD=$WD $script"
+        short="${model:2:1}${mode:0:1}${fusion:0:1}${emb}ctl"
+        cmd="qsub -N $short -o ${name}.qlog -v PRED_MODE=$mode,CHEM_FUSION=$fusion,CHEM_EMBED_DIM=$emb,CHEM_LOSS_ALPHA=0,DROPOUT=$DROPOUT,WD=$WD $script"
         echo "$cmd"
         [ -z "$DRY_RUN" ] && $cmd
       done

@@ -247,8 +247,8 @@ Pick up here (login node steps don't need the GPU):
   python test_cpmamba.py --gpu
   bash train_eval_scripts/mamba_quick_test.sh
   # then real runs:
-  qsub -v MAMBA_LAYER=vanilla    train_eval_scripts/CPMamba_full_qsub.sh
-  qsub -v MAMBA_LAYER=mamba_init train_eval_scripts/CPMamba_full_qsub.sh
+  qsub -N Zvan_K50 -v MAMBA_LAYER=vanilla    train_eval_scripts/CPMamba_full_qsub.sh
+  qsub -N Zini_K50 -v MAMBA_LAYER=mamba_init train_eval_scripts/CPMamba_full_qsub.sh
 Alternative if qrsh keeps stalling: wrap `python test_cpmamba.py --gpu && bash train_eval_scripts/mamba_quick_test.sh`
 in a qsub batch job (gpu_c=7.0) instead of an interactive session.
 

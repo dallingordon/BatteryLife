@@ -26,7 +26,9 @@ for model in CPMLP CPTransformer; do
         # skip the already-completed dropout=0, wd=0 baseline
         { [ "$dropout" = "0" ] || [ "$dropout" = "0.0" ]; } && { [ "$wd" = "0" ] || [ "$wd" = "0.0" ]; } && continue
         name="${lc}_pool_${mode}_none_d${dropout}_w${wd}"
-        cmd="qsub -N $name -o ${name}.qlog -v PRED_MODE=$mode,CHEM_FUSION=none,CHEM_EMBED_DIM=0,CHEM_LOSS_ALPHA=0,DROPOUT=$dropout,WD=$wd $script"
+        # short job name (qstat shows 10 chars): <M|T><r|g>_d<dropout>w<wd>, e.g. Mg_d05w4 = CPMLP geo_bins d0.05 wd1e-4
+        short="${model:2:1}${mode:0:1}_d${dropout#0.}w${wd#1e-}"
+        cmd="qsub -N $short -o ${name}.qlog -v PRED_MODE=$mode,CHEM_FUSION=none,CHEM_EMBED_DIM=0,CHEM_LOSS_ALPHA=0,DROPOUT=$dropout,WD=$wd $script"
         echo "$cmd"
         [ -z "$DRY_RUN" ] && $cmd
       done
