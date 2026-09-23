@@ -233,3 +233,21 @@ NEXT: commit+pull on SCC -> bash scc/setup_venv_mamba.sh -> python test_cpmamba.
       python test_cpmamba.py --gpu, bash train_eval_scripts/mamba_quick_test.sh -> qsub Li-ion vanilla vs mamba_init.
 Open: val/test only see cycles <=100, so they can't show post-cycle-100 learning directly (advisor question); and a
 full-timescale Transformer counterpart for the Mamba-vs-Transformer comparison isn't built yet.
+
+--- CPMamba status, end of 9/22 (paused) ---
+Committed + pushed as 8ce6ccf "mamba model". NOTHING RUN ON SCC YET.
+Tried to get a qrsh GPU session (-l gpus=1 -l gpu_c=7.0 -l h_rt=2:00:00) -- never got scheduled, gave up for the night.
+Unknown whether scc/setup_venv_mamba.sh has been run yet.
+Pick up here (login node steps don't need the GPU):
+  cd /projectnb/nsf-energize/dgordon/Projects/BatteryLife && git pull
+  bash scc/setup_venv_mamba.sh                      # login node OK; check the import-check block at the end (batteryml most likely to fail)
+  module load gcc/12.2.0 cuda/12.2 && source venv_mamba/bin/activate
+  python test_cpmamba.py                            # login node, CPU / ref scan
+  # GPU (gpu_c>=7.0): qrsh again (try shorter h_rt, e.g. 1:00:00, to schedule sooner; `qstat -u dgordon` to see if pending)
+  python test_cpmamba.py --gpu
+  bash train_eval_scripts/mamba_quick_test.sh
+  # then real runs:
+  qsub -v MAMBA_LAYER=vanilla    train_eval_scripts/CPMamba_full_qsub.sh
+  qsub -v MAMBA_LAYER=mamba_init train_eval_scripts/CPMamba_full_qsub.sh
+Alternative if qrsh keeps stalling: wrap `python test_cpmamba.py --gpu && bash train_eval_scripts/mamba_quick_test.sh`
+in a qsub batch job (gpu_c=7.0) instead of an interactive session.
