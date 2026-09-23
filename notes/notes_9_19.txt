@@ -183,3 +183,53 @@ NEXT (in order)
    prediction per prefix first (same one-label-per-sequence shape as current models), per-step prediction deferred
    as a training-loop question for later. P100 kernel compatibility for the Mamba CUDA kernels and an S4 ablation
    are later concerns, not blockers for the first pass.
+
+--- SCC reaper kills: CUDA_VISIBLE_DEVICES bug, stage 1 resubmitted (9/22 evening) ---
+Cause of the repeated "terminated because it was using gpu 0, which was not assigned to its batch job" emails:
+every *_qsub.sh script launched with `CUDA_VISIBLE_DEVICES=0 accelerate launch ...`. SGE sets CUDA_VISIBLE_DEVICES
+to the GPU it actually assigns; the hardcoded =0 overrode that and pinned us to physical GPU 0. Jobs that happened
+to be assigned GPU 0 ran fine, everything else got killed by the reaper. Because the reaper kills the python
+process, not the batch job, the seed loop just moved on to the next seed, which got killed too -- so jobs "finished"
+with no results.
+
+Fix (commit "qsub scripts: stop overriding scheduler's CUDA_VISIBLE_DEVICES", pulled on SCC): removed the
+CUDA_VISIBLE_DEVICES=0 prefix from all 22 train_eval_scripts/*_qsub.sh. Inside a job the assigned GPU still shows up
+as cuda:0, so nothing else needed to change. The older non-qsub scripts (CPMLP.sh etc., CUDA_VISIBLE_DEVICES=0,1)
+were left alone -- they're from the original multi-GPU-box repo; don't qsub them as-is.
+Note: SGE spools the script at qsub time, so queued jobs keep the old script -- they had to be qdel'd and resubmitted.
+
+Stage 1 (dropout x wd) status after cleanup:
+  CPMLP regression, all 3 seeds complete (original jobs): d0_w1e-4, d0_w1e-3, d0.05_w0, d0.05_w1e-3
+  CPMLP regression d0.1_w1e-4: original job 7692647 kept (seeds 2021, 42 done; 2024 running on its correct GPU)
+  CPMLP regression, all 3 seeds killed -> resubmitted: d0.05_w1e-4, d0.1_w0, d0.1_w1e-3 = jobs 7695792-7695794
+    (old logs moved to *.qlog.killed)
+  qdel'd 7692649-7692672 (CPMLP geo_bins + all CPTransformer, queued/just-started with old script) and resubmitted
+    the same 24 with the fixed script = jobs 7695755-7695778. Their .qlog files still contain a stray seed=2021
+    header from the killed 7692649 attempt (cpmlp_pool_geo_bins_none_d0_w1e-4 only).
+Stage 1 job ids are now: 7692647, 7695755-7695778, 7695792-7695794 (+ 7692641-7692646, 7692648 already done).
+
+--- CPMamba + full-timescale training wired up (9/22 night) ---
+Mamba layers come from the mamba-init project, NOT copied: /projectnb/textconv/dgordon/mamba (github dallingordon/mamba-init),
+editable mamba_ssm 2.2.5 fork, venv torch 2.2.0+cu121 / triton 3.5.1. Facts from that repo:
+  - selective_scan_cuda .so is built against torch 2.2.0 -> BatteryLife's torch 2.4.1 venv can't load it.
+  - kernels built for sm_53/62/70+ (no sm_60) -> P100 is out; Mamba jobs need gpu_c=7.0.
+  - needs `module load gcc/12.2.0` at runtime (else GLIBCXX_3.4.29 not found). causal_conv1d not installed -> conv slow path.
+  - MambaInit (modules/mamba_init.py): learned initial_state [d_inner, d_state]; use_fast_path=False; initial-state
+    term added via cumsum/exp (materializes [B, d_inner, d_state, L]; fine at batch 1).
+New files:
+  models/CPMamba.py      CPMLP intra-cycle encoder -> CLS token at position n_valid -> n x (add, LayerNorm, Mamba/MambaInit)
+                         -> final LN -> ReLU -> head (Linear or ChemHead). Right padding + causal mixers => padded val/test
+                         batches are exact. --mamba_layer vanilla|mamba_init, --mamba_scan cuda|ref, mamba_ssm imported lazily.
+                         mamba_ssm's _init_weights applied to the Mamba stack.
+  run_main.py            --full_timescale (needs --pooled, CPMamba; swaps the TRAIN loader for data_provider_full, calls
+                         set_epoch each epoch; val/test unchanged), --mamba_* args, --print_every; chem_fusion allowed for CPMamba.
+  test_cpmamba.py        shapes, padded==unpadded prefix, padding ignored, grads (incl. initial_state), chem fusion; --gpu adds
+                         cuda-vs-ref scan and an L=4000 fwd+bwd. NOT RUN YET (no torch locally).
+  scc/setup_venv_mamba.sh  venv_mamba layered on the mamba venv via .pth (no duplicate torch/mamba_ssm, nothing installed into
+                         the mamba venv); BatteryLife requirements installed with torch/triton pinned.
+  train_eval_scripts/CPMamba_full_qsub.sh   gpu_c=7.0, env-var driven (MAMBA_LAYER, POOLED_CHEMS default Li-ion, K=50, ACCUM=16...)
+  train_eval_scripts/mamba_quick_test.sh    2 epochs, K=5, max 300 cycles, CALB/Zn/Na, both mixers.
+NEXT: commit+pull on SCC -> bash scc/setup_venv_mamba.sh -> python test_cpmamba.py (login node) -> qrsh gpu_c=7.0:
+      python test_cpmamba.py --gpu, bash train_eval_scripts/mamba_quick_test.sh -> qsub Li-ion vanilla vs mamba_init.
+Open: val/test only see cycles <=100, so they can't show post-cycle-100 learning directly (advisor question); and a
+full-timescale Transformer counterpart for the Mamba-vs-Transformer comparison isn't built yet.

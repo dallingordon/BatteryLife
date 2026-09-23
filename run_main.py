@@ -12,7 +12,8 @@ from models import CPGRU, CPLSTM, CPMLP, CPBiGRU, CPBiLSTM, CPTransformer, Patch
     BiLSTM, BiGRU, GRU, LSTM
 import wandb
 from peft import LoraConfig, PeftModel, get_peft_model, prepare_model_for_kbit_training
-from data_provider.data_factory import data_provider_baseline, data_provider_pooled
+from data_provider.data_factory import data_provider_baseline, data_provider_pooled, data_provider_full
+from data_provider.data_loader_full import add_full_timescale_args
 from data_provider.data_loader import CHEMISTRIES
 from utils.pooled_eval import macro_tuple, PooledTracker
 import time
@@ -136,6 +137,25 @@ parser.add_argument('--chem_loss_alpha', type=float, default=0.0,
                          'contribute equally to the loss; alpha=0.5: softer sqrt balancing. Orthogonal to --chem_fusion and '
                          'to --weighted_loss (multiplies with it; --weighted_loss defaults to all-ones when off). Requires --pooled.')
 
+# full-timescale training (data_provider/data_loader_full.py): train on prefixes of any length, batch size 1, no padding.
+# Val/test are unchanged (pooled loaders, published cells, prefixes 1..100). Requires --pooled and a model that takes
+# variable-length input (CPMamba).
+parser.add_argument('--full_timescale', action='store_true', default=False,
+                    help='train on the full-timescale loader (all stored cycles) instead of the pooled first-100-cycles '
+                         'loader. Needs --pooled; see --full_max_cycles / --full_prefixes_per_cell / --full_cache_dir.')
+add_full_timescale_args(parser)
+
+# CPMamba (models/CPMamba.py). Mixers come from the mamba-init fork (mamba_ssm), imported only when CPMamba is built.
+parser.add_argument('--mamba_layer', type=str, default='vanilla', choices=['vanilla', 'mamba_init'],
+                    help='vanilla = mamba_ssm Mamba; mamba_init = MambaInit (learned initial SSM state)')
+parser.add_argument('--mamba_n_layers', type=int, default=4, help='number of Mamba blocks over the cycle axis')
+parser.add_argument('--mamba_d_state', type=int, default=16, help='Mamba SSM state size N')
+parser.add_argument('--mamba_d_conv', type=int, default=4, help='Mamba causal depthwise conv width')
+parser.add_argument('--mamba_expand', type=int, default=2, help='Mamba d_inner = expand * d_model')
+parser.add_argument('--mamba_scan', type=str, default='cuda', choices=['cuda', 'ref'],
+                    help='cuda = selective_scan_cuda kernel (GPU, compute capability >= 7.0); ref = pure-PyTorch scan (slow, debugging)')
+parser.add_argument('--print_every', type=int, default=5, help='print training loss every N iterations')
+
 # optimization
 parser.add_argument('--weighted_loss', action='store_true', default=False, help='use weighted loss')
 parser.add_argument('--weighted_sampling', action='store_true', default=False, help='use weighted sampling')
@@ -169,9 +189,14 @@ if args.pooled:
     pooled_chems = list(args.pooled_chemistries) if args.pooled_chemistries else list(CHEMISTRIES)
 if args.chem_fusion != 'none':
     assert args.pooled, '--chem_fusion needs --pooled (chemistry ids come from the pooled loader)'
-    assert args.model in ('CPMLP', 'CPTransformer'), f'--chem_fusion is only implemented for CPMLP / CPTransformer, not {args.model}'
+    assert args.model in ('CPMLP', 'CPTransformer', 'CPMamba'), f'--chem_fusion is only implemented for CPMLP / CPTransformer / CPMamba, not {args.model}'
 if args.chem_loss_alpha:
     assert args.pooled, '--chem_loss_alpha needs --pooled (chemistry ids / counts come from the pooled loader)'
+if args.full_timescale:
+    assert args.pooled, '--full_timescale needs --pooled (same pooled cells / chemistry ids; val/test use the pooled loaders)'
+    assert args.model == 'CPMamba', f'--full_timescale needs a variable-length model (CPMamba), not {args.model}'
+    assert not args.chem_loss_alpha, '--chem_loss_alpha is not implemented for the full-timescale loader'
+    assert not args.weighted_loss, '--weighted_loss is not supported by the full-timescale loader'
 args.chem_num = len(CHEMISTRIES)
 
 geo_bins = None
@@ -244,6 +269,9 @@ for ii in range(args.itr):
         model = CNN.Model(args).float()
     elif args.model == 'CPTransformer':
         model = CPTransformer.Model(args).float()
+    elif args.model == 'CPMamba':
+        from models import CPMamba   # lazy: needs the mamba-init fork (mamba_ssm), which nothing else requires
+        model = CPMamba.Model(args).float()
     else:
         raise Exception(f'The {args.model} is not an implemented baseline!')
         
@@ -254,7 +282,12 @@ for ii in range(args.itr):
     
     if args.pooled:
         accelerator.print(f"Loading POOLED samples: chemistries={pooled_chems}, split_seed={args.pooled_split_seed}")
-        train_data, train_loader = data_provider_pooled(args, 'train', chemistries=pooled_chems, split_seed=args.pooled_split_seed)
+        if args.full_timescale:
+            accelerator.print(f"FULL-TIMESCALE training loader: max_cycles={args.full_max_cycles}, "
+                              f"prefixes_per_cell={args.full_prefixes_per_cell}, batch size 1 (--batch_size only applies to val/test)")
+            train_data, train_loader = data_provider_full(args, chemistries=pooled_chems, split_seed=args.pooled_split_seed)
+        else:
+            train_data, train_loader = data_provider_pooled(args, 'train', chemistries=pooled_chems, split_seed=args.pooled_split_seed)
         label_scaler = train_data.return_label_scaler()
         life_class_scaler = train_data.return_life_class_scaler()
         accelerator.print(f"pooled train samples per chemistry: {train_data.chemistry_counts()}")
@@ -382,6 +415,8 @@ for ii in range(args.itr):
         print_life_class_loss = 0
         std, mean_value = np.sqrt(train_data.label_scaler.var_[-1]), train_data.label_scaler.mean_[-1]
         total_preds, total_references = [], []
+        if args.full_timescale:
+            train_data.set_epoch(epoch)   # redraw the K prefixes per cell (prints per-chemistry shares)
         for i, batch in enumerate(train_loader):
             cycle_curve_data, curve_attn_mask, labels, life_class, scaled_life_class, weights, seen_unseen_ids = batch[:7]  # pooled loader appends chemistry_ids as an 8th item
             chemistry_ids = batch[7] if len(batch) > 7 else None  # not consumed by the model yet
@@ -445,7 +480,7 @@ for ii in range(args.itr):
                     adjust_learning_rate(accelerator, model_optim, scheduler, epoch + 1, args, printout=False)
                     scheduler.step()
                 
-                if (i + 1) % 5 == 0:
+                if (i + 1) % args.print_every == 0:
                     accelerator.print(f'\titeras: {i+1}, epoch: {epoch+1} | loss:{print_loss:.7f} | label_loss: {label_loss:.7f} | cl_loss: {print_cl_loss:.7f} | lc_loss: {print_life_class_loss:.7f}')
                     speed = (time.time() - time_now) / iter_count
                     left_time = speed * ((args.train_epochs - epoch) * train_steps - i)
