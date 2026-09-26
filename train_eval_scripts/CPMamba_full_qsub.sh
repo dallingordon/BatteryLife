@@ -43,6 +43,7 @@ mkdir -p "$RESULTS_DIR"
 
 MAMBA_LAYER=${MAMBA_LAYER:-vanilla}
 POOLED_CHEMS=${POOLED_CHEMS-Li-ion}
+[ "$POOLED_CHEMS" = all ] && POOLED_CHEMS=""   # "all" = every chemistry (qsub -v cannot reliably pass an empty value)
 K=${K-50}
 MAX_CYCLES=${MAX_CYCLES:-}
 ACCUM=${ACCUM:-16}

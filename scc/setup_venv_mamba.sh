@@ -47,7 +47,8 @@ grep -viE '^(torch|batteryml)==' requirements.txt > venv_mamba/requirements_nont
 python -m pip install -r venv_mamba/requirements_nontorch.txt -c venv_mamba/constraints.txt
 
 # batteryml: install the same thing the existing BatteryLife venv has
-if ! python -c 'import batteryml' 2>/dev/null; then
+# (check batteryml.data, not just batteryml: a stray ./batteryml dir in the repo root imports as an empty namespace package)
+if ! python -c 'import batteryml.data' 2>/dev/null; then
   BML=$("$OLD_VENV/bin/pip" freeze 2>/dev/null | grep -i '^batteryml' || true)
   echo "batteryml in $OLD_VENV: '${BML}'"
   if [ -n "$BML" ]; then
@@ -56,12 +57,18 @@ if ! python -c 'import batteryml' 2>/dev/null; then
     echo "!! batteryml not found in $OLD_VENV -- install it manually into venv_mamba"
   fi
 fi
+# --no-deps above skips batteryml's own requirements (addict, fire, openpyxl, xgboost); install whatever pip check reports
+BML_MISSING=$(python -m pip check 2>/dev/null | grep -i '^batteryml' | grep -oP 'requires \K[^,]+' | sort -u | tr '\n' ' ' || true)
+if [ -n "${BML_MISSING// /}" ]; then
+  echo "installing batteryml deps: $BML_MISSING"
+  python -m pip install $BML_MISSING -c venv_mamba/constraints.txt
+fi
 
 echo "=== import check ==="
 python - <<'EOF'
 import importlib
 for m in ['torch', 'mamba_ssm', 'selective_scan_cuda', 'mamba_ssm.modules.mamba_init', 'mamba_ssm.models.mixer_seq_simple',
-          'accelerate', 'deepspeed', 'evaluate', 'peft', 'wandb', 'transformers', 'sklearn', 'joblib', 'batteryml',
+          'accelerate', 'deepspeed', 'evaluate', 'peft', 'wandb', 'transformers', 'sklearn', 'joblib', 'batteryml', 'batteryml.data.battery_data',
           'reformer_pytorch', 'denseweight']:
     try:
         mod = importlib.import_module(m)

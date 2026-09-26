@@ -8,6 +8,10 @@
 #                                                                          sweeping fusion x alpha at that setting -- this
 #                                                                          is "stage 2" of the staged dropout/wd + fusion/
 #                                                                          alpha search (see submit_dropout_wd_sweep.sh for stage 1)
+#   MODELS="CPMLP" MODES=geo_bins FUSIONS="late_mlp" ...                # restrict the grid (defaults: both models, both
+#                                                                          modes, FUSIONS="none late_mlp early_concat").
+#                                                                          Leave "none" out of FUSIONS when stage 1 already
+#                                                                          ran the unconditioned model at this DROPOUT/WD.
 # Each job runs seeds 2021/42/2024 sequentially (seed also picks the CALB/Zn-ion/Na-ion split).
 # Compare, per chemistry: pooled baseline (fusion none, alpha 0) vs late-fusion (late_mlp E=16, chemistry only seen by
 # the output head) vs early-fusion (early_concat E=16, chemistry embedding concatenated onto the raw input before the
@@ -18,16 +22,22 @@ E=${E:-16}
 DROPOUT=${DROPOUT:-0}
 WD=${WD:-0.0}
 ALPHAS=${ALPHAS:-"0 0.5 1.0"}
+MODELS=${MODELS:-"CPMLP CPTransformer"}
+MODES=${MODES:-"regression geo_bins"}
+FUSIONS=${FUSIONS:-"none late_mlp early_concat"}
 
 extra_tag=""
 { [ "$DROPOUT" != "0" ] && [ "$DROPOUT" != "0.0" ]; } && extra_tag="${extra_tag}_d${DROPOUT}"
 { [ "$WD" != "0" ] && [ "$WD" != "0.0" ]; } && extra_tag="${extra_tag}_w${WD}"
 
-for model in CPMLP CPTransformer; do
+for model in $MODELS; do
   script=train_eval_scripts/${model}_pooled_3seeds_qsub.sh
   lc=$(echo "$model" | tr 'A-Z' 'a-z')
-  for mode in regression geo_bins; do
-    variants="none:0 late_mlp:$E early_concat:$E"
+  for mode in $MODES; do
+    variants=""
+    for f in $FUSIONS; do
+      if [ "$f" = none ]; then variants="$variants none:0"; else variants="$variants $f:$E"; fi
+    done
     for v in $variants; do
       fusion=${v%%:*}; emb=${v##*:}
       for alpha in $ALPHAS; do
@@ -44,8 +54,9 @@ for model in CPMLP CPTransformer; do
     done
     # capacity controls stay at alpha=0 only -- they're about architecture capacity, not loss weighting
     if [ -n "$WITH_CONTROL" ]; then
-      for v in late_mlp:0 early_concat:0; do
-        fusion=${v%%:*}; emb=${v##*:}
+      for fusion in $FUSIONS; do
+        [ "$fusion" = none ] && continue
+        emb=0
         name="${lc}_pool_${mode}_${fusion}${emb}${extra_tag}"
         short="${model:2:1}${mode:0:1}${fusion:0:1}${emb}ctl"
         cmd="qsub -N $short -o ${name}.qlog -v PRED_MODE=$mode,CHEM_FUSION=$fusion,CHEM_EMBED_DIM=$emb,CHEM_LOSS_ALPHA=0,DROPOUT=$DROPOUT,WD=$WD $script"

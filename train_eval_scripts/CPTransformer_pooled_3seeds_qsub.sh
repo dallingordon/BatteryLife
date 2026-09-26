@@ -53,6 +53,7 @@ WD=${WD:-0.0}
 SEEDS=${SEEDS:-"2021 42 2024"}
 EPOCHS=${EPOCHS:-100}
 POOLED_CHEMS=${POOLED_CHEMS:-}
+[ "$POOLED_CHEMS" = all ] && POOLED_CHEMS=""   # "all" = every chemistry (qsub -v cannot reliably pass an empty value)
 
 TAG=""
 [ "$PRED_MODE" = "geo_bins" ] && TAG="${TAG}_geobins"

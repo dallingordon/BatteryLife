@@ -1,0 +1,28 @@
+# Planned experiments, 9/26. One row per job (each job loops over SEEDS). Columns after `script` are the
+# env vars the qsub script reads ("-" = not used / script default; POOLED_CHEMS all = every chemistry).
+# Mamba: 1 seed, H_RT capped at 30h (est. ~1.5-2.5 h/epoch at K=200); runs that hit the cap get continued.
+short	group	script	PRED_MODE	CHEM_FUSION	CHEM_EMBED_DIM	CHEM_LOSS_ALPHA	DROPOUT	WD	MAMBA_LAYER	K	MAX_CYCLES	POOLED_CHEMS	SEEDS	H_RT	purpose
+Mgl16a0	pooled_conditioning	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	late_mlp	16	0	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	chemistry id -> output head
+Mge16a0	pooled_conditioning	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	16	0	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	chemistry id -> input (every layer sees it)
+Mgl0ctl	pooled_conditioning	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	late_mlp	0	0	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	capacity control for late_mlp16 (same head, no chemistry)
+Mge0ctl	pooled_conditioning	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	0	0	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	control for early_concat16 (same params as unconditioned)
+Mgna5	pooled_loss_weighting	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	none	0	0.5	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	per-chemistry loss weighting N_c^-0.5 (unconditioned)
+Mgna1	pooled_loss_weighting	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	none	0	1.0	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	per-chemistry loss weighting N_c^-1.0 (unconditioned)
+Tgl16a0	pooled_conditioning	train_eval_scripts/CPTransformer_pooled_3seeds_qsub.sh	geo_bins	late_mlp	16	0	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	chemistry id -> output head
+Tge16a0	pooled_conditioning	train_eval_scripts/CPTransformer_pooled_3seeds_qsub.sh	geo_bins	early_concat	16	0	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	chemistry id -> input (every layer sees it)
+Tgl0ctl	pooled_conditioning	train_eval_scripts/CPTransformer_pooled_3seeds_qsub.sh	geo_bins	late_mlp	0	0	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	capacity control for late_mlp16 (same head, no chemistry)
+Tge0ctl	pooled_conditioning	train_eval_scripts/CPTransformer_pooled_3seeds_qsub.sh	geo_bins	early_concat	0	0	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	control for early_concat16 (same params as unconditioned)
+Tgna5	pooled_loss_weighting	train_eval_scripts/CPTransformer_pooled_3seeds_qsub.sh	geo_bins	none	0	0.5	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	per-chemistry loss weighting N_c^-0.5 (unconditioned)
+Tgna1	pooled_loss_weighting	train_eval_scripts/CPTransformer_pooled_3seeds_qsub.sh	geo_bins	none	0	1.0	0	1e-3	-	-	-	all	2021 42 2024	24:00:00	per-chemistry loss weighting N_c^-1.0 (unconditioned)
+Zv_none	mamba_main	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	-	0	1e-3	vanilla	200	-	all	2021	30:00:00	unconditioned, full histories
+Zv_l16	mamba_main	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	late_mlp	16	-	0	1e-3	vanilla	200	-	all	2021	30:00:00	chemistry id -> output head
+Zv_e16	mamba_main	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	early_concat	16	-	0	1e-3	vanilla	200	-	all	2021	30:00:00	chemistry id -> input
+Zv_l0ctl	mamba_control	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	late_mlp	0	-	0	1e-3	vanilla	200	-	all	2021	30:00:00	capacity control for late_mlp16
+Zv_e0ctl	mamba_control	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	early_concat	0	-	0	1e-3	vanilla	200	-	all	2021	30:00:00	control for early_concat16
+Zv_max100	mamba_control	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	-	0	1e-3	vanilla	200	100	all	2021	30:00:00	horizon control: same trainer, prefixes 1..100 only (= baseline training data)
+Zi_none	mamba_main	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	-	0	1e-3	mamba_init	200	-	all	2021	30:00:00	unconditioned, full histories
+Zi_l16	mamba_main	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	late_mlp	16	-	0	1e-3	mamba_init	200	-	all	2021	30:00:00	chemistry id -> output head
+Zi_e16	mamba_main	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	early_concat	16	-	0	1e-3	mamba_init	200	-	all	2021	30:00:00	chemistry id -> input
+Zi_l0ctl	mamba_control	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	late_mlp	0	-	0	1e-3	mamba_init	200	-	all	2021	30:00:00	capacity control for late_mlp16
+Zi_e0ctl	mamba_control	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	early_concat	0	-	0	1e-3	mamba_init	200	-	all	2021	30:00:00	control for early_concat16
+Zi_max100	mamba_control	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	-	0	1e-3	mamba_init	200	100	all	2021	30:00:00	horizon control: same trainer, prefixes 1..100 only (= baseline training data)
