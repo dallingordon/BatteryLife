@@ -57,4 +57,4 @@ run_check block5_longmamba_run "Pooled single-checkpoint" \
 grep -h "cost time" /tmp/smoke_9_29_block5_longmamba_run.out | head -2
 
 echo; echo "======== SUMMARY"; printf '%s\n' "${RESULTS[@]}"
-echo "If everything passed: DRY_RUN=1 bash sh_submit_9_29.sh (expect 11 + 6 + 6 + 16 + 18 = 57 jobs), then bash sh_submit_9_29.sh"
+echo "If everything passed: DRY_RUN=1 bash sh_submit_9_29.sh (expect 11 + 6 + 6 + 16 + 18 + 12 + 27 = 96 jobs), then bash sh_submit_9_29.sh"

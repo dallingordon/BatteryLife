@@ -20,11 +20,15 @@
 # Variants via environment variables (`qsub -v VAR=val,... this_script`, or VAR=val bash this_script in a qrsh):
 #   MAMBA_LAYER     vanilla (default) | mamba_init
 #   BOUNDARY        none (default) | shared | index   (cycle-boundary token in front of every cycle; see LongMamba.py)
+#   CHEM_CLS        0 (default) | 1: per-chemistry output CLS token                               (log tag _ccls)
+#   CHEM_BOUNDARY   0 (default) | 1: per-chemistry cycle-start embedding; replaces the token with BOUNDARY=shared,
+#                   is added to the cycle-index token with BOUNDARY=index; not allowed with none   (log tag _cbnd)
 #   PRED_MODE       geo_bins (default) | regression | dual
 #   POOLED_CHEMS    "" / all = all four (default); e.g. "CALB Zn-ion Na-ion" for a fast test (logs get a _quick tag)
 #   BATCH ACCUM     8 4 (defaults; effective batch 32 like CPMLP)
 #   LR WD           1e-4 1e-3 (defaults)
-#   D_MODEL N_LAYERS D_STATE     64 4 16 (defaults, same as CPMamba)
+#   D_MODEL N_LAYERS D_STATE MAMBA_EXPAND   64 4 16 2 (defaults, same as CPMamba); non-default values add
+#                   _dm<D_MODEL> / _L<N_LAYERS> / _ds<D_STATE> / _ex<MAMBA_EXPAND> to the log tag
 #   SEEDS           "2021 42 2024" (default); other seeds reuse the paper's 3 splits (see run_one)
 #   EPOCHS PATIENCE 100 5 (defaults)
 #   PRINT_EVERY     200 (default)
@@ -43,6 +47,8 @@ mkdir -p "$RESULTS_DIR"
 
 MAMBA_LAYER=${MAMBA_LAYER:-vanilla}
 BOUNDARY=${BOUNDARY:-none}
+CHEM_CLS=${CHEM_CLS:-0}
+CHEM_BOUNDARY=${CHEM_BOUNDARY:-0}
 PRED_MODE=${PRED_MODE:-geo_bins}
 POOLED_CHEMS=${POOLED_CHEMS:-}
 [ "$POOLED_CHEMS" = all ] && POOLED_CHEMS=""   # "all" = every chemistry (qsub -v cannot reliably pass an empty value)
@@ -53,16 +59,23 @@ WD=${WD:-1e-3}
 D_MODEL=${D_MODEL:-64}
 N_LAYERS=${N_LAYERS:-4}
 D_STATE=${D_STATE:-16}
+MAMBA_EXPAND=${MAMBA_EXPAND:-2}
 SEEDS=${SEEDS:-"2021 42 2024"}
 EPOCHS=${EPOCHS:-100}
 PATIENCE=${PATIENCE:-5}
 PRINT_EVERY=${PRINT_EVERY:-200}
 
 TAG="_${MAMBA_LAYER}_b${BOUNDARY}"
+[ "$CHEM_CLS" = "1" ] && TAG="${TAG}_ccls"
+[ "$CHEM_BOUNDARY" = "1" ] && TAG="${TAG}_cbnd"
+[ "$D_MODEL" != "64" ] && TAG="${TAG}_dm${D_MODEL}"
+[ "$N_LAYERS" != "4" ] && TAG="${TAG}_L${N_LAYERS}"
+[ "$D_STATE" != "16" ] && TAG="${TAG}_ds${D_STATE}"
+[ "$MAMBA_EXPAND" != "2" ] && TAG="${TAG}_ex${MAMBA_EXPAND}"
 [ "$PRED_MODE" = "geo_bins" ] && TAG="${TAG}_geobins"
 [ "$PRED_MODE" = "dual" ] && TAG="${TAG}_dual"
 [ "$WD" != "0.0" ] && [ "$WD" != "0" ] && TAG="${TAG}_wd${WD}"
-EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --wd $WD"
+EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD"
 if [ -n "$POOLED_CHEMS" ]; then
   TAG="${TAG}_quick"
   EXTRA_ARGS="$EXTRA_ARGS --pooled_chemistries $POOLED_CHEMS"
@@ -82,7 +95,7 @@ run_one () {
     --model_id LongMamba --model LongMamba --features MS --seq_len 1 --label_len 50 --factor 3 \
     --enc_in 3 --dec_in 1 --c_out 1 --des 'Exp' --itr 1 --seed "$seed" \
     --d_model "$D_MODEL" --batch_size "$BATCH" --learning_rate "$LR" \
-    --mamba_layer "$MAMBA_LAYER" --mamba_n_layers "$N_LAYERS" --mamba_d_state "$D_STATE" \
+    --mamba_layer "$MAMBA_LAYER" --mamba_n_layers "$N_LAYERS" --mamba_d_state "$D_STATE" --mamba_expand "$MAMBA_EXPAND" \
     --train_epochs "$EPOCHS" --model_comment "LongMamba_Pooled${TAG}_s${seed}" --accumulation_steps "$ACCUM" \
     --charge_discharge_length 300 --dataset POOLED --num_workers 4 --print_every "$PRINT_EVERY" \
     --patience "$PATIENCE" --early_cycle_threshold 100 --lradj constant --loss MSE \

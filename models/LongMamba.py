@@ -15,12 +15,19 @@ LongMamba: one Mamba stack over the raw per-point time series of every early cyc
       -> n x [residual add -> LayerNorm -> Mamba mixer]   (pre-norm residual, same blocks as CPMamba)
       -> final LayerNorm, hidden state at the CLS position -> ReLU -> Linear head (regression / geo_bins / dual)
 
+Chemistry conditioning (pooled training; two independent switches, both need chemistry_ids):
+  --long_chem_cls 1       the output CLS token is per chemistry: nn.Embedding(4, d_model) instead of one vector
+  --long_chem_boundary 1  per-chemistry cycle-start embedding nn.Embedding(4, d_model):
+                            with --long_boundary shared: REPLACES the single shared token (one token per chemistry)
+                            with --long_boundary index:  ADDED to the cycle-index token: token_k = index[k] + chem[c]
+                            (not allowed with --long_boundary none: there is no boundary token to condition)
+
 Only the final position carries the output (CLS) token. Every mixer is causal, so anything after the CLS position
 (the zeroed, unseen cycles of a padded sample) cannot affect the prediction: a prefix padded inside a batch gives the
 same output as the same prefix alone (test_longmamba.py checks this for all three boundary modes).
 
 Compared with CPMamba, the sequence runs over POINTS (300 per cycle, ~30k for 100 cycles) instead of over per-cycle
-MLP summaries (<= 100 steps); there is no per-cycle MLP encoder. Chemistry conditioning is not implemented here yet.
+MLP summaries (<= 100 steps); there is no per-cycle MLP encoder. --chem_fusion is not used here (see above).
 Mixers: same mamba-init fork / --mamba_layer / --mamba_scan options as CPMamba.
 """
 import torch
@@ -48,15 +55,27 @@ class Model(nn.Module):
         if self.boundary not in BOUNDARY_MODES:
             raise ValueError(f'--long_boundary must be one of {BOUNDARY_MODES}, got {self.boundary}')
         if getattr(configs, 'chem_fusion', 'none') != 'none':
-            raise NotImplementedError('LongMamba does not implement --chem_fusion yet')
+            raise NotImplementedError('LongMamba uses --long_chem_cls / --long_chem_boundary, not --chem_fusion')
+        self.chem_cls = bool(getattr(configs, 'long_chem_cls', 0))
+        self.chem_boundary = bool(getattr(configs, 'long_chem_boundary', 0))
+        chem_num = getattr(configs, 'chem_num', 4)
+        if self.chem_boundary and self.boundary == 'none':
+            raise ValueError('--long_chem_boundary needs --long_boundary shared or index (there is no boundary token)')
 
         self.in_proj = nn.Linear(self.n_channels, self.d_model)
-        if self.boundary == 'shared':
+        if self.boundary == 'shared' and not self.chem_boundary:
             self.boundary_token = nn.Parameter(torch.randn(self.d_model) * 0.02)
-        elif self.boundary == 'index':
+        if self.boundary == 'index':
             self.cycle_embed = nn.Embedding(self.max_cycles, self.d_model)
             nn.init.normal_(self.cycle_embed.weight, std=0.02)
-        self.cls_token = nn.Parameter(torch.randn(self.d_model) * 0.02)
+        if self.chem_boundary:
+            self.chem_boundary_embed = nn.Embedding(chem_num, self.d_model)   # [chem] -> cycle-start token / offset
+            nn.init.normal_(self.chem_boundary_embed.weight, std=0.02)
+        if self.chem_cls:
+            self.chem_cls_embed = nn.Embedding(chem_num, self.d_model)        # [chem] -> output token
+            nn.init.normal_(self.chem_cls_embed.weight, std=0.02)
+        else:
+            self.cls_token = nn.Parameter(torch.randn(self.d_model) * 0.02)
 
         if mixer_cls is None:
             cls = get_mamba_mixer_cls(getattr(configs, 'mamba_layer', 'vanilla'), getattr(configs, 'mamba_scan', 'cuda'))
@@ -86,6 +105,8 @@ class Model(nn.Module):
         curve_attn_mask:  [B, L], right-padded (1 for the first n_valid cycles, 0 after)
         '''
         B = cycle_curve_data.shape[0]
+        if (self.chem_cls or self.chem_boundary) and chemistry_ids is None:
+            raise ValueError('LongMamba chemistry conditioning needs chemistry_ids (pooled loader / --pooled)')
         assert cycle_curve_data.shape[2] == self.n_channels and cycle_curve_data.shape[3] == self.n_points, \
             f'LongMamba expects [B, L, {self.n_channels}, {self.n_points}], got {tuple(cycle_curve_data.shape)}'
         n_valid = curve_attn_mask.sum(dim=1).round().long()                     # [B]
@@ -98,10 +119,15 @@ class Model(nn.Module):
         x = self.in_proj(x)                                                      # [B, L, P, D]
         if self.boundary != 'none':
             if self.boundary == 'shared':
-                tok = self.boundary_token.to(x.dtype).view(1, 1, 1, -1).expand(B, L, 1, -1)
+                if self.chem_boundary:                                           # one start token per chemistry
+                    tok = self.chem_boundary_embed(chemistry_ids.long()).to(x.dtype).view(B, 1, 1, -1).expand(B, L, 1, -1)
+                else:
+                    tok = self.boundary_token.to(x.dtype).view(1, 1, 1, -1).expand(B, L, 1, -1)
             else:
                 idx = torch.arange(L, device=x.device)
                 tok = self.cycle_embed(idx).to(x.dtype).view(1, L, 1, -1).expand(B, L, 1, -1)
+                if self.chem_boundary:                                           # index[k] + chem[c]
+                    tok = tok + self.chem_boundary_embed(chemistry_ids.long()).to(x.dtype).view(B, 1, 1, -1)
             x = torch.cat([tok, x], dim=2)                                       # [B, L, P+1, D], token BEFORE each cycle
         S = x.shape[2]
         x = x.reshape(B, L * S, self.d_model)                                    # one long sequence
@@ -111,7 +137,11 @@ class Model(nn.Module):
         cls_pos = n_valid * S                                                    # [B]
         pos = torch.arange(L * S + 1, device=x.device)
         is_cls = (pos.unsqueeze(0) == cls_pos.unsqueeze(1)).unsqueeze(-1)       # [B, L*S+1, 1]
-        x = torch.where(is_cls, self.cls_token.to(x.dtype).view(1, 1, -1), x)
+        if self.chem_cls:
+            cls = self.chem_cls_embed(chemistry_ids.long()).to(x.dtype).view(B, 1, -1)   # per-chemistry output token
+        else:
+            cls = self.cls_token.to(x.dtype).view(1, 1, -1)
+        x = torch.where(is_cls, cls, x)
 
         hidden, residual = x, None
         for layer in self.mamba_layers:

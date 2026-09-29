@@ -36,3 +36,11 @@ bash train_eval_scripts/submit_from_config.sh experiments/sweep_9_29_mamba.tsv
 #                                            # needed, add BATCH=/ACCUM= columns to experiments/sweep_9_29_longmamba.tsv
 #      EPOCHS=1 SEEDS=2021 POOLED_CHEMS="CALB Zn-ion Na-ion" BOUNDARY=index bash train_eval_scripts/LongMamba_pooled_qsub.sh 2>&1 | tail -30
 bash train_eval_scripts/submit_from_config.sh experiments/sweep_9_29_longmamba.tsv
+
+# 6) geo_bins width ablation: tol 0.07 (59 bins) and 0.03 (138 bins) vs 0.15 (28 bins), on unconditioned pooled CPMLP
+#    and early_concat16, 8 seeds each (12 jobs). Tags: CPMLP_Pooled_geobins_tol{0.07,0.03}[_early_concatE16]_wd1e-3_seed*.log
+GROUP='^bin_width$' bash train_eval_scripts/submit_from_config.sh "$CFG"
+
+# 7) Long Mamba architecture ablation (vanilla, boundary index), one factor at a time vs the block-5 base:
+#    layers 2/8, d_state 8/32/64, d_model 32/128, expand 1/4; 3 seeds each (27 jobs, 1 seed each).
+bash train_eval_scripts/submit_from_config.sh experiments/sweep_9_29_longmamba_arch.tsv

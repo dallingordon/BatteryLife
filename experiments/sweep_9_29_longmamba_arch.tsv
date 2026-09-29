@@ -1,0 +1,32 @@
+# Long Mamba architecture ablation, 9/29. One factor at a time around the v1 base (vanilla, BOUNDARY=index, d_model 64,
+# 4 layers, d_state 16, expand 2, geo_bins, wd1e-3). The base itself is block 5 (Lvindex_*, same log tag). 3 seeds, 1 per job.
+# Bigger variants (8 layers, d_state 64, d_model 128, expand 4) use batch 4 x accum 8 (same effective 32) to fit memory.
+# d_conv is not ablated: the causal_conv1d kernel only supports widths 2-4.
+short	group	script	PRED_MODE	BOUNDARY	MAMBA_LAYER	D_MODEL	N_LAYERS	D_STATE	MAMBA_EXPAND	BATCH	ACCUM	WD	POOLED_CHEMS	SEEDS	H_RT	purpose
+LAL2_s2021	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	2	16	2	8	4	1e-3	all	2021	30:00:00	Long Mamba arch ablation: 2 Mamba layers (base 4); else = v1 base (vanilla, boundary index)
+LAL2_s42	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	2	16	2	8	4	1e-3	all	42	30:00:00	Long Mamba arch ablation: 2 Mamba layers (base 4); else = v1 base (vanilla, boundary index)
+LAL2_s2024	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	2	16	2	8	4	1e-3	all	2024	30:00:00	Long Mamba arch ablation: 2 Mamba layers (base 4); else = v1 base (vanilla, boundary index)
+LAL8_s2021	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	8	16	2	4	8	1e-3	all	2021	30:00:00	Long Mamba arch ablation: 8 Mamba layers (base 4); else = v1 base (vanilla, boundary index)
+LAL8_s42	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	8	16	2	4	8	1e-3	all	42	30:00:00	Long Mamba arch ablation: 8 Mamba layers (base 4); else = v1 base (vanilla, boundary index)
+LAL8_s2024	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	8	16	2	4	8	1e-3	all	2024	30:00:00	Long Mamba arch ablation: 8 Mamba layers (base 4); else = v1 base (vanilla, boundary index)
+LAds8_s2021	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	8	2	8	4	1e-3	all	2021	30:00:00	Long Mamba arch ablation: d_state 8 (base 16); else = v1 base (vanilla, boundary index)
+LAds8_s42	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	8	2	8	4	1e-3	all	42	30:00:00	Long Mamba arch ablation: d_state 8 (base 16); else = v1 base (vanilla, boundary index)
+LAds8_s2024	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	8	2	8	4	1e-3	all	2024	30:00:00	Long Mamba arch ablation: d_state 8 (base 16); else = v1 base (vanilla, boundary index)
+LAds32_s2021	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	32	2	8	4	1e-3	all	2021	30:00:00	Long Mamba arch ablation: d_state 32 (base 16); else = v1 base (vanilla, boundary index)
+LAds32_s42	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	32	2	8	4	1e-3	all	42	30:00:00	Long Mamba arch ablation: d_state 32 (base 16); else = v1 base (vanilla, boundary index)
+LAds32_s2024	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	32	2	8	4	1e-3	all	2024	30:00:00	Long Mamba arch ablation: d_state 32 (base 16); else = v1 base (vanilla, boundary index)
+LAds64_s2021	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	64	2	4	8	1e-3	all	2021	30:00:00	Long Mamba arch ablation: d_state 64 (base 16); else = v1 base (vanilla, boundary index)
+LAds64_s42	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	64	2	4	8	1e-3	all	42	30:00:00	Long Mamba arch ablation: d_state 64 (base 16); else = v1 base (vanilla, boundary index)
+LAds64_s2024	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	64	2	4	8	1e-3	all	2024	30:00:00	Long Mamba arch ablation: d_state 64 (base 16); else = v1 base (vanilla, boundary index)
+LAdm32_s2021	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	32	4	16	2	8	4	1e-3	all	2021	30:00:00	Long Mamba arch ablation: d_model 32 (base 64); else = v1 base (vanilla, boundary index)
+LAdm32_s42	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	32	4	16	2	8	4	1e-3	all	42	30:00:00	Long Mamba arch ablation: d_model 32 (base 64); else = v1 base (vanilla, boundary index)
+LAdm32_s2024	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	32	4	16	2	8	4	1e-3	all	2024	30:00:00	Long Mamba arch ablation: d_model 32 (base 64); else = v1 base (vanilla, boundary index)
+LAdm128_s2021	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	128	4	16	2	4	8	1e-3	all	2021	30:00:00	Long Mamba arch ablation: d_model 128 (base 64); else = v1 base (vanilla, boundary index)
+LAdm128_s42	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	128	4	16	2	4	8	1e-3	all	42	30:00:00	Long Mamba arch ablation: d_model 128 (base 64); else = v1 base (vanilla, boundary index)
+LAdm128_s2024	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	128	4	16	2	4	8	1e-3	all	2024	30:00:00	Long Mamba arch ablation: d_model 128 (base 64); else = v1 base (vanilla, boundary index)
+LAex1_s2021	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	16	1	8	4	1e-3	all	2021	30:00:00	Long Mamba arch ablation: expand 1 (base 2); else = v1 base (vanilla, boundary index)
+LAex1_s42	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	16	1	8	4	1e-3	all	42	30:00:00	Long Mamba arch ablation: expand 1 (base 2); else = v1 base (vanilla, boundary index)
+LAex1_s2024	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	16	1	8	4	1e-3	all	2024	30:00:00	Long Mamba arch ablation: expand 1 (base 2); else = v1 base (vanilla, boundary index)
+LAex4_s2021	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	16	4	4	8	1e-3	all	2021	30:00:00	Long Mamba arch ablation: expand 4 (base 2); else = v1 base (vanilla, boundary index)
+LAex4_s42	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	16	4	4	8	1e-3	all	42	30:00:00	Long Mamba arch ablation: expand 4 (base 2); else = v1 base (vanilla, boundary index)
+LAex4_s2024	longmamba_arch	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	64	4	16	4	4	8	1e-3	all	2024	30:00:00	Long Mamba arch ablation: expand 4 (base 2); else = v1 base (vanilla, boundary index)

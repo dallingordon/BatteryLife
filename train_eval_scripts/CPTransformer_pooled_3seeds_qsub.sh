@@ -19,6 +19,8 @@
 #   PRED_MODE       regression (default) | geo_bins | dual (geo_bins + regression heads on one backbone; per chemistry
 #                   the head with the lower val MAPE is reported; logs also get Pooled[bins] / Pooled[reg] lines)
 #   DUAL_REG_WEIGHT 1.0 (default); weight of the regression MSE vs the bins cross-entropy in PRED_MODE=dual
+#   GEO_BIN_TOL     0.15 (default); geo_bins relative bin half-width (0.15 -> 28 bins, 0.07 -> 59, 0.03 -> 138 over [1, 3842]).
+#                   Logs get a _tol<value> tag when it isn't 0.15. Used by PRED_MODE=geo_bins and dual.
 #   CHEM_FUSION     none (default) | late_mlp | early_concat
 #                   late_mlp = output head over [features ; chemistry embedding]
 #                   early_concat = chemistry embedding concatenated onto the raw input before the model's first layer
@@ -52,6 +54,7 @@ CHEM_FUSION=${CHEM_FUSION:-none}
 CHEM_EMBED_DIM=${CHEM_EMBED_DIM:-16}
 CHEM_LOSS_ALPHA=${CHEM_LOSS_ALPHA:-0.0}
 DUAL_REG_WEIGHT=${DUAL_REG_WEIGHT:-1.0}
+GEO_BIN_TOL=${GEO_BIN_TOL:-0.15}
 DROPOUT=${DROPOUT:-0}
 WD=${WD:-0.0}
 SEEDS=${SEEDS:-"2021 42 2024"}
@@ -62,12 +65,13 @@ POOLED_CHEMS=${POOLED_CHEMS:-}
 TAG=""
 [ "$PRED_MODE" = "geo_bins" ] && TAG="${TAG}_geobins"
 [ "$PRED_MODE" = "dual" ] && TAG="${TAG}_dual"
+[ "$PRED_MODE" != "regression" ] && [ "$GEO_BIN_TOL" != "0.15" ] && TAG="${TAG}_tol${GEO_BIN_TOL}"
 [ "$PRED_MODE" = "dual" ] && [ "$DUAL_REG_WEIGHT" != "1.0" ] && [ "$DUAL_REG_WEIGHT" != "1" ] && TAG="${TAG}_rw${DUAL_REG_WEIGHT}"
 [ "$CHEM_FUSION" != "none" ] && TAG="${TAG}_${CHEM_FUSION}E${CHEM_EMBED_DIM}"
 [ "$CHEM_LOSS_ALPHA" != "0.0" ] && [ "$CHEM_LOSS_ALPHA" != "0" ] && TAG="${TAG}_alpha${CHEM_LOSS_ALPHA}"
 [ "$DROPOUT" != "0" ] && [ "$DROPOUT" != "0.0" ] && TAG="${TAG}_drop${DROPOUT}"
 [ "$WD" != "0.0" ] && [ "$WD" != "0" ] && TAG="${TAG}_wd${WD}"
-EXTRA_ARGS="--prediction_mode $PRED_MODE --chem_fusion $CHEM_FUSION --chem_embed_dim $CHEM_EMBED_DIM --chem_loss_alpha $CHEM_LOSS_ALPHA --dropout $DROPOUT --wd $WD --dual_reg_weight $DUAL_REG_WEIGHT"
+EXTRA_ARGS="--prediction_mode $PRED_MODE --chem_fusion $CHEM_FUSION --chem_embed_dim $CHEM_EMBED_DIM --chem_loss_alpha $CHEM_LOSS_ALPHA --dropout $DROPOUT --wd $WD --dual_reg_weight $DUAL_REG_WEIGHT --geo_bin_tol $GEO_BIN_TOL"
 if [ -n "$POOLED_CHEMS" ]; then
   TAG="${TAG}_quick"
   EXTRA_ARGS="$EXTRA_ARGS --pooled_chemistries $POOLED_CHEMS"

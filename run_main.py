@@ -164,6 +164,11 @@ parser.add_argument('--long_boundary', type=str, default='none', choices=['none'
                     help='LongMamba (models/LongMamba.py) cycle-boundary token in front of every cycle: none = cycles '
                          'concatenated as is; shared = one learned token, same at every boundary; index = learned '
                          'per-cycle-index token (nn.Embedding(early_cycle_threshold, d_model))')
+parser.add_argument('--long_chem_cls', type=int, default=0, choices=[0, 1],
+                    help='LongMamba: 1 = per-chemistry output CLS token (nn.Embedding(4, d_model)). Needs --pooled.')
+parser.add_argument('--long_chem_boundary', type=int, default=0, choices=[0, 1],
+                    help='LongMamba: 1 = per-chemistry cycle-start embedding; replaces the token for --long_boundary shared, '
+                         'is added to the cycle-index token for --long_boundary index. Needs --pooled.')
 parser.add_argument('--print_every', type=int, default=5, help='print training loss every N iterations')
 
 # optimization
@@ -206,6 +211,10 @@ if args.full_timescale:
     assert args.pooled, '--full_timescale needs --pooled (same pooled cells / chemistry ids; val/test use the pooled loaders)'
     assert args.model == 'CPMamba', f'--full_timescale needs a variable-length model (CPMamba), not {args.model}'
     assert not args.weighted_loss, '--weighted_loss is not supported by the full-timescale loader'
+if args.long_chem_cls or args.long_chem_boundary:
+    assert args.pooled and args.model == 'LongMamba', '--long_chem_cls / --long_chem_boundary need --pooled and --model LongMamba'
+# the model gets chemistry ids when any chemistry conditioning is on
+args.uses_chem_ids = args.chem_fusion != 'none' or bool(args.long_chem_cls) or bool(args.long_chem_boundary)
 args.chem_num = len(CHEMISTRIES)
 
 geo_bins = None
@@ -455,7 +464,7 @@ for ii in range(args.itr):
                 
 
                 # encoder - decoder
-                model_kwargs = {'chemistry_ids': chemistry_ids.to(accelerator.device)} if args.chem_fusion != 'none' else {}
+                model_kwargs = {'chemistry_ids': chemistry_ids.to(accelerator.device)} if args.uses_chem_ids else {}
                 outputs = model(cycle_curve_data, curve_attn_mask, **model_kwargs)
                 
 

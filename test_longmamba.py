@@ -13,6 +13,8 @@ What it checks, for --mamba_layer vanilla / mamba_init x --long_boundary none / 
   4. causality: garbage in the unseen cycles (after the CLS position) doesn't change the output
   5. gradient flow into every parameter incl. cls_token, boundary_token / cycle_embed, (mamba_init) initial_state
   6. boundary modes: 'shared' uses the same token at every boundary, 'index' a different one per cycle
+  7. chemistry conditioning (--long_chem_cls / --long_chem_boundary, all combinations): chemistry id changes the
+     output only when conditioning is on, padding invariance holds, gradients reach every embedding row used
 """
 import argparse
 import sys
@@ -39,7 +41,8 @@ def check(name, ok, detail=''):
 def make_args(**kw):
     a = dict(d_model=32, charge_discharge_length=20, early_cycle_threshold=10, output_num=1,
              mamba_n_layers=2, mamba_d_state=16, mamba_d_conv=4, mamba_expand=2, mamba_layer='vanilla',
-             mamba_scan='ref', chem_fusion='none', long_boundary='none')
+             mamba_scan='ref', chem_fusion='none', long_boundary='none',
+             long_chem_cls=0, long_chem_boundary=0, chem_num=4)
     a.update(kw)
     return SimpleNamespace(**a)
 
@@ -128,6 +131,43 @@ with torch.no_grad():
         outs[boundary] = LongMamba.Model(make_args(long_boundary=boundary)).eval()(xb, mb)
     check('shared != none', (outs['shared'] - outs['none']).abs().max().item() > 1e-6)
     check('index != shared', (outs['index'] - outs['shared']).abs().max().item() > 1e-6)
+
+# chemistry conditioning: every allowed (boundary, chem_cls, chem_boundary) combination
+print('=== chemistry conditioning ===')
+xb, mb = padded_batch([2, 5, 10, 10], 10, 20)
+c0 = torch.zeros(4, dtype=torch.long)
+for boundary in LongMamba.BOUNDARY_MODES:
+    for ccls in (0, 1):
+        for cbnd in (0, 1):
+            if cbnd and boundary == 'none':
+                try:
+                    LongMamba.Model(make_args(long_boundary='none', long_chem_boundary=1))
+                    check('chem_boundary with boundary=none is rejected', False)
+                except ValueError:
+                    check('chem_boundary with boundary=none is rejected', True)
+                continue
+            torch.manual_seed(0)
+            m = LongMamba.Model(make_args(long_boundary=boundary, long_chem_cls=ccls, long_chem_boundary=cbnd)).eval()
+            tag = f'boundary={boundary} chem_cls={ccls} chem_boundary={cbnd}'
+            with torch.no_grad():
+                y0, y1 = m(xb, mb, chemistry_ids=c0), m(xb, mb, chemistry_ids=c0 + 2)
+                # padding invariance with chemistry ids
+                err = max((m(xb[b:b + 1, :n], torch.ones(1, n), chemistry_ids=c0[b:b + 1] + 2) - y1[b:b + 1]).abs().max().item()
+                          for b, n in enumerate([2, 5, 10, 10]))
+            conditioned = bool(ccls or cbnd)
+            check(f'{tag}: chemistry {"changes" if conditioned else "does not change"} output',
+                  ((y0 - y1).abs().max().item() > 1e-6) == conditioned)
+            check(f'{tag}: padded == unpadded prefix', err < 1e-4, f'{err:.2e}')
+            m.train(); m.zero_grad()
+            m(xb, mb, chemistry_ids=torch.tensor([0, 1, 2, 3])).pow(2).sum().backward()
+            no_grad = [n for n, q in m.named_parameters() if q.grad is None or q.grad.abs().sum() == 0]
+            check(f'{tag}: every parameter gets gradient', not no_grad, str(no_grad[:5]))
+            if conditioned:
+                try:
+                    m(xb, mb)
+                    check(f'{tag}: missing chemistry_ids raises', False)
+                except ValueError:
+                    check(f'{tag}: missing chemistry_ids raises', True)
 
 if cli.gpu:
     assert torch.cuda.is_available(), '--gpu but no CUDA device'
