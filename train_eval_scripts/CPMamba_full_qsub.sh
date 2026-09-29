@@ -24,6 +24,7 @@
 #   D_MODEL D_FF E_LAYERS N_LAYERS D_STATE     64 256 4 4 16 (defaults)
 #   PRED_MODE       regression (default) | geo_bins
 #   CHEM_FUSION     none (default) | late_mlp | early_concat;  CHEM_EMBED_DIM 16 (default)
+#   CHEM_LOSS_ALPHA 0 (default, off). Per-chemistry loss weight N_c^-alpha from each epoch's drawn samples (1.0 = equal).
 #   DROPOUT WD      0 0.0 (defaults)
 #   SEEDS           "2021" (default)
 #   EPOCHS          50 (default);  PATIENCE 5 (default)
@@ -56,6 +57,7 @@ D_STATE=${D_STATE:-16}
 PRED_MODE=${PRED_MODE:-regression}
 CHEM_FUSION=${CHEM_FUSION:-none}
 CHEM_EMBED_DIM=${CHEM_EMBED_DIM:-16}
+CHEM_LOSS_ALPHA=${CHEM_LOSS_ALPHA:-0}
 DROPOUT=${DROPOUT:-0}
 WD=${WD:-0.0}
 SEEDS=${SEEDS:-"2021"}
@@ -68,10 +70,11 @@ TAG="_${MAMBA_LAYER}_K${K:-all}"
 [ -n "$POOLED_CHEMS" ] && TAG="${TAG}_$(echo "$POOLED_CHEMS" | tr -d ' -')"
 [ "$PRED_MODE" = "geo_bins" ] && TAG="${TAG}_geobins"
 [ "$CHEM_FUSION" != "none" ] && TAG="${TAG}_${CHEM_FUSION}E${CHEM_EMBED_DIM}"
+[ "$CHEM_LOSS_ALPHA" != "0.0" ] && [ "$CHEM_LOSS_ALPHA" != "0" ] && TAG="${TAG}_alpha${CHEM_LOSS_ALPHA}"
 [ "$DROPOUT" != "0" ] && [ "$DROPOUT" != "0.0" ] && TAG="${TAG}_drop${DROPOUT}"
 [ "$WD" != "0.0" ] && [ "$WD" != "0" ] && TAG="${TAG}_wd${WD}"
 
-EXTRA_ARGS="--prediction_mode $PRED_MODE --chem_fusion $CHEM_FUSION --chem_embed_dim $CHEM_EMBED_DIM --dropout $DROPOUT --wd $WD"
+EXTRA_ARGS="--prediction_mode $PRED_MODE --chem_fusion $CHEM_FUSION --chem_embed_dim $CHEM_EMBED_DIM --dropout $DROPOUT --wd $WD --chem_loss_alpha $CHEM_LOSS_ALPHA"
 [ -n "$POOLED_CHEMS" ] && EXTRA_ARGS="$EXTRA_ARGS --pooled_chemistries $POOLED_CHEMS"
 [ -n "$K" ] && EXTRA_ARGS="$EXTRA_ARGS --full_prefixes_per_cell $K"
 [ -n "$MAX_CYCLES" ] && EXTRA_ARGS="$EXTRA_ARGS --full_max_cycles $MAX_CYCLES"

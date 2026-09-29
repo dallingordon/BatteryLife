@@ -212,7 +212,9 @@ def cal_accuracy(y_pred, y_true):
 def del_files(dir_path):
     shutil.rmtree(dir_path, ignore_errors=True)
 
-def vali_baseline(args, accelerator, model, vali_data, vali_loader, criterion, compute_seen_unseen=False, geo_bins=None):
+def vali_baseline(args, accelerator, model, vali_data, vali_loader, criterion, compute_seen_unseen=False, geo_bins=None, head=None):
+    """head (dual-head models only, --prediction_mode dual): 'bins' = decode outputs[:, :num_bins] as geo_bins,
+    'reg' = read outputs[:, -1] as the scaled regression value. None = the model's single head (unchanged behavior)."""
     total_preds, total_references = [], []
     total_seen_unseen_ids = []
     model.eval()
@@ -229,9 +231,12 @@ def vali_baseline(args, accelerator, model, vali_data, vali_loader, criterion, c
             # self.accelerator.wait_for_everyone()
             std, mean_value = np.sqrt(vali_data.label_scaler.var_[-1]), vali_data.label_scaler.mean_[-1]
 
-            if geo_bins is not None:
+            if head == 'reg':
+                transformed_preds = outputs[:, -1] * std + mean_value
+                transformed_labels = labels.reshape(-1) * std + mean_value
+            elif geo_bins is not None:
                 raw_labels_np = (labels.detach().cpu().numpy().reshape(-1) * std) + mean_value
-                pred_bins_np = outputs.detach().argmax(dim=-1).cpu().numpy()
+                pred_bins_np = outputs[:, :geo_bins.num_bins].detach().argmax(dim=-1).cpu().numpy()
                 pred_values_np = geo_bins.bin_to_center(pred_bins_np)
                 transformed_preds = torch.from_numpy(pred_values_np).float().to(accelerator.device)
                 transformed_labels = torch.from_numpy(raw_labels_np).float().to(accelerator.device)

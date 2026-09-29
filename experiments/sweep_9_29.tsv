@@ -1,0 +1,30 @@
+# Planned experiments, 9/29. Same format as sweep_9_26.tsv; one row per job, each job loops over SEEDS.
+# All pooled CPMLP geo_bins d0 wd1e-3. Extra seeds 1-5 merge with the existing 42/2021/2024 logs in collect_results.py
+# (same TAG), giving 8 seeds per config. Seeds split into jobs of <=3 so each fits the 24h limit the 3-seed jobs used.
+# Seeds 1-5 set training randomness only; the CALB/Zn-ion/Na-ion split cycles over the paper's 3 (1->42, 2->2024, 3->2021,
+# 4->42, 5->2024; see run_pooled in the qsub script), so 8 seeds = 3x split 42, 2x split 2021, 3x split 2024.
+# dual_heads rows need the 9/29 code change (--prediction_mode dual); smoke-test first (see sh_submit_9_29.sh).
+short	group	script	PRED_MODE	CHEM_FUSION	CHEM_EMBED_DIM	CHEM_LOSS_ALPHA	DROPOUT	WD	POOLED_CHEMS	SEEDS	H_RT	purpose
+Mnone_s123	more_seeds	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	none	0	0	0	1e-3	all	1 2 3	24:00:00	unconditioned pooled CPMLP (current winner); extra seeds -> 8 total
+Mnone_s45	more_seeds	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	none	0	0	0	1e-3	all	4 5	24:00:00	unconditioned pooled CPMLP (current winner); extra seeds -> 8 total
+Mna5_s123	more_seeds	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	none	0	0.5	0	1e-3	all	1 2 3	24:00:00	loss weighting N_c^-0.5 (lowest 3-seed macro, 0.264); extra seeds -> 8 total
+Mna5_s45	more_seeds	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	none	0	0.5	0	1e-3	all	4 5	24:00:00	loss weighting N_c^-0.5 (lowest 3-seed macro, 0.264); extra seeds -> 8 total
+Mna1_s123	more_seeds	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	none	0	1.0	0	1e-3	all	1 2 3	24:00:00	loss weighting N_c^-1.0 (best geo_bins Li-ion, 0.192); extra seeds -> 8 total
+Mna1_s45	more_seeds	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	none	0	1.0	0	1e-3	all	4 5	24:00:00	loss weighting N_c^-1.0 (best geo_bins Li-ion, 0.192); extra seeds -> 8 total
+Me16_s123	more_seeds	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	16	0	0	1e-3	all	1 2 3	24:00:00	chemistry id -> input (Zn-ion gain, Li/Na cost); extra seeds -> 8 total
+Me16_s45	more_seeds	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	16	0	0	1e-3	all	4 5	24:00:00	chemistry id -> input (Zn-ion gain, Li/Na cost); extra seeds -> 8 total
+Me16na5_base	combo	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	16	0.5	0	1e-3	all	42 2021 2024	24:00:00	early_concat16 + loss weighting 0.5: do the Zn-ion gains stack?
+Me16na5_s123	combo	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	16	0.5	0	1e-3	all	1 2 3	24:00:00	early_concat16 + loss weighting 0.5: do the Zn-ion gains stack?
+Me16na5_s45	combo	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	16	0.5	0	1e-3	all	4 5	24:00:00	early_concat16 + loss weighting 0.5: do the Zn-ion gains stack?
+Mdual_base	dual_heads	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	dual	none	0	0	0	1e-3	all	42 2021 2024	24:00:00	dual heads (geo_bins + regression, val-picked per chemistry), unconditioned
+Mdual_s123	dual_heads	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	dual	none	0	0	0	1e-3	all	1 2 3	24:00:00	dual heads (geo_bins + regression, val-picked per chemistry), unconditioned
+Mdual_s45	dual_heads	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	dual	none	0	0	0	1e-3	all	4 5	24:00:00	dual heads (geo_bins + regression, val-picked per chemistry), unconditioned
+Mduale16_base	dual_heads	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	dual	early_concat	16	0	0	1e-3	all	42 2021 2024	24:00:00	dual heads (geo_bins + regression, val-picked per chemistry) + early_concat16
+Mduale16_s123	dual_heads	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	dual	early_concat	16	0	0	1e-3	all	1 2 3	24:00:00	dual heads (geo_bins + regression, val-picked per chemistry) + early_concat16
+Mduale16_s45	dual_heads	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	dual	early_concat	16	0	0	1e-3	all	4 5	24:00:00	dual heads (geo_bins + regression, val-picked per chemistry) + early_concat16
+Me32_base	embed_dim	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	32	0	0	1e-3	all	42 2021 2024	24:00:00	early_concat chemistry embedding E=32 (ablation vs E=16; all else = Me16)
+Me32_s123	embed_dim	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	32	0	0	1e-3	all	1 2 3	24:00:00	early_concat chemistry embedding E=32 (ablation vs E=16; all else = Me16)
+Me32_s45	embed_dim	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	32	0	0	1e-3	all	4 5	24:00:00	early_concat chemistry embedding E=32 (ablation vs E=16; all else = Me16)
+Me64_base	embed_dim	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	64	0	0	1e-3	all	42 2021 2024	24:00:00	early_concat chemistry embedding E=64 (ablation vs E=16; all else = Me16)
+Me64_s123	embed_dim	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	64	0	0	1e-3	all	1 2 3	24:00:00	early_concat chemistry embedding E=64 (ablation vs E=16; all else = Me16)
+Me64_s45	embed_dim	train_eval_scripts/CPMLP_pooled_3seeds_qsub.sh	geo_bins	early_concat	64	0	0	1e-3	all	4 5	24:00:00	early_concat chemistry embedding E=64 (ablation vs E=16; all else = Me16)

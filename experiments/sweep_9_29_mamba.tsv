@@ -1,0 +1,21 @@
+# Planned Mamba experiments, 9/29. Same format as sweep_9_26.tsv. All CPMamba, geo_bins, wd1e-3, pooled over all 4
+# chemistries, MAX_CYCLES=100 (training prefixes 1..100 = exactly what CPMLP trains on and what val/test score), K=200
+# (>= 100, so every prefix is used). One seed per job. alpha=0 seed 2021 already exists (9/26 Zv_max100 / Zi_max100),
+# same log tag, so collect_results.py merges it -> 3 seeds for every (layer, alpha). Needs the 9/29 full-loader alpha code.
+short	group	script	PRED_MODE	CHEM_FUSION	CHEM_EMBED_DIM	CHEM_LOSS_ALPHA	DROPOUT	WD	MAMBA_LAYER	K	MAX_CYCLES	POOLED_CHEMS	SEEDS	H_RT	purpose
+Zv100a0_s42	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	0	0	1e-3	vanilla	200	100	all	42	30:00:00	horizon-matched baseline (prefixes 1..100 = CPMLP training data), extra seed; seed 2021 is the 9/26 Zv_max100 run
+Zv100a0_s2024	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	0	0	1e-3	vanilla	200	100	all	2024	30:00:00	horizon-matched baseline (prefixes 1..100 = CPMLP training data), extra seed; seed 2021 is the 9/26 Zv_max100 run
+Zv100a5_s2021	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	0.5	0	1e-3	vanilla	200	100	all	2021	30:00:00	max100 + per-chemistry loss weighting alpha=0.5 (fix Na-ion/CALB collapse?)
+Zv100a5_s42	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	0.5	0	1e-3	vanilla	200	100	all	42	30:00:00	max100 + per-chemistry loss weighting alpha=0.5 (fix Na-ion/CALB collapse?)
+Zv100a5_s2024	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	0.5	0	1e-3	vanilla	200	100	all	2024	30:00:00	max100 + per-chemistry loss weighting alpha=0.5 (fix Na-ion/CALB collapse?)
+Zv100a1_s2021	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	1.0	0	1e-3	vanilla	200	100	all	2021	30:00:00	max100 + per-chemistry loss weighting alpha=1.0 (fix Na-ion/CALB collapse?)
+Zv100a1_s42	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	1.0	0	1e-3	vanilla	200	100	all	42	30:00:00	max100 + per-chemistry loss weighting alpha=1.0 (fix Na-ion/CALB collapse?)
+Zv100a1_s2024	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	1.0	0	1e-3	vanilla	200	100	all	2024	30:00:00	max100 + per-chemistry loss weighting alpha=1.0 (fix Na-ion/CALB collapse?)
+Zi100a0_s42	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	0	0	1e-3	mamba_init	200	100	all	42	30:00:00	horizon-matched baseline (prefixes 1..100 = CPMLP training data), extra seed; seed 2021 is the 9/26 Zi_max100 run
+Zi100a0_s2024	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	0	0	1e-3	mamba_init	200	100	all	2024	30:00:00	horizon-matched baseline (prefixes 1..100 = CPMLP training data), extra seed; seed 2021 is the 9/26 Zi_max100 run
+Zi100a5_s2021	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	0.5	0	1e-3	mamba_init	200	100	all	2021	30:00:00	max100 + per-chemistry loss weighting alpha=0.5 (fix Na-ion/CALB collapse?)
+Zi100a5_s42	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	0.5	0	1e-3	mamba_init	200	100	all	42	30:00:00	max100 + per-chemistry loss weighting alpha=0.5 (fix Na-ion/CALB collapse?)
+Zi100a5_s2024	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	0.5	0	1e-3	mamba_init	200	100	all	2024	30:00:00	max100 + per-chemistry loss weighting alpha=0.5 (fix Na-ion/CALB collapse?)
+Zi100a1_s2021	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	1.0	0	1e-3	mamba_init	200	100	all	2021	30:00:00	max100 + per-chemistry loss weighting alpha=1.0 (fix Na-ion/CALB collapse?)
+Zi100a1_s42	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	1.0	0	1e-3	mamba_init	200	100	all	42	30:00:00	max100 + per-chemistry loss weighting alpha=1.0 (fix Na-ion/CALB collapse?)
+Zi100a1_s2024	mamba_max100	train_eval_scripts/CPMamba_full_qsub.sh	geo_bins	none	16	1.0	0	1e-3	mamba_init	200	100	all	2024	30:00:00	max100 + per-chemistry loss weighting alpha=1.0 (fix Na-ion/CALB collapse?)

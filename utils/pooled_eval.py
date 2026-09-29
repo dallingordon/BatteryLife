@@ -27,29 +27,36 @@ def macro_tuple(tuples):
 
 
 class PooledTracker:
-    def __init__(self, chemistries):
+    def __init__(self, chemistries, name=None):
+        """name: optional tag printed as 'Pooled[name] ...' (dual-head runs track each head separately). The default
+        (None) prints the plain 'Pooled ...' lines that collect_results.py treats as the run's main result."""
         self.chemistries = list(chemistries)
+        self.name = name
         self.best_per_chem = {c: None for c in self.chemistries}
         self.single = None
         self.best_macro_val_mape = float('inf')
 
-    def update(self, epoch, vali_res, test_res):
-        """vali_res / test_res: {chemistry: metric tuple} for this epoch."""
+    def update(self, epoch, vali_res, test_res, heads=None):
+        """vali_res / test_res: {chemistry: metric tuple} for this epoch.
+        heads: optional {chemistry: 'bins' | 'reg'} -- which head of a dual-head model produced that chemistry's
+        numbers this epoch (chosen on val); recorded and printed as '| Head: ...' at the end of the result line."""
+        heads = heads or {}
         for c in self.chemistries:
             b = self.best_per_chem[c]
             if b is None or vali_res[c][2] < b['val'][2]:
-                self.best_per_chem[c] = dict(epoch=epoch, val=vali_res[c], test=test_res[c])
+                self.best_per_chem[c] = dict(epoch=epoch, val=vali_res[c], test=test_res[c], head=heads.get(c))
         macro_val_mape = float(np.mean([vali_res[c][2] for c in self.chemistries]))
         if macro_val_mape < self.best_macro_val_mape:
             self.best_macro_val_mape = macro_val_mape
-            self.single = {c: dict(epoch=epoch, val=vali_res[c], test=test_res[c]) for c in self.chemistries}
+            self.single = {c: dict(epoch=epoch, val=vali_res[c], test=test_res[c], head=heads.get(c)) for c in self.chemistries}
 
-    @staticmethod
-    def _line(tag, c, r):
+    def _line(self, tag, c, r):
         t, v = r['test'], r['val']
-        return (f"Pooled {tag} | chem={c} | epoch={r['epoch']} | Test MAE: {t[1]:.4f} | Test RMSE: {t[0]:.4f} | "
+        prefix = f"Pooled[{self.name}]" if self.name else "Pooled"
+        head = f" | Head: {r['head']}" if r.get('head') else ""
+        return (f"{prefix} {tag} | chem={c} | epoch={r['epoch']} | Test MAE: {t[1]:.4f} | Test RMSE: {t[0]:.4f} | "
                 f"Test MAPE: {t[2]:.4f} | Test 15%-accuracy: {t[3]:.4f} | Test 10%-accuracy: {t[4]:.4f} | "
-                f"Test Seen MAPE: {t[6]:.4f} | Test Unseen MAPE: {t[5]:.4f} | Val MAPE: {v[2]:.4f} | Val 15%-accuracy: {v[3]:.4f}")
+                f"Test Seen MAPE: {t[6]:.4f} | Test Unseen MAPE: {t[5]:.4f} | Val MAPE: {v[2]:.4f} | Val 15%-accuracy: {v[3]:.4f}{head}")
 
     def report_lines(self):
         lines = []

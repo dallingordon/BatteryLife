@@ -10,6 +10,9 @@ Reads the per-run logs the qsub scripts tee (<MODEL>_Pooled<TAG>_seed<seed>.log,
 one file per seed, and parses the lines run_main.py prints at the end (utils/pooled_eval.PooledTracker):
     Pooled single-checkpoint | chem=Li-ion | epoch=12 | Test MAE: ... | Test MAPE: ... | Val MAPE: ...
     Pooled per-chem-best-val | chem=Li-ion | ...
+Dual-head runs (--prediction_mode dual) also print 'Pooled[bins] ...' / 'Pooled[reg] ...' lines (each head on its own);
+those get their own groups, with '_head-bins' / '_head-reg' appended to the tag. The plain 'Pooled ...' lines of a dual
+run end in '| Head: bins|reg' (the head chosen on val for that chemistry), kept in the runs CSV as head_used.
 
 Writes:
   <out_prefix>_runs.csv     one row per (log file, view, chemistry): model, run_type, tag, seed, epoch, all metrics
@@ -26,7 +29,8 @@ import statistics
 from collections import defaultdict
 
 NAME_RE = re.compile(r'^(?P<model>[A-Za-z0-9]+)_(?P<run_type>Pooled|Full)(?P<tag>.*)_seed(?P<seed>\d+)\.log$')
-LINE_RE = re.compile(r'Pooled (?P<view>single-checkpoint|per-chem-best-val) \| chem=(?P<chem>[^|]+?) \| epoch=(?P<epoch>\d+) \| (?P<rest>.*)$')
+LINE_RE = re.compile(r'Pooled(?:\[(?P<head>\w+)\])? (?P<view>single-checkpoint|per-chem-best-val) \| chem=(?P<chem>[^|]+?) \| epoch=(?P<epoch>\d+) \| (?P<rest>.*)$')
+HEAD_USED_RE = re.compile(r'\| Head: (\w+)')
 METRIC_RE = re.compile(r'([A-Za-z0-9 %\-]+?):\s*(-?[\d.]+)')
 METRICS = ['Test MAE', 'Test RMSE', 'Test MAPE', 'Test 15%-accuracy', 'Test 10%-accuracy',
            'Test Seen MAPE', 'Test Unseen MAPE', 'Val MAPE', 'Val 15%-accuracy']
@@ -42,11 +46,13 @@ def parse_log(path):
         if not m:
             continue
         metrics = {k.strip(): float(v) for k, v in METRIC_RE.findall(m['rest'])}
-        row = {'view': m['view'], 'chem': m['chem'].strip(), 'epoch': int(m['epoch'])}
+        hu = HEAD_USED_RE.search(m['rest'])
+        row = {'view': m['view'], 'chem': m['chem'].strip(), 'epoch': int(m['epoch']),
+               'head': m['head'] or '', 'head_used': hu.group(1) if hu else ''}
         for name in METRICS:
             v = metrics.get(name)
             row[COL[name]] = '' if v is None or v <= -9999 else v
-        rows[(row['view'], row['chem'])] = row          # last occurrence wins (e.g. a log reused across attempts)
+        rows[(row['head'], row['view'], row['chem'])] = row          # last occurrence wins (e.g. a log reused across attempts)
     last = next((l for l in reversed(lines) if l.strip()), '')
     return list(rows.values()), last
 
@@ -69,14 +75,16 @@ def main():
             missing.append(dict(file=name, **info, last_line=last[:300]))
             continue
         for r in rows:
-            run_rows.append(dict(file=name, **info, **r))
+            head = r.pop('head')
+            tag = info['tag'] + (f'_head-{head}' if head else '')
+            run_rows.append(dict(file=name, **{**info, 'tag': tag}, **r))
 
     metric_cols = [COL[m] for m in METRICS]
     base_cols = ['model', 'run_type', 'tag', 'seed', 'view', 'chem', 'epoch']
     os.makedirs(os.path.dirname(args.out_prefix) or '.', exist_ok=True)
 
     with open(f'{args.out_prefix}_runs.csv', 'w', newline='') as f:
-        w = csv.DictWriter(f, fieldnames=base_cols + metric_cols + ['file'])
+        w = csv.DictWriter(f, fieldnames=base_cols + metric_cols + ['head_used', 'file'])
         w.writeheader()
         w.writerows(sorted(run_rows, key=lambda r: (r['model'], r['run_type'], r['tag'], r['view'], r['chem'], r['seed'])))
 

@@ -1,0 +1,48 @@
+Notes 9/26
+
+--- Stage 1 (dropout x wd, pooled, fusion none, 3 seeds) DONE ---
+wd fix confirmed (wd rows differ from wd=0 twins). Picked by macro VAL MAPE (single-checkpoint view):
+  CPMLP regression          d0 w0     test macro 0.313
+  CPMLP geo_bins            d0 w1e-3  test macro 0.276   <- overall winner
+  CPTransformer regression  d0.1 w0   0.434 (all configs 0.40-0.47; Zn-ion 0.8-1.0)
+  CPTransformer geo_bins    d0 w1e-3  0.307 (was 0.354 unregularized; Na-ion/CALB stabilized)
+Dropout never helps (hurts Zn-ion most). wd 1e-3 no dropout best for geo_bins, both archs.
+Missing: CPMLP regression d0.1 w0 (logs exist, no result lines) -- ignored, doesn't change conclusions.
+Write-up: project doc stage1_dropout_wd_results_9_26.md
+
+Winner vs published CPMLP (ONE unconditioned pooled model vs 4 per-chemistry models):
+  chem     MAPE ours / pub        15%-acc ours / pub
+  Li-ion   0.203 / 0.179  worse   57.1 / 62.0   (geo_bins costs Li-ion even unpooled; unseen 0.264 vs seen 0.164)
+  CALB     0.117 / 0.140          84.4 / 70.4   (5 test cells, noisy)
+  Zn-ion   0.512 / 0.558          19.3 / 29.7
+  Na-ion   0.271 / 0.274          34.7 / 33.7
+  macro    0.276 / 0.288          48.9 / 49.0   (published CPTransformer macro also 0.276)
+It is unconditioned: no chemistry id anywhere in the model; only eval + macro model selection are per chemistry.
+
+--- CPMamba: working on SCC ---
+test_cpmamba.py ALL PASSED on V100 (cuda kernel vs ref scan <2e-7, L=4000 fwd+bwd fine).
+venv_mamba fix: stray ./batteryml dir in SCC repo root (no __init__) shadowed the package -> installed
+  BatteryML @ git 2861ae3 + addict fire openpyxl xgboost. setup_venv_mamba.sh patched to catch this.
+mamba_quick_test.sh runs end to end. Full cycle cache complete (600 train cells, 2 truncated).
+Timing probe (K=200, all chems, no cap): 114,535 samples / 46.5M cycle-steps per epoch; Li-ion 94% of cycle-steps.
+  est ~1.5 h/epoch vanilla, ~2.5 h mamba_init (from quick-test rate, not measured). val/test load ~5.5 min/job.
+CLS-per-prefix design = K separate passes per cell -> expensive. Idea: every-cycle readout (model is causal):
+  one pass per cell covers ALL prefixes, <1M cycle-steps/epoch. Do this next if the 30h runs are too slow.
+Note: --chem_loss_alpha not implemented for the full-timescale loader yet (Li-ion ~84% of cells there too).
+
+--- Submitted 9/26 13:59: 24 jobs, 7747694-7747718 (experiments/sweep_9_26.tsv, submit_from_config.sh) ---
+All geo_bins, wd 1e-3, d0, all four chems pooled.
+  pooled_conditioning (8):  {CPMLP,CPTransformer} x {late_mlp,early_concat} x E{16,0}, 3 seeds, 24h
+  pooled_loss_weighting (4): {CPMLP,CPTransformer} x chem_loss_alpha {0.5,1.0}, 3 seeds, 24h
+  mamba (12): {vanilla,mamba_init} x {none, late16, early16, late0ctl, early0ctl, max100 horizon ctl}, K=200, seed 2021, 30h
+  Mamba full runs will likely hit 30h around epoch 10-20: no resume; use per-epoch "Pooled epoch N" lines,
+  pick best macro val epoch, note epochs reached.
+TODO when jobs start: verify SEEDS passed with spaces: qstat -j 7747694 | grep -o 'SEEDS=[^,]*'
+Delete probe log: results_logs/CPMamba_Full_mamba_init_K200_geobins_wd1e-3_seed42.log
+
+--- Next ---
+- Collect 9/26 batch results (collect_results.py; needs a per-epoch parser for partial Mamba runs).
+- Every-cycle readout for CPMamba (+ chem_loss_alpha in full loader) -> affordable 3-seed Mamba runs.
+- Eval beyond cycle 100 + full-timescale Transformer counterpart = the actual advisor question (post-100 dynamics).
+- Li-ion under geo_bins (regression head for Li-ion or per-chemistry bin ranges).
+- Something to present to Emily (meeting 9/23): unified model ties 4 dedicated models.

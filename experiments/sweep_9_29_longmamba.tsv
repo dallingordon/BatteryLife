@@ -1,0 +1,23 @@
+# Long Mamba v1, 9/29 (models/LongMamba.py). One Mamba stack over 100 cycles x 300 points (3 channels/step),
+# output CLS token after the last step. Pooled loader (prefixes 1..100, all 4 chemistries), geo_bins, wd1e-3,
+# d_model 64 / 4 layers / d_state 16, batch 8 x accum 4. Ablation: cycle-boundary token none / shared / index.
+# One seed per job (runtime unknown). Run `python test_longmamba.py --gpu` first to set BATCH / ACCUM / H_RT.
+short	group	script	PRED_MODE	BOUNDARY	MAMBA_LAYER	WD	POOLED_CHEMS	SEEDS	H_RT	purpose
+Lvnone_s2021	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	none	vanilla	1e-3	all	2021	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=none
+Lvnone_s42	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	none	vanilla	1e-3	all	42	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=none
+Lvnone_s2024	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	none	vanilla	1e-3	all	2024	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=none
+Lvshared_s2021	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	shared	vanilla	1e-3	all	2021	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=shared
+Lvshared_s42	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	shared	vanilla	1e-3	all	42	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=shared
+Lvshared_s2024	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	shared	vanilla	1e-3	all	2024	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=shared
+Lvindex_s2021	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	1e-3	all	2021	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=index
+Lvindex_s42	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	1e-3	all	42	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=index
+Lvindex_s2024	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	vanilla	1e-3	all	2024	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=index
+Linone_s2021	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	none	mamba_init	1e-3	all	2021	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=none
+Linone_s42	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	none	mamba_init	1e-3	all	42	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=none
+Linone_s2024	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	none	mamba_init	1e-3	all	2024	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=none
+Lishared_s2021	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	shared	mamba_init	1e-3	all	2021	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=shared
+Lishared_s42	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	shared	mamba_init	1e-3	all	42	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=shared
+Lishared_s2024	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	shared	mamba_init	1e-3	all	2024	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=shared
+Liindex_s2021	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	mamba_init	1e-3	all	2021	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=index
+Liindex_s42	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	mamba_init	1e-3	all	42	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=index
+Liindex_s2024	longmamba_v1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	index	mamba_init	1e-3	all	2024	30:00:00	Long Mamba v1: ~30k-step point-level sequence, output CLS at the end, boundary=index

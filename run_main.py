@@ -106,10 +106,16 @@ parser.add_argument('--output_num', type=int, default=1, help='The number of pre
 parser.add_argument('--class_num', type=int, default=8, help='The number of life classes')
 
 # geo_bins: turn the regression target into classification over geometric ("within X%%") bins
-parser.add_argument('--prediction_mode', type=str, default='regression', choices=['regression', 'geo_bins'],
+parser.add_argument('--prediction_mode', type=str, default='regression', choices=['regression', 'geo_bins', 'dual'],
                     help='regression (default): original single-scalar MSE/MAPE regression, unchanged. '
                          'geo_bins: classification over geometric bins of the label range, each bin sized '
-                         'to match +/-geo_bin_tol relative error (see utils/geo_bins.py).')
+                         'to match +/-geo_bin_tol relative error (see utils/geo_bins.py). '
+                         'dual: BOTH heads on one shared backbone -- the output layer gets num_bins + 1 outputs, the first '
+                         'num_bins are the geo_bins logits and the last one is the (scaled) regression value. '
+                         'Loss = CE(bins) + dual_reg_weight * MSE(regression). Each epoch both heads are evaluated; per '
+                         'chemistry the head with the lower VAL MAPE is used (never picked on test). Requires --pooled.')
+parser.add_argument('--dual_reg_weight', type=float, default=1.0,
+                    help='weight of the regression MSE term in --prediction_mode dual (CE on the bins has weight 1)')
 parser.add_argument('--geo_bin_tol', type=float, default=0.15, help='relative tolerance defining bin width in geo_bins mode')
 parser.add_argument('--geo_bin_min', type=float, default=1.0, help='global min label value covered by geo_bins (see notes/notes_9_8.txt cycle-length audit)')
 parser.add_argument('--geo_bin_max', type=float, default=3842.0, help='global max label value covered by geo_bins (see notes/notes_9_8.txt cycle-length audit)')
@@ -154,6 +160,10 @@ parser.add_argument('--mamba_d_conv', type=int, default=4, help='Mamba causal de
 parser.add_argument('--mamba_expand', type=int, default=2, help='Mamba d_inner = expand * d_model')
 parser.add_argument('--mamba_scan', type=str, default='cuda', choices=['cuda', 'ref'],
                     help='cuda = selective_scan_cuda kernel (GPU, compute capability >= 7.0); ref = pure-PyTorch scan (slow, debugging)')
+parser.add_argument('--long_boundary', type=str, default='none', choices=['none', 'shared', 'index'],
+                    help='LongMamba (models/LongMamba.py) cycle-boundary token in front of every cycle: none = cycles '
+                         'concatenated as is; shared = one learned token, same at every boundary; index = learned '
+                         'per-cycle-index token (nn.Embedding(early_cycle_threshold, d_model))')
 parser.add_argument('--print_every', type=int, default=5, help='print training loss every N iterations')
 
 # optimization
@@ -195,14 +205,18 @@ if args.chem_loss_alpha:
 if args.full_timescale:
     assert args.pooled, '--full_timescale needs --pooled (same pooled cells / chemistry ids; val/test use the pooled loaders)'
     assert args.model == 'CPMamba', f'--full_timescale needs a variable-length model (CPMamba), not {args.model}'
-    assert not args.chem_loss_alpha, '--chem_loss_alpha is not implemented for the full-timescale loader'
     assert not args.weighted_loss, '--weighted_loss is not supported by the full-timescale loader'
 args.chem_num = len(CHEMISTRIES)
 
 geo_bins = None
-if args.prediction_mode == 'geo_bins':
+if args.prediction_mode in ('geo_bins', 'dual'):
     geo_bins = GeoBins(range_min=args.geo_bin_min, range_max=args.geo_bin_max, tol=args.geo_bin_tol)
     args.output_num = geo_bins.num_bins
+if args.prediction_mode == 'dual':
+    assert args.pooled, '--prediction_mode dual is only wired into the pooled training/eval path'
+    assert not args.full_timescale, '--prediction_mode dual is not implemented for the full-timescale loader'
+    args.output_num = geo_bins.num_bins + 1   # last output = regression head
+DUAL_HEADS = ('bins', 'reg')
 
 nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 set_seed(args.seed)
@@ -272,6 +286,9 @@ for ii in range(args.itr):
     elif args.model == 'CPMamba':
         from models import CPMamba   # lazy: needs the mamba-init fork (mamba_ssm), which nothing else requires
         model = CPMamba.Model(args).float()
+    elif args.model == 'LongMamba':
+        from models import LongMamba   # lazy, same reason as CPMamba
+        model = LongMamba.Model(args).float()
     else:
         raise Exception(f'The {args.model} is not an implemented baseline!')
         
@@ -403,6 +420,9 @@ for ii in range(args.itr):
     best_unseen_vali_MAPE, best_unseen_test_MAPE = 0, 0
 
     pooled_tracker = PooledTracker(pooled_chems) if args.pooled else None
+    # dual mode: pooled_tracker follows the val-selected head per chemistry (the headline result); these two follow
+    # each head on its own, so the log also shows what bins-only / regression-only would have given from the same run
+    head_trackers = {h: PooledTracker(pooled_chems, name=h) for h in DUAL_HEADS} if args.prediction_mode == 'dual' else {}
 
     for epoch in range(args.train_epochs):
         mae_metric = evaluate.load('./utils/mae')
@@ -441,7 +461,14 @@ for ii in range(args.itr):
 
                 cut_off = labels.shape[0]
                     
-                if args.prediction_mode == 'geo_bins':
+                if args.prediction_mode == 'dual':
+                    # shared backbone, two heads: outputs[:, :num_bins] = bin logits, outputs[:, -1] = scaled regression
+                    raw_labels_np = (labels[:cut_off].detach().cpu().numpy().reshape(-1) * std) + mean_value
+                    true_bins = torch.from_numpy(geo_bins.value_to_bin(raw_labels_np)).long().to(accelerator.device)
+                    ce = classification_criterion(outputs[:cut_off, :geo_bins.num_bins], true_bins)            # [B]
+                    mse = (outputs[:cut_off, -1] - labels[:cut_off].reshape(-1)) ** 2                          # [B]
+                    loss = torch.mean((ce + args.dual_reg_weight * mse) * weights.reshape(-1).to(ce.device))
+                elif args.prediction_mode == 'geo_bins':
                     raw_labels_np = (labels[:cut_off].detach().cpu().numpy().reshape(-1) * std) + mean_value
                     true_bins_np = geo_bins.value_to_bin(raw_labels_np)
                     true_bins = torch.from_numpy(true_bins_np).long().to(accelerator.device)
@@ -465,8 +492,8 @@ for ii in range(args.itr):
                 total_cl_loss += print_cl_loss
                 total_lc_loss += print_life_class_loss
 
-                if args.prediction_mode == 'geo_bins':
-                    pred_bins_np = outputs[:cut_off].detach().argmax(dim=-1).cpu().numpy()
+                if args.prediction_mode in ('geo_bins', 'dual'):   # train-set metrics use the bins head in dual mode
+                    pred_bins_np = outputs[:cut_off, :geo_bins.num_bins].detach().argmax(dim=-1).cpu().numpy()
                     pred_values_np = geo_bins.bin_to_center(pred_bins_np)
                     transformed_preds = torch.from_numpy(pred_values_np).float().to(accelerator.device)
                     transformed_labels = torch.from_numpy(raw_labels_np).float().to(accelerator.device)
@@ -498,14 +525,29 @@ for ii in range(args.itr):
         pooled_log = {}
         if args.pooled:
             vali_res, test_res = {}, {}
+            chosen_head = {}
+            head_vali = {h: {} for h in head_trackers}
+            head_test = {h: {} for h in head_trackers}
             for c in pooled_chems:
                 vd, vl = pooled_eval_sets[(c, 'val')]
                 td, tl = pooled_eval_sets[(c, 'test')]
-                vali_res[c] = vali_baseline(args, accelerator, model, vd, vl, criterion, compute_seen_unseen=False, geo_bins=geo_bins)
-                test_res[c] = vali_baseline(args, accelerator, model, td, tl, criterion, compute_seen_unseen=True, geo_bins=geo_bins)
-                accelerator.print(f'\tPooled epoch {epoch+1} | {c:7s} | Val MAPE {vali_res[c][2]:.4f} acc15 {vali_res[c][3]:.1f} | Test MAPE {test_res[c][2]:.4f} acc15 {test_res[c][3]:.1f}')
+                if args.prediction_mode == 'dual':
+                    for h in DUAL_HEADS:
+                        head_vali[h][c] = vali_baseline(args, accelerator, model, vd, vl, criterion, compute_seen_unseen=False, geo_bins=geo_bins, head=h)
+                        head_test[h][c] = vali_baseline(args, accelerator, model, td, tl, criterion, compute_seen_unseen=True, geo_bins=geo_bins, head=h)
+                        accelerator.print(f'\tPooled[{h}] epoch {epoch+1} | {c:7s} | Val MAPE {head_vali[h][c][2]:.4f} acc15 {head_vali[h][c][3]:.1f} | Test MAPE {head_test[h][c][2]:.4f} acc15 {head_test[h][c][3]:.1f}')
+                    # per chemistry, use whichever head has the lower VAL MAPE this epoch (selection never looks at test)
+                    chosen_head[c] = min(DUAL_HEADS, key=lambda h: head_vali[h][c][2])
+                    vali_res[c], test_res[c] = head_vali[chosen_head[c]][c], head_test[chosen_head[c]][c]
+                else:
+                    vali_res[c] = vali_baseline(args, accelerator, model, vd, vl, criterion, compute_seen_unseen=False, geo_bins=geo_bins)
+                    test_res[c] = vali_baseline(args, accelerator, model, td, tl, criterion, compute_seen_unseen=True, geo_bins=geo_bins)
+                head_note = f' | head {chosen_head[c]}' if c in chosen_head else ''
+                accelerator.print(f'\tPooled epoch {epoch+1} | {c:7s} | Val MAPE {vali_res[c][2]:.4f} acc15 {vali_res[c][3]:.1f} | Test MAPE {test_res[c][2]:.4f} acc15 {test_res[c][3]:.1f}{head_note}')
                 pooled_log.update({f'val_MAPE/{c}': vali_res[c][2], f'val_acc1/{c}': vali_res[c][3], f'test_MAPE/{c}': test_res[c][2], f'test_acc1/{c}': test_res[c][3]})
-            pooled_tracker.update(epoch + 1, vali_res, test_res)
+            pooled_tracker.update(epoch + 1, vali_res, test_res, heads=chosen_head or None)
+            for h, tr in head_trackers.items():
+                tr.update(epoch + 1, head_vali[h], head_test[h])
             # macro-average over chemistries (each counts equally) drives model selection and early stopping
             vali_rmse, vali_mae_loss, vali_mape, vali_alpha_acc1, vali_alpha_acc2 = macro_tuple(list(vali_res.values()))
             (test_rmse, test_mae_loss, test_mape, test_alpha_acc1, test_alpha_acc2, test_unseen_mape, test_seen_mape,
@@ -573,6 +615,9 @@ if args.pooled:
     accelerator.print(f'=== Pooled per-chemistry results | chemistries={pooled_chems} | split_seed={args.pooled_split_seed} | seed={args.seed} ===')
     for _line in pooled_tracker.report_lines():
         accelerator.print(_line)
+    for _tr in head_trackers.values():   # dual mode only: each head on its own ("Pooled[bins] ...", "Pooled[reg] ...")
+        for _line in _tr.report_lines():
+            accelerator.print(_line)
 else:
     accelerator.print(f'Best model performance: Test MAE: {best_test_MAE:.4f} | Test RMSE: {best_test_RMSE:.4f} | Test MAPE: {best_test_MAPE:.4f} | Test 15%-accuracy: {best_test_alpha_acc1:.4f} | Test 10%-accuracy: {best_test_alpha_acc2:.4f} | Val MAE: {best_vali_MAE:.4f} | Val RMSE: {best_vali_RMSE:.4f} | Val MAPE: {best_vali_MAPE:.4f} | Val 15%-accuracy: {best_vali_alpha_acc1:.4f} | Val 10%-accuracy: {best_vali_alpha_acc2:.4f} ')
     accelerator.print(f'Best model performance: Test Seen MAPE: {best_seen_test_MAPE:.4f} | Test Unseen MAPE: {best_unseen_test_MAPE:.4f}')

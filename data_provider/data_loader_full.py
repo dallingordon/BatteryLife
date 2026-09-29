@@ -206,6 +206,9 @@ class Dataset_full_timescale(Dataset):
         assert prefixes_per_cell is None or prefixes_per_cell >= 1
         if getattr(args, 'weighted_loss', False):
             raise NotImplementedError('--weighted_loss is not supported by the full-timescale loader')
+        # --chem_loss_alpha: per-sample loss weight N_c^-alpha (N_c = this epoch's sample count for chemistry c), mean 1,
+        # same formula as Dataset_pooled. Recomputed in set_epoch since the drawn samples change every epoch.
+        self.chem_loss_alpha = float(getattr(args, 'chem_loss_alpha', 0.0) or 0.0)
         self.args = args
         self.chemistries = chemistries
         self.split_seed = split_seed
@@ -288,6 +291,12 @@ class Dataset_full_timescale(Dataset):
         self._cell_idx = np.concatenate(cell_idx)
         self._lens = np.concatenate(lens)
         self.epoch = int(epoch)
+        self._weights = None
+        if self.chem_loss_alpha:
+            from data_provider.data_loader_pooled import Dataset_pooled   # local import: pure numpy helper
+            chem_of_sample = self.cell_chemistry_ids[self._cell_idx]
+            counts_by_id = np.bincount(chem_of_sample, minlength=len(CHEMISTRIES)).astype(np.float64)
+            self._weights = Dataset_pooled.volume_weights(chem_of_sample, counts_by_id, self.chem_loss_alpha)
         if self.verbose:
             print(self.epoch_summary())
 
@@ -295,15 +304,16 @@ class Dataset_full_timescale(Dataset):
         chem_of_sample = self.cell_chemistry_ids[self._cell_idx]
         n_samples, n_steps = len(self._lens), int(self._lens.sum())
         lines = [f'[full-timescale train] epoch {self.epoch}: {n_samples} samples, {n_steps} cycle-steps '
-                 f'(K={self.prefixes_per_cell}, max_cycles={self.max_cycles})',
+                 f'(K={self.prefixes_per_cell}, max_cycles={self.max_cycles}, chem_loss_alpha={self.chem_loss_alpha})',
                  f'  {"chemistry":8s} {"cells":>6s} {"samples":>9s} {"share":>7s} {"cycle-steps":>12s} {"share":>7s}']
         for i, name in enumerate(CHEMISTRIES):
             m = chem_of_sample == i
             if not (self.cell_chemistry_ids == i).any():
                 continue
             s, st = int(m.sum()), int(self._lens[m].sum())
+            wtxt = f'  loss weight {float(self._weights[m][0]):.3f}' if self._weights is not None and s else ''
             lines.append(f'  {name:8s} {int((self.cell_chemistry_ids == i).sum()):6d} {s:9d} {100 * s / n_samples:6.1f}% '
-                         f'{st:12d} {100 * st / n_steps:6.1f}%')
+                         f'{st:12d} {100 * st / n_steps:6.1f}%{wtxt}')
         return '\n'.join(lines)
 
     def chemistry_counts(self):
@@ -342,7 +352,7 @@ class Dataset_full_timescale(Dataset):
             'labels': self._scaled_eol[ci],            # shape (1,), same as the baseline
             'life_class': cell['life_class'],
             'scaled_life_class': cell['life_class'] - 1,
-            'weight': 1.0,
+            'weight': 1.0 if self._weights is None else float(self._weights[index]),
             'dataset_id': cell['dataset_id'],
             'seen_unseen_id': 1,                       # training set: unused
             'chemistry_id': cell['chem'],
