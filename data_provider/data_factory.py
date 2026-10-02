@@ -194,6 +194,7 @@ def data_provider_full(args, chemistries=None, split_seed=2021, label_scaler=Non
                                       max_cycles=getattr(args, 'full_max_cycles', None),
                                       prefixes_per_cell=getattr(args, 'full_prefixes_per_cell', None),
                                       seed=getattr(args, 'seed', 0),
+                                      sampling=getattr(args, 'full_sampling', 'uniform'),
                                       label_scaler=label_scaler, life_class_scaler=life_class_scaler)
     data_loader = DataLoader(
         data_set,

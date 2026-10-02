@@ -145,7 +145,7 @@ parser.add_argument('--chem_loss_alpha', type=float, default=0.0,
 
 # full-timescale training (data_provider/data_loader_full.py): train on prefixes of any length, batch size 1, no padding.
 # Val/test are unchanged (pooled loaders, published cells, prefixes 1..100). Requires --pooled and a model that takes
-# variable-length input (CPMamba).
+# variable-length input (CPMamba, or LongMamba with --long_boundary none / shared).
 parser.add_argument('--full_timescale', action='store_true', default=False,
                     help='train on the full-timescale loader (all stored cycles) instead of the pooled first-100-cycles '
                          'loader. Needs --pooled; see --full_max_cycles / --full_prefixes_per_cell / --full_cache_dir.')
@@ -164,6 +164,9 @@ parser.add_argument('--long_boundary', type=str, default='none', choices=['none'
                     help='LongMamba (models/LongMamba.py) cycle-boundary token in front of every cycle: none = cycles '
                          'concatenated as is; shared = one learned token, same at every boundary; index = learned '
                          'per-cycle-index token (nn.Embedding(early_cycle_threshold, d_model))')
+parser.add_argument('--long_grad_ckpt', type=int, default=0, choices=[0, 1],
+                    help='LongMamba: 1 = recompute each Mamba block in the backward pass (activation checkpointing) to '
+                         'fit very long full-history prefixes; same outputs and gradients, ~30%% slower')
 parser.add_argument('--long_chem_cls', type=int, default=0, choices=[0, 1],
                     help='LongMamba: 1 = per-chemistry output CLS token (nn.Embedding(4, d_model)). Needs --pooled.')
 parser.add_argument('--long_chem_boundary', type=int, default=0, choices=[0, 1],
@@ -209,7 +212,9 @@ if args.chem_loss_alpha:
     assert args.pooled, '--chem_loss_alpha needs --pooled (chemistry ids / counts come from the pooled loader)'
 if args.full_timescale:
     assert args.pooled, '--full_timescale needs --pooled (same pooled cells / chemistry ids; val/test use the pooled loaders)'
-    assert args.model == 'CPMamba', f'--full_timescale needs a variable-length model (CPMamba), not {args.model}'
+    assert args.model in ('CPMamba', 'LongMamba'), f'--full_timescale needs a variable-length model (CPMamba / LongMamba), not {args.model}'
+    if args.model == 'LongMamba':
+        assert args.long_boundary != 'index', '--full_timescale with LongMamba needs --long_boundary none or shared (index has 100 tokens)'
     assert not args.weighted_loss, '--weighted_loss is not supported by the full-timescale loader'
 if args.long_chem_cls or args.long_chem_boundary:
     assert args.pooled and args.model == 'LongMamba', '--long_chem_cls / --long_chem_boundary need --pooled and --model LongMamba'
@@ -309,7 +314,7 @@ for ii in range(args.itr):
     if args.pooled:
         accelerator.print(f"Loading POOLED samples: chemistries={pooled_chems}, split_seed={args.pooled_split_seed}")
         if args.full_timescale:
-            accelerator.print(f"FULL-TIMESCALE training loader: max_cycles={args.full_max_cycles}, "
+            accelerator.print(f"FULL-TIMESCALE training loader: sampling={args.full_sampling}, max_cycles={args.full_max_cycles}, "
                               f"prefixes_per_cell={args.full_prefixes_per_cell}, batch size 1 (--batch_size only applies to val/test)")
             train_data, train_loader = data_provider_full(args, chemistries=pooled_chems, split_seed=args.pooled_split_seed)
         else:

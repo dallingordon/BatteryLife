@@ -25,6 +25,13 @@
 #                   is added to the cycle-index token with BOUNDARY=index; not allowed with none   (log tag _cbnd)
 #   PRED_MODE       geo_bins (default) | regression | dual
 #   POOLED_CHEMS    "" / all = all four (default); e.g. "CALB Zn-ion Na-ion" for a fast test (logs get a _quick tag)
+#   CHEM_TAG        log tag used instead of _quick when POOLED_CHEMS is set on purpose, e.g. CHEM_TAG=Lionly
+#   FULL            0 (default) | 1: full-timescale training loader (prefixes past cycle 100; batch 1, ACCUM default 32;
+#                   val/test unchanged). Needs BOUNDARY none or shared. Log tag _full<sampling>K<K>[_max<M>]
+#   FULL_SAMPLING   stratified (default) = every prefix 1..100 + FULL_K longer ones per cell per epoch | uniform
+#   FULL_K          100 (default): random prefixes per cell per epoch (the longer ones, for stratified)
+#   FULL_MAX_CYCLES "" (default, no cap) | int: longest training prefix
+#   GRAD_CKPT       0 (default) | 1: recompute Mamba blocks in backward (memory for very long prefixes)  (tag _gc not added)
 #   BATCH ACCUM     8 4 (defaults; effective batch 32 like CPMLP)
 #   LR WD           1e-4 1e-3 (defaults)
 #   D_MODEL N_LAYERS D_STATE MAMBA_EXPAND   64 4 16 2 (defaults, same as CPMamba); non-default values add
@@ -52,8 +59,14 @@ CHEM_BOUNDARY=${CHEM_BOUNDARY:-0}
 PRED_MODE=${PRED_MODE:-geo_bins}
 POOLED_CHEMS=${POOLED_CHEMS:-}
 [ "$POOLED_CHEMS" = all ] && POOLED_CHEMS=""   # "all" = every chemistry (qsub -v cannot reliably pass an empty value)
-BATCH=${BATCH:-8}
-ACCUM=${ACCUM:-4}
+FULL=${FULL:-0}
+FULL_SAMPLING=${FULL_SAMPLING:-stratified}
+FULL_K=${FULL_K:-100}
+FULL_MAX_CYCLES=${FULL_MAX_CYCLES:-}
+GRAD_CKPT=${GRAD_CKPT:-0}
+CHEM_TAG=${CHEM_TAG:-}
+BATCH=${BATCH:-8}                                         # full-timescale: train batch is 1, BATCH is val/test only
+if [ "$FULL" = "1" ]; then ACCUM=${ACCUM:-32}; else ACCUM=${ACCUM:-4}; fi   # effective train batch 32 either way
 LR=${LR:-1e-4}
 WD=${WD:-1e-3}
 D_MODEL=${D_MODEL:-64}
@@ -75,9 +88,18 @@ TAG="_${MAMBA_LAYER}_b${BOUNDARY}"
 [ "$PRED_MODE" = "geo_bins" ] && TAG="${TAG}_geobins"
 [ "$PRED_MODE" = "dual" ] && TAG="${TAG}_dual"
 [ "$WD" != "0.0" ] && [ "$WD" != "0" ] && TAG="${TAG}_wd${WD}"
-EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD"
+EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT"
+if [ "$FULL" = "1" ]; then
+  if [ "$BOUNDARY" = "index" ]; then echo "FULL=1 needs BOUNDARY none or shared (index has 100 cycle tokens)"; exit 1; fi
+  TAG="${TAG}_full${FULL_SAMPLING}K${FULL_K}"
+  EXTRA_ARGS="$EXTRA_ARGS --full_timescale --full_sampling $FULL_SAMPLING --full_prefixes_per_cell $FULL_K"
+  if [ -n "$FULL_MAX_CYCLES" ]; then
+    TAG="${TAG}_max${FULL_MAX_CYCLES}"
+    EXTRA_ARGS="$EXTRA_ARGS --full_max_cycles $FULL_MAX_CYCLES"
+  fi
+fi
 if [ -n "$POOLED_CHEMS" ]; then
-  TAG="${TAG}_quick"
+  if [ -n "$CHEM_TAG" ]; then TAG="${TAG}_${CHEM_TAG}"; else TAG="${TAG}_quick"; fi
   EXTRA_ARGS="$EXTRA_ARGS --pooled_chemistries $POOLED_CHEMS"
 fi
 

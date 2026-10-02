@@ -14,6 +14,9 @@ eol <= early_cycle_threshold). What differs:
 Config (both are "empty = off"):
   max_cycles          None -> use every stored cycle;  int -> prefix length never exceeds it
   prefixes_per_cell   None -> drop nothing;            int -> K prefixes per cell per epoch
+  sampling            'uniform'    -> the K prefixes are drawn from 1..n
+                      'stratified' -> every prefix 1..early_cycle_threshold (the range val/test evaluate) every epoch,
+                                      plus K drawn from early_cycle_threshold+1..n (cells with fewer give all of them)
 
 Val / test are NOT built here. Keep using Dataset_pooled(flag='val'/'test', chemistries=[c]) so evaluation is
 the published cells and prefixes 1..100, unchanged.
@@ -60,6 +63,9 @@ def add_full_timescale_args(parser):
                         help='full-timescale loader: longest prefix (cycles) used in training. Empty = no max')
     parser.add_argument('--full_prefixes_per_cell', type=int_or_none, default=None,
                         help='full-timescale loader: at most K random prefixes per cell per epoch. Empty = drop nothing')
+    parser.add_argument('--full_sampling', type=str, default='uniform', choices=['uniform', 'stratified'],
+                        help='full-timescale loader: uniform = K random prefixes from 1..n per cell per epoch; stratified = '
+                             'every prefix 1..early_cycle_threshold every epoch PLUS K random longer prefixes per cell')
     parser.add_argument('--full_cache_dir', type=str, default=None,
                         help='full-timescale loader: cycle cache dir (default <root_path>/full_cycle_cache)')
     return parser
@@ -189,7 +195,8 @@ class Dataset_full_timescale(Dataset):
     """Training-only. Call set_epoch(e) before iterating each epoch to redraw the per-cell prefixes."""
 
     def __init__(self, args, chemistries=None, split_seed=2021, cache_dir=None, max_cycles=None,
-                 prefixes_per_cell=None, seed=0, label_scaler=None, life_class_scaler=None, verbose=True):
+                 prefixes_per_cell=None, seed=0, label_scaler=None, life_class_scaler=None, verbose=True,
+                 sampling='uniform'):
         """
         :param chemistries: subset of CHEMISTRIES (default all four)
         :param split_seed: 2021 / 42 / 2024, picks the CALB / Zn-ion / Na-ion split (same as Dataset_pooled)
@@ -204,6 +211,8 @@ class Dataset_full_timescale(Dataset):
             assert c in CHEMISTRIES, f'unknown chemistry {c}, expected one of {CHEMISTRIES}'
         assert max_cycles is None or max_cycles >= 1
         assert prefixes_per_cell is None or prefixes_per_cell >= 1
+        assert sampling in ('uniform', 'stratified'), f'unknown sampling {sampling}'
+        self.sampling = sampling
         if getattr(args, 'weighted_loss', False):
             raise NotImplementedError('--weighted_loss is not supported by the full-timescale loader')
         # --chem_loss_alpha: per-sample loss weight N_c^-alpha (N_c = this epoch's sample count for chemistry c), mean 1,
@@ -273,7 +282,7 @@ class Dataset_full_timescale(Dataset):
 
         if verbose:
             n_trunc = sum(c['truncated_at'] is not None for c in self.cells)
-            print(f'[full-timescale train] {len(self.cells)} cells | max_cycles={max_cycles} | prefixes_per_cell={prefixes_per_cell} '
+            print(f'[full-timescale train] {len(self.cells)} cells | sampling={sampling} | max_cycles={max_cycles} | prefixes_per_cell={prefixes_per_cell} '
                   f'| dropped: {self.dropped or "none"} | cells with a truncated cache: {n_trunc}')
         self.set_epoch(0)
 
@@ -285,7 +294,15 @@ class Dataset_full_timescale(Dataset):
         cell_idx, lens = [], []
         for ci, cell in enumerate(self.cells):
             n = cell['n_eligible']
-            chosen = np.arange(1, n + 1) if (K is None or n <= K) else np.sort(rng.choice(n, size=K, replace=False)) + 1
+            if self.sampling == 'stratified':
+                T = self.early_cycle_threshold
+                early = np.arange(1, min(n, T) + 1)                     # every evaluated-range prefix, every epoch
+                late = np.arange(T + 1, n + 1)                          # longer prefixes: K of them at random
+                if K is not None and len(late) > K:
+                    late = np.sort(rng.choice(late, size=K, replace=False))
+                chosen = np.concatenate([early, late])
+            else:
+                chosen = np.arange(1, n + 1) if (K is None or n <= K) else np.sort(rng.choice(n, size=K, replace=False)) + 1
             cell_idx.append(np.full(len(chosen), ci, dtype=np.int64))
             lens.append(chosen.astype(np.int64))
         self._cell_idx = np.concatenate(cell_idx)
@@ -304,7 +321,10 @@ class Dataset_full_timescale(Dataset):
         chem_of_sample = self.cell_chemistry_ids[self._cell_idx]
         n_samples, n_steps = len(self._lens), int(self._lens.sum())
         lines = [f'[full-timescale train] epoch {self.epoch}: {n_samples} samples, {n_steps} cycle-steps '
-                 f'(K={self.prefixes_per_cell}, max_cycles={self.max_cycles}, chem_loss_alpha={self.chem_loss_alpha})',
+                 f'(sampling={self.sampling}, K={self.prefixes_per_cell}, max_cycles={self.max_cycles}, '
+                 f'chem_loss_alpha={self.chem_loss_alpha}) | prefixes <= {self.early_cycle_threshold}: '
+                 f'{int((self._lens <= self.early_cycle_threshold).sum())}, longer: {int((self._lens > self.early_cycle_threshold).sum())}, '
+                 f'longest: {int(self._lens.max())} cycles',
                  f'  {"chemistry":8s} {"cells":>6s} {"samples":>9s} {"share":>7s} {"cycle-steps":>12s} {"share":>7s}']
         for i, name in enumerate(CHEMISTRIES):
             m = chem_of_sample == i

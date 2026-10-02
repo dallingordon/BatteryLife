@@ -22,6 +22,11 @@ Chemistry conditioning (pooled training; two independent switches, both need che
                             with --long_boundary index:  ADDED to the cycle-index token: token_k = index[k] + chem[c]
                             (not allowed with --long_boundary none: there is no boundary token to condition)
 
+Prefix length: --long_boundary none / shared take any number of cycles (full-timescale training, --full_timescale);
+--long_boundary index has one token per cycle index 0..early_cycle_threshold-1 and refuses longer prefixes.
+--long_grad_ckpt 1 recomputes each Mamba block in the backward pass instead of storing its activations (needed for
+the longest full-history prefixes, ~5000 cycles = 1.5M steps); outputs and gradients are unchanged.
+
 Only the final position carries the output (CLS) token. Every mixer is causal, so anything after the CLS position
 (the zeroed, unseen cycles of a padded sample) cannot affect the prediction: a prefix padded inside a batch gives the
 same output as the same prefix alone (test_longmamba.py checks this for all three boundary modes).
@@ -33,6 +38,7 @@ Mixers: same mamba-init fork / --mamba_layer / --mamba_scan options as CPMamba.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.checkpoint import checkpoint
 
 from models.CPMamba import ResidualMixerBlock, get_mamba_mixer_cls
 
@@ -56,6 +62,7 @@ class Model(nn.Module):
             raise ValueError(f'--long_boundary must be one of {BOUNDARY_MODES}, got {self.boundary}')
         if getattr(configs, 'chem_fusion', 'none') != 'none':
             raise NotImplementedError('LongMamba uses --long_chem_cls / --long_chem_boundary, not --chem_fusion')
+        self.grad_ckpt = bool(getattr(configs, 'long_grad_ckpt', 0))
         self.chem_cls = bool(getattr(configs, 'long_chem_cls', 0))
         self.chem_boundary = bool(getattr(configs, 'long_chem_boundary', 0))
         chem_num = getattr(configs, 'chem_num', 4)
@@ -113,7 +120,9 @@ class Model(nn.Module):
         if bool((n_valid < 1).any()):
             raise ValueError('LongMamba: every sample needs at least one real cycle')
         L = int(n_valid.max().item())
-        assert L <= self.max_cycles, f'LongMamba: {L} cycles > early_cycle_threshold {self.max_cycles}'
+        if self.boundary == 'index' and L > self.max_cycles:
+            raise ValueError(f'LongMamba --long_boundary index has {self.max_cycles} cycle tokens, got a {L}-cycle prefix '
+                             f'(for full-history training use --long_boundary none or shared)')
 
         x = cycle_curve_data[:, :L].transpose(2, 3)                              # [B, L, P, 3]: time = points
         x = self.in_proj(x)                                                      # [B, L, P, D]
@@ -145,7 +154,10 @@ class Model(nn.Module):
 
         hidden, residual = x, None
         for layer in self.mamba_layers:
-            hidden, residual = layer(hidden, residual)
+            if self.grad_ckpt and self.training and torch.is_grad_enabled():
+                hidden, residual = checkpoint(layer, hidden, residual, use_reentrant=False)
+            else:
+                hidden, residual = layer(hidden, residual)
         residual = hidden + residual if residual is not None else hidden
         hidden = self.norm_f(residual.to(dtype=self.norm_f.weight.dtype))
         emb = hidden[torch.arange(B, device=x.device), cls_pos]                 # [B, D]

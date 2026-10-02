@@ -27,6 +27,7 @@ from models import LongMamba
 
 p = argparse.ArgumentParser()
 p.add_argument('--gpu', action='store_true')
+p.add_argument('--long', action='store_true', help='with --gpu: batch-1 time / memory at 100..5000 cycles (full history)')
 cli = p.parse_args()
 
 fails = []
@@ -169,6 +170,74 @@ for boundary in LongMamba.BOUNDARY_MODES:
                 except ValueError:
                     check(f'{tag}: missing chemistry_ids raises', True)
 
+# full-timescale: prefixes longer than early_cycle_threshold (10 in these tests)
+print('=== full-timescale (prefixes past early_cycle_threshold) ===')
+for boundary in ('none', 'shared'):
+    torch.manual_seed(0)
+    m = LongMamba.Model(make_args(long_boundary=boundary)).eval()
+    xb, mb = padded_batch([5, 37], 37, 20)
+    with torch.no_grad():
+        yb = m(xb, mb)
+        err = max((m(xb[b:b + 1, :n], torch.ones(1, n)) - yb[b:b + 1]).abs().max().item() for b, n in enumerate([5, 37]))
+    check(f'boundary={boundary}: 37-cycle prefix runs, padded == unpadded', bool(torch.isfinite(yb).all()) and err < 1e-4,
+          f'max abs diff {err:.2e}')
+try:
+    LongMamba.Model(make_args(long_boundary='index')).eval()(torch.randn(1, 11, 3, 20), torch.ones(1, 11))
+    check('boundary=index refuses an 11-cycle prefix (10 tokens)', False)
+except ValueError:
+    check('boundary=index refuses an 11-cycle prefix (10 tokens)', True)
+
+# --long_grad_ckpt: same outputs and gradients
+for boundary in LongMamba.BOUNDARY_MODES:
+    grads, outs = [], []
+    for gc in (0, 1):
+        torch.manual_seed(0)
+        m = LongMamba.Model(make_args(long_boundary=boundary, long_grad_ckpt=gc)).train()
+        xb, mb = padded_batch([3, 10], 10, 20)
+        y = m(xb, mb)
+        y.pow(2).sum().backward()
+        outs.append(y.detach())
+        grads.append(torch.cat([q.grad.reshape(-1) for q in m.parameters() if q.grad is not None]))
+    d_out, d_grad = (outs[0] - outs[1]).abs().max().item(), (grads[0] - grads[1]).abs().max().item()
+    check(f'boundary={boundary}: grad_ckpt gives identical output / gradients', d_out < 1e-6 and d_grad < 1e-5,
+          f'out {d_out:.1e} grad {d_grad:.1e}')
+
+# stratified prefix draw (data_loader_full.Dataset_full_timescale.set_epoch), on fake cells
+print('=== full-timescale loader: stratified sampling ===')
+import numpy as np
+from data_provider.data_loader_full import Dataset_full_timescale
+
+
+def fake_full(sampling, ns, K=100, T=100):
+    ds = Dataset_full_timescale.__new__(Dataset_full_timescale)
+    ds.cells = [dict(n_eligible=n) for n in ns]
+    ds.cell_chemistry_ids = np.zeros(len(ns), dtype=np.int64)
+    ds.prefixes_per_cell, ds.sampling, ds.early_cycle_threshold = K, sampling, T
+    ds.seed, ds.verbose, ds.chem_loss_alpha, ds.max_cycles = 0, False, 0.0, None
+    return ds
+
+
+def per_cell(ds):
+    return [sorted(ds._lens[ds._cell_idx == ci].tolist()) for ci in range(len(ds.cells))]
+
+
+ns = [50, 100, 150, 400, 4998]
+ds = fake_full('stratified', ns)
+ds.set_epoch(0); e0 = per_cell(ds)
+ds.set_epoch(1); e1 = per_cell(ds)
+check('stratified: short cells (50 / 100 / 150) give every prefix', e0[0] == list(range(1, 51)) and
+      e0[1] == list(range(1, 101)) and e0[2] == list(range(1, 151)))
+for ci in (3, 4):
+    early, late = [v for v in e0[ci] if v <= 100], [v for v in e0[ci] if v > 100]
+    check(f'stratified: n={ns[ci]} -> all 100 early + 100 distinct later prefixes',
+          early == list(range(1, 101)) and len(late) == 100 and len(set(late)) == 100 and max(late) <= ns[ci])
+check('stratified: early prefixes identical across epochs, later ones redrawn',
+      [v for v in e1[4] if v <= 100] == list(range(1, 101)) and e0[4] != e1[4])
+du = fake_full('uniform', ns)
+du.set_epoch(0); u0 = per_cell(du)
+check('uniform unchanged: K=100 drawn from 1..n', len(u0[4]) == 100 and min(u0[4]) >= 1 and max(u0[4]) <= ns[4]
+      and u0[0] == list(range(1, 51)))
+
 if cli.gpu:
     assert torch.cuda.is_available(), '--gpu but no CUDA device'
     dev = 'cuda'
@@ -213,6 +282,31 @@ if cli.gpu:
                 break
             finally:
                 del m, x, y
+
+    # FULL-HISTORY size: batch 1, boundary none, 100..5000 cycles (Li-ion train cells: median 606, max 4998).
+    # Prints fwd+bwd time and peak memory with and without --long_grad_ckpt -> pick GRAD_CKPT / FULL_MAX_CYCLES.
+    if cli.long:
+        for gc in (0, 1):
+            for n_cyc in (100, 500, 1000, 2000, 3000, 5000):
+                torch.cuda.empty_cache()
+                torch.cuda.reset_peak_memory_stats()
+                m = x = y = None
+                try:
+                    m = LongMamba.Model(make_args(mamba_layer='vanilla', mamba_scan='cuda', d_model=64, mamba_n_layers=4,
+                                                  charge_discharge_length=300, early_cycle_threshold=100,
+                                                  long_boundary='none', output_num=28, long_grad_ckpt=gc)).float().to(dev).train()
+                    x = torch.randn(1, n_cyc, 3, 300, device=dev)
+                    y = m(x, torch.ones(1, n_cyc, device=dev)); y.sum().backward()      # warm-up
+                    m.zero_grad(); torch.cuda.synchronize(); t = time.time()
+                    y = m(x, torch.ones(1, n_cyc, device=dev)); y.sum().backward()
+                    torch.cuda.synchronize()
+                    print(f'  grad_ckpt={gc} B=1 {n_cyc:5d} cycles ({n_cyc * 300 + 1:8d} steps): fwd+bwd {time.time() - t:.3f}s, '
+                          f'peak mem {torch.cuda.max_memory_allocated() / 2**20:.0f} MiB')
+                except torch.cuda.OutOfMemoryError:
+                    print(f'  grad_ckpt={gc} B=1 {n_cyc:5d} cycles: OUT OF MEMORY')
+                    break
+                finally:
+                    del m, x, y
 
 print('\nALL PASSED' if not fails else f'\n{len(fails)} FAILED: {fails}')
 sys.exit(1 if fails else 0)

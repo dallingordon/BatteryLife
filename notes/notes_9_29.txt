@@ -1,0 +1,67 @@
+Notes 9/29
+
+--- 9/26 batch results (3 seeds, collect_results.py, single-checkpoint test MAPE) ---
+Correction: all 3 seeds DID run. qsub summary greps *_seed*.log, glob sorts 2021, 2024, 42 -> tail showed only seed 42.
+Seed 42 alone made early_concat16 look like a big win (macro 0.230, Zn-ion 0.330). It was a lucky seed.
+CPMLP pooled geo_bins wd1e-3, macro MAPE / 15%-acc:
+  unconditioned (= early_concat E0)  0.276 / 48.9   <- still the winner; E0 reproduces stage 1 exactly (deterministic)
+  early_concat E16                    0.278 / 49.4   Zn-ion 0.512 -> 0.402 (acc 19 -> 29), Li-ion 0.203 -> 0.234, Na 0.271 -> 0.337
+  late_mlp E16                        0.280 / 47.1
+  late_mlp E0 (not a clean control)   0.337 / 40.9
+  chem_loss_alpha 0.5                 0.264 / 48.2   lowest macro, not significant with 3 seeds
+  chem_loss_alpha 1.0                 0.279 / 49.0   best geo_bins Li-ion 0.192 (pub 0.179); Na-ion 0.330
+  regression (9/22, wd0)              0.313 / 41.7   Li-ion 0.177 = only pooled model matching published Li-ion
+CPTransformer: nothing beats unconditioned (0.307).
+Conditioning / weighting move error between chemistries; macro doesn't move. Write-up: project doc
+conditioning_lossweight_3seed_results_9_29.md
+mamba_init (Zi_*): Na-ion still constant-prediction in every run (0.3956 / 0% acc, flips between two constants).
+  Zn-ion 0.3384 identical across models (same MAE 206.4143) = constant prediction too. Best Zi = Zi_none 0.365.
+Na-ion unseen test MAPE ~0.405 for nearly EVERY model (CPMLP, CPTransformer, Mamba) -> check before reading Na-ion.
+Samples: each cell gives ~100 samples (one per prefix length 1..100, same label). Test Na-ion = 5 cells x 100.
+  Effective N = cells, not samples.
+
+--- Advisor figure ---
+figures/pooled_cpmlp_vs_published.png (script plot_scripts/make_pooled_vs_published_table.py; numbers hardcoded).
+Columns: share of train data (Li 83.9% / CALB 2.8% / Zn 9.9% / Na 3.3%), published CPMLP + CPTransformer, ours pooled
+regression, geo_bins, + early_concat16, + alpha 1.0 (all 3 seeds). MAPE and 15%-acc, cells marked beats both/one/neither.
+Headline: one pooled model matches published per-chemistry models (macro MAPE 0.276 vs 0.288 / 0.276, acc 48.9 vs 49.0).
+
+--- New code 9/29 (NOT run with torch before submit -- check blocks 2, 4, 5, 7 logs first) ---
+- --prediction_mode dual: output layer num_bins+1 (bins logits + 1 regression value), loss CE + dual_reg_weight*MSE,
+  both heads evaluated every epoch, per chemistry the head with lower VAL MAPE is reported ("| Head: bins|reg").
+  Also prints Pooled[bins] / Pooled[reg] lines; collect_results.py makes _head-bins / _head-reg rows.
+- Pooled qsub scripts: seeds other than 2021/42/2024 reuse the paper's splits (1->42, 2->2024, 3->2021, 4->42, 5->2024);
+  --pooled_split_seed only accepts the 3. GEO_BIN_TOL env (tag _tol<v>), DUAL_REG_WEIGHT env, PRED_MODE=dual (tag _dual).
+- --chem_loss_alpha now works with --full_timescale (weights from each epoch's drawn samples). CPMamba qsub: CHEM_LOSS_ALPHA.
+- Long Mamba (models/LongMamba.py, test_longmamba.py, train_eval_scripts/LongMamba_pooled_qsub.sh):
+  Why: CPMamba's sequence is <= 100 cycle summaries (eval is prefixes 1..100) -- too short for Mamba to matter.
+  Long Mamba runs over raw points: per cycle 3 channels (V/max, I in C, Q/nominal) x 300 points (150 charge + 150
+  discharge), cycles end to end = ~30k steps for 100 cycles. Linear(3->d_model), Mamba stack, output CLS at the end.
+  --long_boundary none | shared (one learned token before every cycle) | index (nn.Embedding(100,d), token k before
+  cycle k); only the final position has the output token.
+  Chemistry: --long_chem_cls 1 (per-chemistry CLS), --long_chem_boundary 1 (per-chem start token: replaces shared token,
+  or ADDED to index token: index[k]+chem[c]); independent. qsub CHEM_CLS / CHEM_BOUNDARY. Not queued yet.
+  Pooled loader, prefixes 1..100 (same data as CPMLP), batch 8 x accum 4. ~900M sequence steps / epoch -> may be slow;
+  test_longmamba.py --gpu prints time/memory per batch size. Every-cycle readout is the fix if too slow.
+- smoke_9_29.sh: one-shot checks for all of the above (run in qrsh gpu_c=7.0). Ran an older copy today.
+
+--- Submitted 9/29 (sh_submit_9_29.sh, 96 jobs; job ids: fill in) ---
+1) more seeds (11): seeds 1-5 for unconditioned / alpha0.5 / alpha1.0 / early_concat16 (-> 8 seeds), + early_concat16 &
+   alpha0.5 combo on 8 seeds                                                           experiments/sweep_9_29.tsv
+2) dual heads (6): unconditioned + early_concat16, 8 seeds                                sweep_9_29.tsv
+3) early_concat E=32 / 64 (6), 8 seeds                                                    sweep_9_29.tsv
+4) CPMamba max100 x alpha {0, 0.5, 1.0} x {vanilla, mamba_init}, 3 seeds (16)             sweep_9_29_mamba.tsv
+5) Long Mamba v1: boundary none/shared/index x {vanilla, mamba_init}, 3 seeds (18)        sweep_9_29_longmamba.tsv
+6) geo_bins width 0.07 (59 bins) / 0.03 (138 bins) x {unconditioned, early_concat16}, 8 seeds (12)   sweep_9_29.tsv
+7) Long Mamba arch (vanilla, boundary index), one factor at a time: layers 2/8, d_state 8/32/64, d_model 32/128,
+   expand 1/4; 3 seeds (27); big variants batch 4 x accum 8        sweep_9_29_longmamba_arch.tsv
+If a block dies on unknown arguments: SCC copy of run_main.py / qsub scripts is out of date -- sync and resubmit that block.
+
+--- Next ---
+- Check first logs of blocks 2 (dual), 4 (alpha 'loss weight' column), 5 and 7 (Long Mamba) for crashes / epoch time.
+- collect_results.py once block 1 lands -> 8-seed table: unconditioned vs alpha0.5 vs alpha1.0 vs early_concat16.
+- Long Mamba chemistry conditioning runs (CHEM_CLS / CHEM_BOUNDARY) once v1 trains.
+- Long Mamba other training setups (every-cycle readout etc.).
+- If early_concat E sweep is flat: widen intra_embed or FiLM-style chemistry scaling (E=64 is small vs 900-dim input).
+- If 3% bins do worse: soft labels over neighbouring bins.
+- Figure: rerun plot script with 8-seed numbers when in.
