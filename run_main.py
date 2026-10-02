@@ -160,10 +160,18 @@ parser.add_argument('--mamba_d_conv', type=int, default=4, help='Mamba causal de
 parser.add_argument('--mamba_expand', type=int, default=2, help='Mamba d_inner = expand * d_model')
 parser.add_argument('--mamba_scan', type=str, default='cuda', choices=['cuda', 'ref'],
                     help='cuda = selective_scan_cuda kernel (GPU, compute capability >= 7.0); ref = pure-PyTorch scan (slow, debugging)')
-parser.add_argument('--long_boundary', type=str, default='none', choices=['none', 'shared', 'index'],
+parser.add_argument('--long_boundary', type=str, default='none', choices=['none', 'shared', 'index', 'readout'],
                     help='LongMamba (models/LongMamba.py) cycle-boundary token in front of every cycle: none = cycles '
                          'concatenated as is; shared = one learned token, same at every boundary; index = learned '
-                         'per-cycle-index token (nn.Embedding(early_cycle_threshold, d_model))')
+                         'per-cycle-index token (nn.Embedding(early_cycle_threshold, d_model)); readout = learned R '
+                         'token between cycles that also feeds a training-only guidance head (see --long_r_*)')
+parser.add_argument('--long_r_first', type=int, default=0, choices=[0, 1],
+                    help='LongMamba --long_boundary readout: 1 = also put an R token in front of cycle 1 (never supervised)')
+parser.add_argument('--long_r_dim', type=int, default=32,
+                    help='LongMamba --long_boundary readout: width of the Linear(d_model -> r_dim) bottleneck of the R guidance head')
+parser.add_argument('--long_r_weight', type=float, default=1.0,
+                    help='LongMamba --long_boundary readout: loss = F loss + w * (per-sample mean over R tokens of the R-head '
+                         'loss, same target as F). 0 = R tokens present but unsupervised. Evaluation always uses F.')
 parser.add_argument('--long_grad_ckpt', type=int, default=0, choices=[0, 1],
                     help='LongMamba: 1 = recompute each Mamba block in the backward pass (activation checkpointing) to '
                          'fit very long full-history prefixes; same outputs and gradients, ~30%% slower')
@@ -214,11 +222,16 @@ if args.full_timescale:
     assert args.pooled, '--full_timescale needs --pooled (same pooled cells / chemistry ids; val/test use the pooled loaders)'
     assert args.model in ('CPMamba', 'LongMamba'), f'--full_timescale needs a variable-length model (CPMamba / LongMamba), not {args.model}'
     if args.model == 'LongMamba':
-        assert args.long_boundary != 'index', '--full_timescale with LongMamba needs --long_boundary none or shared (index has 100 tokens)'
+        assert args.long_boundary != 'index', '--full_timescale with LongMamba needs --long_boundary none, shared or readout (index has 100 tokens)'
     assert not args.weighted_loss, '--weighted_loss is not supported by the full-timescale loader'
 if args.long_chem_cls or args.long_chem_boundary:
     assert args.pooled and args.model == 'LongMamba', '--long_chem_cls / --long_chem_boundary need --pooled and --model LongMamba'
 # the model gets chemistry ids when any chemistry conditioning is on
+if args.long_boundary == 'readout':
+    assert args.model == 'LongMamba', '--long_boundary readout is a LongMamba option'
+    assert args.prediction_mode == 'geo_bins' or (args.prediction_mode == 'regression' and args.loss == 'MSE'), \
+        '--long_boundary readout guidance loss is implemented for geo_bins and regression with --loss MSE'
+USE_R = args.model == 'LongMamba' and args.long_boundary == 'readout' and args.long_r_weight > 0
 args.uses_chem_ids = args.chem_fusion != 'none' or bool(args.long_chem_cls) or bool(args.long_chem_boundary)
 args.chem_num = len(CHEMISTRIES)
 
@@ -470,7 +483,10 @@ for ii in range(args.itr):
 
                 # encoder - decoder
                 model_kwargs = {'chemistry_ids': chemistry_ids.to(accelerator.device)} if args.uses_chem_ids else {}
-                outputs = model(cycle_curve_data, curve_attn_mask, **model_kwargs)
+                if USE_R:   # LongMamba readout: F output + guidance-head outputs at the R tokens
+                    outputs, r_preds, r_mask = model(cycle_curve_data, curve_attn_mask, return_r=True, **model_kwargs)
+                else:
+                    outputs = model(cycle_curve_data, curve_attn_mask, **model_kwargs)
                 
 
                 cut_off = labels.shape[0]
@@ -497,7 +513,26 @@ for ii in range(args.itr):
                     loss = criterion(tmp_outputs/tmp_labels, tmp_labels/tmp_labels)
                     loss = torch.mean(loss * weights)
                     
-                label_loss = loss.detach().float()
+                label_loss = loss.detach().float()   # F loss only
+
+                if USE_R:
+                    # R guidance loss: same target as F at every R that follows a real cycle; mean over a sample's R
+                    # tokens, then the (weighted) mean over samples that have at least one R
+                    B_r, L_r = r_mask.shape
+                    if L_r > 0:
+                        if args.prediction_mode == 'geo_bins':
+                            per = classification_criterion(r_preds[:cut_off].reshape(-1, r_preds.shape[-1]),
+                                                           true_bins.repeat_interleave(L_r)).view(B_r, L_r)
+                        else:
+                            per = (r_preds[:cut_off, :, 0] - labels[:cut_off].reshape(-1, 1)) ** 2
+                        n_r = r_mask.sum(1)
+                        has = (n_r > 0).float()
+                        per_sample = (per * r_mask).sum(1) / n_r.clamp(min=1)
+                        r_loss = (per_sample * weights.reshape(-1).to(per.device) * has).sum() / has.sum().clamp(min=1)
+                    else:
+                        r_loss = loss.new_zeros(())
+                    loss = loss + args.long_r_weight * r_loss
+                    print_r_loss = r_loss.detach().float()
                 
                 
                 print_loss = loss.detach().float()
@@ -525,7 +560,8 @@ for ii in range(args.itr):
                     scheduler.step()
                 
                 if (i + 1) % args.print_every == 0:
-                    accelerator.print(f'\titeras: {i+1}, epoch: {epoch+1} | loss:{print_loss:.7f} | label_loss: {label_loss:.7f} | cl_loss: {print_cl_loss:.7f} | lc_loss: {print_life_class_loss:.7f}')
+                    r_txt = f' | r_loss: {print_r_loss:.7f}' if USE_R else ''
+                    accelerator.print(f'\titeras: {i+1}, epoch: {epoch+1} | loss:{print_loss:.7f} | label_loss: {label_loss:.7f} | cl_loss: {print_cl_loss:.7f} | lc_loss: {print_life_class_loss:.7f}{r_txt}')
                     speed = (time.time() - time_now) / iter_count
                     left_time = speed * ((args.train_epochs - epoch) * train_steps - i)
                     accelerator.print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))

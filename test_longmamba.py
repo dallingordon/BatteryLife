@@ -78,9 +78,10 @@ def run_suite(layer, boundary, device, scan):
 
     # 2. sequence length = max(n) * S + 1
     S = P + (0 if boundary == 'none' else 1)
-    check('sequence length', seen[-1] == L * S + 1, f'{seen[-1]} vs expected {L * S + 1}')
+    off = 1 if boundary == 'readout' else 0      # readout without --long_r_first: no R in front of cycle 1
+    check('sequence length', seen[-1] == L * S + 1 - off, f'{seen[-1]} vs expected {L * S + 1 - off}')
     model(xb[1:2, :3], torch.ones(1, 3, device=device))
-    check('sequence length (3 cycles alone)', seen[-1] == 3 * S + 1, f'{seen[-1]} vs {3 * S + 1}')
+    check('sequence length (3 cycles alone)', seen[-1] == 3 * S + 1 - off, f'{seen[-1]} vs {3 * S + 1 - off}')
     hook.remove()
 
     # 3. padding invariance
@@ -101,12 +102,13 @@ def run_suite(layer, boundary, device, scan):
     model.train()
     model.zero_grad()
     model(xb, mb).pow(2).sum().backward()
-    no_grad = [n for n, q in model.named_parameters() if q.requires_grad and (q.grad is None or q.grad.abs().sum() == 0)]
+    no_grad = [n for n, q in model.named_parameters() if q.requires_grad and not n.startswith('r_')
+               and (q.grad is None or q.grad.abs().sum() == 0)]
     check('every parameter gets gradient', not no_grad, str(no_grad[:5]))
 
     # 6. boundary tokens
-    if boundary == 'shared':
-        check('shared token param present', hasattr(model, 'boundary_token') and not hasattr(model, 'cycle_embed'))
+    if boundary in ('shared', 'readout'):
+        check(f'{boundary} token param present', hasattr(model, 'boundary_token') and not hasattr(model, 'cycle_embed'))
     if boundary == 'index':
         check('cycle_embed has one row per cycle', tuple(model.cycle_embed.weight.shape) == (L, args.d_model))
         # the embedding rows actually used get gradient; row k only for samples with > k cycles
@@ -161,7 +163,7 @@ for boundary in LongMamba.BOUNDARY_MODES:
             check(f'{tag}: padded == unpadded prefix', err < 1e-4, f'{err:.2e}')
             m.train(); m.zero_grad()
             m(xb, mb, chemistry_ids=torch.tensor([0, 1, 2, 3])).pow(2).sum().backward()
-            no_grad = [n for n, q in m.named_parameters() if q.grad is None or q.grad.abs().sum() == 0]
+            no_grad = [n for n, q in m.named_parameters() if not n.startswith('r_') and (q.grad is None or q.grad.abs().sum() == 0)]
             check(f'{tag}: every parameter gets gradient', not no_grad, str(no_grad[:5]))
             if conditioned:
                 try:
@@ -170,9 +172,71 @@ for boundary in LongMamba.BOUNDARY_MODES:
                 except ValueError:
                     check(f'{tag}: missing chemistry_ids raises', True)
 
+# readout: R token between cycles (+ optionally before cycle 1) feeding a training-only guidance head
+print('=== readout (R guidance tokens) ===')
+lengths = [1, 3, 7, 10]
+xb, mb = padded_batch(lengths, 10, 20)
+for rf in (0, 1):
+    tag = f'readout r_first={rf}'
+    torch.manual_seed(0)
+    m = LongMamba.Model(make_args(long_boundary='readout', long_r_first=rf, long_r_dim=8)).eval()
+    seen = []
+    hk = m.mamba_layers[0].mixer.register_forward_hook(lambda mod, inp, out: seen.append(inp[0].shape[1]))
+    with torch.no_grad():
+        y = m(xb, mb)
+        y2, rp, rm = m(xb, mb, return_r=True)
+    hk.remove()
+    check(f'{tag}: sequence length 10*21 + 1 - (1 - r_first)', seen[0] == 10 * 21 + rf, f'{seen[0]}')
+    check(f'{tag}: return_r leaves F unchanged', (y - y2).abs().max().item() == 0)
+    check(f'{tag}: r_preds [B, L-1, out], r_mask [B, L-1]', tuple(rp.shape) == (4, 9, 1) and tuple(rm.shape) == (4, 9))
+    check(f'{tag}: r_mask = R after cycles 1..n-1', rm.sum(1).tolist() == [0, 2, 6, 9]
+          and bool((rm[1, :2] == 1).all()) and bool((rm[1, 2:] == 0).all()))
+    check(f'{tag}: R head is a {m.r_proj.in_features}->{m.r_proj.out_features}->{m.r_head.out_features} bottleneck',
+          (m.r_proj.in_features, m.r_proj.out_features) == (32, 8))
+    with torch.no_grad():
+        # padded == unpadded (F and the R tokens that are real)
+        errF, errR = 0.0, 0.0
+        for b, n in enumerate(lengths):
+            yf, rpb, rmb = m(xb[b:b + 1, :n], torch.ones(1, n), return_r=True)
+            errF = max(errF, (yf - y[b:b + 1]).abs().max().item())
+            if n > 1:
+                errR = max(errR, (rpb[0] - rp[b, :n - 1]).abs().max().item())
+        check(f'{tag}: padded == unpadded (F)', errF < 1e-4, f'{errF:.2e}')
+        check(f'{tag}: padded == unpadded (R)', errR < 1e-4, f'{errR:.2e}')
+        # R after cycle k only sees cycles 1..k: scrambling cycles > k changes nothing before it
+        xg = xb.clone(); xg[3, 5:] = torch.randn_like(xg[3, 5:]) * 10
+        _, rpg, _ = m(xg, mb, return_r=True)
+        d_before = (rpg[3, :4] - rp[3, :4]).abs().max().item()
+        d_after = (rpg[3, 4:] - rp[3, 4:]).abs().max().item()
+        check(f'{tag}: R after cycle k ignores cycles > k', d_before < 1e-4 and d_after > 1e-6,
+              f'before {d_before:.1e} after {d_after:.1e}')
+        # a single-cycle prefix has no supervised R
+        _, rp1, rm1 = m(xb[:1, :1], torch.ones(1, 1), return_r=True)
+        check(f'{tag}: 1-cycle prefix -> no R outputs', tuple(rp1.shape) == (1, 0, 1) and rm1.numel() == 0)
+    # gradients: F loss alone gives the same backbone gradients with or without return_r; the R loss reaches r_*
+    m.train()
+    m.zero_grad(); m(xb, mb).pow(2).sum().backward()
+    g_plain = {n: q.grad.clone() for n, q in m.named_parameters() if q.grad is not None}
+    m.zero_grad(); f, rp, rm = m(xb, mb, return_r=True); (f.pow(2).sum() + 0.0 * (rp.pow(2).sum(-1) * rm).sum()).backward()
+    d = max((g_plain[n] - q.grad).abs().max().item() for n, q in m.named_parameters() if n in g_plain)
+    check(f'{tag}: weight 0 -> identical F gradients', d < 1e-6, f'{d:.1e}')
+    m.zero_grad(); f, rp, rm = m(xb, mb, return_r=True); (rp.pow(2).sum(-1) * rm).sum().backward()
+    no_g = [n for n, q in m.named_parameters() if n.startswith('r_') and (q.grad is None or q.grad.abs().sum() == 0)]
+    check(f'{tag}: R loss reaches the guidance head', not no_g, str(no_g))
+    check(f'{tag}: R loss does not touch the F head', m.head_output.weight.grad is None
+          or m.head_output.weight.grad.abs().sum().item() == 0)
+torch.manual_seed(0); y_rf0 = LongMamba.Model(make_args(long_boundary='readout', long_r_first=0)).eval()(xb, mb)
+torch.manual_seed(0); y_rf1 = LongMamba.Model(make_args(long_boundary='readout', long_r_first=1)).eval()(xb, mb)
+check('readout: r_first changes F', (y_rf0 - y_rf1).abs().max().item() > 1e-6)
+try:
+    LongMamba.Model(make_args(long_boundary='shared'))(xb, mb, return_r=True)
+    check('return_r without readout raises', False)
+except ValueError:
+    check('return_r without readout raises', True)
+
 # full-timescale: prefixes longer than early_cycle_threshold (10 in these tests)
 print('=== full-timescale (prefixes past early_cycle_threshold) ===')
-for boundary in ('none', 'shared'):
+for boundary in ('none', 'shared', 'readout'):
     torch.manual_seed(0)
     m = LongMamba.Model(make_args(long_boundary=boundary)).eval()
     xb, mb = padded_batch([5, 37], 37, 20)

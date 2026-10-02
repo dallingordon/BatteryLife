@@ -10,6 +10,11 @@ LongMamba: one Mamba stack over the raw per-point time series of every early cyc
             --long_boundary shared  one learned token, identical at every cycle boundary     (301 steps / cycle)
             --long_boundary index   learned per-cycle-index token, nn.Embedding(100, d_model):
                                     token k sits in front of cycle k                         (301 steps / cycle)
+            --long_boundary readout one learned R token ("another cycle follows") between cycles, and also in
+                                    front of cycle 1 with --long_r_first 1. Each R after a real cycle feeds a
+                                    TRAINING-ONLY guidance head: h_R -> Linear(d_model -> long_r_dim) -> ReLU ->
+                                    Linear(-> output_num), trained on the same target as the output CLS (F) and
+                                    weighted by --long_r_weight in run_main. Evaluation reads F only.
       -> flatten cycles into one sequence of n_valid * S steps (S = 300 or 301), ~30,000 steps for 100 cycles
       -> learned output CLS token right after the last real step (position n_valid * S)
       -> n x [residual add -> LayerNorm -> Mamba mixer]   (pre-norm residual, same blocks as CPMamba)
@@ -42,7 +47,7 @@ from torch.utils.checkpoint import checkpoint
 
 from models.CPMamba import ResidualMixerBlock, get_mamba_mixer_cls
 
-BOUNDARY_MODES = ('none', 'shared', 'index')
+BOUNDARY_MODES = ('none', 'shared', 'index', 'readout')
 
 
 class Model(nn.Module):
@@ -63,14 +68,16 @@ class Model(nn.Module):
         if getattr(configs, 'chem_fusion', 'none') != 'none':
             raise NotImplementedError('LongMamba uses --long_chem_cls / --long_chem_boundary, not --chem_fusion')
         self.grad_ckpt = bool(getattr(configs, 'long_grad_ckpt', 0))
+        self.r_first = bool(getattr(configs, 'long_r_first', 0))
+        self.r_dim = int(getattr(configs, 'long_r_dim', 32))
         self.chem_cls = bool(getattr(configs, 'long_chem_cls', 0))
         self.chem_boundary = bool(getattr(configs, 'long_chem_boundary', 0))
         chem_num = getattr(configs, 'chem_num', 4)
         if self.chem_boundary and self.boundary == 'none':
-            raise ValueError('--long_chem_boundary needs --long_boundary shared or index (there is no boundary token)')
+            raise ValueError('--long_chem_boundary needs --long_boundary shared, index or readout (there is no boundary token)')
 
         self.in_proj = nn.Linear(self.n_channels, self.d_model)
-        if self.boundary == 'shared' and not self.chem_boundary:
+        if self.boundary in ('shared', 'readout') and not self.chem_boundary:
             self.boundary_token = nn.Parameter(torch.randn(self.d_model) * 0.02)
         if self.boundary == 'index':
             self.cycle_embed = nn.Embedding(self.max_cycles, self.d_model)
@@ -101,16 +108,25 @@ class Model(nn.Module):
             self.mamba_layers.apply(partial(_init_weights, n_layer=self.n_mamba))
 
         self.head_output = nn.Linear(self.d_model, configs.output_num)
+        if self.boundary == 'readout':   # guidance head on the R tokens (training only)
+            self.r_proj = nn.Linear(self.d_model, self.r_dim)
+            self.r_head = nn.Linear(self.r_dim, configs.output_num)
 
     @property
     def steps_per_cycle(self):
         return self.n_points + (0 if self.boundary == 'none' else 1)
 
-    def forward(self, cycle_curve_data, curve_attn_mask, return_embedding=False, chemistry_ids=None):
+    def forward(self, cycle_curve_data, curve_attn_mask, return_embedding=False, chemistry_ids=None, return_r=False):
         '''
         cycle_curve_data: [B, L, 3, n_points]  (the loaders' layout: channels, then points)
         curve_attn_mask:  [B, L], right-padded (1 for the first n_valid cycles, 0 after)
+        return_r: (--long_boundary readout only) also return the guidance-head outputs of the R tokens that follow
+                  cycles 1..L-1, r_preds [B, L-1, output_num], and r_mask [B, L-1] (1 where that R follows a real
+                  cycle AND precedes one, i.e. k < n_valid). The R in front of cycle 1 (--long_r_first) has seen no
+                  data and is never returned.
         '''
+        if return_r and self.boundary != 'readout':
+            raise ValueError('return_r needs --long_boundary readout')
         B = cycle_curve_data.shape[0]
         if (self.chem_cls or self.chem_boundary) and chemistry_ids is None:
             raise ValueError('LongMamba chemistry conditioning needs chemistry_ids (pooled loader / --pooled)')
@@ -127,7 +143,7 @@ class Model(nn.Module):
         x = cycle_curve_data[:, :L].transpose(2, 3)                              # [B, L, P, 3]: time = points
         x = self.in_proj(x)                                                      # [B, L, P, D]
         if self.boundary != 'none':
-            if self.boundary == 'shared':
+            if self.boundary in ('shared', 'readout'):
                 if self.chem_boundary:                                           # one start token per chemistry
                     tok = self.chem_boundary_embed(chemistry_ids.long()).to(x.dtype).view(B, 1, 1, -1).expand(B, L, 1, -1)
                 else:
@@ -140,12 +156,15 @@ class Model(nn.Module):
             x = torch.cat([tok, x], dim=2)                                       # [B, L, P+1, D], token BEFORE each cycle
         S = x.shape[2]
         x = x.reshape(B, L * S, self.d_model)                                    # one long sequence
+        off = 1 if (self.boundary == 'readout' and not self.r_first) else 0       # drop the R in front of cycle 1
+        if off:
+            x = x[:, 1:]
 
         # output CLS token right after the last real step; positions after it belong to unseen (zeroed) cycles
-        x = torch.cat([x, x.new_zeros(B, 1, self.d_model)], dim=1)              # [B, L*S + 1, D]
-        cls_pos = n_valid * S                                                    # [B]
-        pos = torch.arange(L * S + 1, device=x.device)
-        is_cls = (pos.unsqueeze(0) == cls_pos.unsqueeze(1)).unsqueeze(-1)       # [B, L*S+1, 1]
+        x = torch.cat([x, x.new_zeros(B, 1, self.d_model)], dim=1)              # [B, L*S - off + 1, D]
+        cls_pos = n_valid * S - off                                              # [B]
+        pos = torch.arange(x.shape[1], device=x.device)
+        is_cls = (pos.unsqueeze(0) == cls_pos.unsqueeze(1)).unsqueeze(-1)       # [B, T, 1]
         if self.chem_cls:
             cls = self.chem_cls_embed(chemistry_ids.long()).to(x.dtype).view(B, 1, -1)   # per-chemistry output token
         else:
@@ -163,6 +182,15 @@ class Model(nn.Module):
         emb = hidden[torch.arange(B, device=x.device), cls_pos]                 # [B, D]
 
         preds = self.head_output(F.relu(emb))
+        if return_r:
+            # R in front of cycle k+1 (k = 1..L-1) sits at flat position k*S - off and has seen cycles 1..k
+            r_pos = torch.arange(1, L, device=x.device) * S - off                # [L-1]
+            r_hidden = hidden[:, r_pos]                                          # [B, L-1, D]
+            r_preds = self.r_head(F.relu(self.r_proj(r_hidden)))                 # [B, L-1, output_num]
+            r_mask = (torch.arange(1, L, device=x.device).unsqueeze(0) < n_valid.unsqueeze(1)).to(preds.dtype)
+            if return_embedding:
+                return preds, emb, r_preds, r_mask
+            return preds, r_preds, r_mask
         if return_embedding:
             return preds, emb
         return preds
