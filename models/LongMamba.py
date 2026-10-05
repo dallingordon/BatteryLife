@@ -38,7 +38,9 @@ same output as the same prefix alone (test_longmamba.py checks this for all thre
 
 Compared with CPMamba, the sequence runs over POINTS (300 per cycle, ~30k for 100 cycles) instead of over per-cycle
 MLP summaries (<= 100 steps); there is no per-cycle MLP encoder. --chem_fusion is not used here (see above).
-Mixers: same mamba-init fork / --mamba_layer / --mamba_scan options as CPMamba.
+Mixers: same mamba-init fork / --mamba_layer / --mamba_scan options as CPMamba, plus --mamba_layer s4d: the same
+block with the selective scan replaced by a time-invariant diagonal S4D SSM (models/S4D.py; --s4_dt_min / --s4_dt_max
+set its timescales). s4d needs no mamba_ssm kernels.
 """
 import torch
 import torch.nn as nn
@@ -91,6 +93,16 @@ class Model(nn.Module):
         else:
             self.cls_token = nn.Parameter(torch.randn(self.d_model) * 0.02)
 
+        layer_kind = getattr(configs, 'mamba_layer', 'vanilla')
+        use_s4d_init = False
+        if mixer_cls is None and layer_kind == 's4d':
+            from models.S4D import S4DMixer
+            dt_min, dt_max = getattr(configs, 's4_dt_min', 1e-5), getattr(configs, 's4_dt_max', 1e-1)
+            mixer_cls = lambda d, i: S4DMixer(d, d_state=getattr(configs, 'mamba_d_state', 16),
+                                              d_conv=getattr(configs, 'mamba_d_conv', 4),
+                                              expand=getattr(configs, 'mamba_expand', 2),
+                                              dt_min=dt_min, dt_max=dt_max, layer_idx=i)
+            use_s4d_init = True
         if mixer_cls is None:
             cls = get_mamba_mixer_cls(getattr(configs, 'mamba_layer', 'vanilla'), getattr(configs, 'mamba_scan', 'cuda'))
             mixer_cls = lambda d, i: cls(d, d_state=getattr(configs, 'mamba_d_state', 16),
@@ -106,6 +118,9 @@ class Model(nn.Module):
             from functools import partial
             from mamba_ssm.models.mixer_seq_simple import _init_weights
             self.mamba_layers.apply(partial(_init_weights, n_layer=self.n_mamba))
+        if use_s4d_init:   # same init as the Mamba stack, without importing mamba_ssm
+            from models.S4D import init_s4d_stack
+            init_s4d_stack(self.mamba_layers, self.n_mamba)
 
         self.head_output = nn.Linear(self.d_model, configs.output_num)
         if self.boundary == 'readout':   # guidance head on the R tokens (training only)

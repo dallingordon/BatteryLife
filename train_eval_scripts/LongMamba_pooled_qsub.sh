@@ -18,7 +18,9 @@
 # fwd+bwd time and peak memory at 100 cycles for B = 1..32.
 #
 # Variants via environment variables (`qsub -v VAR=val,... this_script`, or VAR=val bash this_script in a qrsh):
-#   MAMBA_LAYER     vanilla (default) | mamba_init
+#   MAMBA_LAYER     vanilla (default) | mamba_init | s4d (time-invariant S4D in the same block; models/S4D.py)
+#   S4_DT_MIN S4_DT_MAX  1e-5 1e-1 (defaults; s4d only): initial step-size range, memory ~ 2/dt steps
+#                   (tag _dtmin<v> / _dtmax<v> if not default)
 #   BOUNDARY        none (default) | shared | index | readout   (cycle-boundary token in front of every cycle; see LongMamba.py)
 #                   readout = R token between cycles + training-only guidance head (eval uses the output CLS F only):
 #   R_FIRST         0 (default) | 1: also an R in front of cycle 1 (never supervised)            (tag _rfirst)
@@ -71,6 +73,8 @@ GRAD_CKPT=${GRAD_CKPT:-0}
 R_FIRST=${R_FIRST:-0}
 R_DIM=${R_DIM:-32}
 R_WEIGHT=${R_WEIGHT:-1.0}
+S4_DT_MIN=${S4_DT_MIN:-1e-5}
+S4_DT_MAX=${S4_DT_MAX:-1e-1}
 CHEM_TAG=${CHEM_TAG:-}
 BATCH=${BATCH:-8}                                         # full-timescale: train batch is 1, BATCH is val/test only
 if [ "$FULL" = "1" ]; then ACCUM=${ACCUM:-32}; else ACCUM=${ACCUM:-4}; fi   # effective train batch 32 either way
@@ -91,6 +95,10 @@ if [ "$BOUNDARY" = "readout" ]; then
   [ "$R_DIM" != "32" ] && TAG="${TAG}_rd${R_DIM}"
   [ "$R_WEIGHT" != "1.0" ] && [ "$R_WEIGHT" != "1" ] && TAG="${TAG}_rw${R_WEIGHT}"
 fi
+if [ "$MAMBA_LAYER" = "s4d" ]; then
+  [ "$S4_DT_MIN" != "1e-5" ] && TAG="${TAG}_dtmin${S4_DT_MIN}"
+  [ "$S4_DT_MAX" != "1e-1" ] && TAG="${TAG}_dtmax${S4_DT_MAX}"
+fi
 [ "$CHEM_CLS" = "1" ] && TAG="${TAG}_ccls"
 [ "$CHEM_BOUNDARY" = "1" ] && TAG="${TAG}_cbnd"
 [ "$D_MODEL" != "64" ] && TAG="${TAG}_dm${D_MODEL}"
@@ -100,7 +108,7 @@ fi
 [ "$PRED_MODE" = "geo_bins" ] && TAG="${TAG}_geobins"
 [ "$PRED_MODE" = "dual" ] && TAG="${TAG}_dual"
 [ "$WD" != "0.0" ] && [ "$WD" != "0" ] && TAG="${TAG}_wd${WD}"
-EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT --long_r_first $R_FIRST --long_r_dim $R_DIM --long_r_weight $R_WEIGHT"
+EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT --long_r_first $R_FIRST --long_r_dim $R_DIM --long_r_weight $R_WEIGHT --s4_dt_min $S4_DT_MIN --s4_dt_max $S4_DT_MAX"
 if [ "$FULL" = "1" ]; then
   if [ "$BOUNDARY" = "index" ]; then echo "FULL=1 needs BOUNDARY none, shared or readout (index has 100 cycle tokens)"; exit 1; fi
   TAG="${TAG}_full${FULL_SAMPLING}K${FULL_K}"

@@ -152,8 +152,13 @@ parser.add_argument('--full_timescale', action='store_true', default=False,
 add_full_timescale_args(parser)
 
 # CPMamba (models/CPMamba.py). Mixers come from the mamba-init fork (mamba_ssm), imported only when CPMamba is built.
-parser.add_argument('--mamba_layer', type=str, default='vanilla', choices=['vanilla', 'mamba_init'],
-                    help='vanilla = mamba_ssm Mamba; mamba_init = MambaInit (learned initial SSM state)')
+parser.add_argument('--mamba_layer', type=str, default='vanilla', choices=['vanilla', 'mamba_init', 's4d'],
+                    help='vanilla = mamba_ssm Mamba; mamba_init = MambaInit (learned initial SSM state); '
+                         's4d = same block with a time-invariant diagonal S4D SSM instead of the selective scan (LongMamba only)')
+parser.add_argument('--s4_dt_min', type=float, default=1e-5,
+                    help='--mamba_layer s4d: smallest initial step size; memory ~ 2/dt steps (1e-5 ~ 200k steps ~ 670 cycles)')
+parser.add_argument('--s4_dt_max', type=float, default=1e-1,
+                    help='--mamba_layer s4d: largest initial step size (1e-1 ~ 20 steps); channels are log-uniform in between')
 parser.add_argument('--mamba_n_layers', type=int, default=4, help='number of Mamba blocks over the cycle axis')
 parser.add_argument('--mamba_d_state', type=int, default=16, help='Mamba SSM state size N')
 parser.add_argument('--mamba_d_conv', type=int, default=4, help='Mamba causal depthwise conv width')
@@ -227,6 +232,8 @@ if args.full_timescale:
 if args.long_chem_cls or args.long_chem_boundary:
     assert args.pooled and args.model == 'LongMamba', '--long_chem_cls / --long_chem_boundary need --pooled and --model LongMamba'
 # the model gets chemistry ids when any chemistry conditioning is on
+if args.mamba_layer == 's4d':
+    assert args.model == 'LongMamba', '--mamba_layer s4d is only wired into LongMamba'
 if args.long_boundary == 'readout':
     assert args.model == 'LongMamba', '--long_boundary readout is a LongMamba option'
     assert args.prediction_mode == 'geo_bins' or (args.prediction_mode == 'regression' and args.loss == 'MSE'), \
@@ -395,8 +402,18 @@ for ii in range(args.itr):
     accelerator.print(f'Trainable parameters are: {trained_parameters_names}')
     # --wd was parsed but never passed to the optimizer before 9/22 (every WD value trained like WD=0).
     # Adam's weight_decay = L2 penalty added to the gradient; with wd=0 this is identical to the old line.
-    model_optim = optim.Adam(trained_parameters, lr=args.learning_rate, weight_decay=args.wd)
-    accelerator.print(f'optimizer: Adam lr={args.learning_rate} weight_decay={args.wd}')
+    # S4D SSM parameters (dt, A, C; tagged _ssm_no_wd in models/S4D.py) get no weight decay: coupled L2 on log_dt
+    # pulls dt toward 1 and erases the long timescales. Nothing else is tagged, so other models are unchanged.
+    no_wd = [p for p in trained_parameters if getattr(p, '_ssm_no_wd', False)]
+    if no_wd:
+        rest = [p for p in trained_parameters if not getattr(p, '_ssm_no_wd', False)]
+        model_optim = optim.Adam([{'params': rest, 'weight_decay': args.wd}, {'params': no_wd, 'weight_decay': 0.0}],
+                                 lr=args.learning_rate)
+        accelerator.print(f'optimizer: Adam lr={args.learning_rate} weight_decay={args.wd} '
+                          f'({len(no_wd)} S4D SSM tensors with weight_decay=0)')
+    else:
+        model_optim = optim.Adam(trained_parameters, lr=args.learning_rate, weight_decay=args.wd)
+        accelerator.print(f'optimizer: Adam lr={args.learning_rate} weight_decay={args.wd}')
     
     if args.lradj == 'COS':
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(model_optim, T_max=20, eta_min=1e-8)
