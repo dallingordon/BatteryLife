@@ -17,6 +17,12 @@ Config (both are "empty = off"):
   sampling            'uniform'    -> the K prefixes are drawn from 1..n
                       'stratified' -> every prefix 1..early_cycle_threshold (the range val/test evaluate) every epoch,
                                       plus K drawn from early_cycle_threshold+1..n (cells with fewer give all of them)
+                      'tail'       -> long-tail pretraining: K prefix lengths drawn uniformly (without replacement) from
+                                      early_cycle_threshold..n, nothing shorter (K = None means 1). With LongMamba
+                                      --long_boundary readout one sample is one pass over cycles 1..len: R tokens
+                                      between cycles (guidance loss on each) and the output token F after the last one,
+                                      so F lands at a different cycle every epoch. Cells with n < early_cycle_threshold
+                                      (only possible with max_cycles) give their full n.
 
 Val / test are NOT built here. Keep using Dataset_pooled(flag='val'/'test', chemistries=[c]) so evaluation is
 the published cells and prefixes 1..100, unchanged.
@@ -63,9 +69,10 @@ def add_full_timescale_args(parser):
                         help='full-timescale loader: longest prefix (cycles) used in training. Empty = no max')
     parser.add_argument('--full_prefixes_per_cell', type=int_or_none, default=None,
                         help='full-timescale loader: at most K random prefixes per cell per epoch. Empty = drop nothing')
-    parser.add_argument('--full_sampling', type=str, default='uniform', choices=['uniform', 'stratified'],
+    parser.add_argument('--full_sampling', type=str, default='uniform', choices=['uniform', 'stratified', 'tail'],
                         help='full-timescale loader: uniform = K random prefixes from 1..n per cell per epoch; stratified = '
-                             'every prefix 1..early_cycle_threshold every epoch PLUS K random longer prefixes per cell')
+                             'every prefix 1..early_cycle_threshold every epoch PLUS K random longer prefixes per cell; '
+                             'tail = K lengths from early_cycle_threshold..n only (long-tail pretraining; empty K = 1)')
     parser.add_argument('--full_cache_dir', type=str, default=None,
                         help='full-timescale loader: cycle cache dir (default <root_path>/full_cycle_cache)')
     return parser
@@ -211,7 +218,7 @@ class Dataset_full_timescale(Dataset):
             assert c in CHEMISTRIES, f'unknown chemistry {c}, expected one of {CHEMISTRIES}'
         assert max_cycles is None or max_cycles >= 1
         assert prefixes_per_cell is None or prefixes_per_cell >= 1
-        assert sampling in ('uniform', 'stratified'), f'unknown sampling {sampling}'
+        assert sampling in ('uniform', 'stratified', 'tail'), f'unknown sampling {sampling}'
         self.sampling = sampling
         if getattr(args, 'weighted_loss', False):
             raise NotImplementedError('--weighted_loss is not supported by the full-timescale loader')
@@ -301,6 +308,10 @@ class Dataset_full_timescale(Dataset):
                 if K is not None and len(late) > K:
                     late = np.sort(rng.choice(late, size=K, replace=False))
                 chosen = np.concatenate([early, late])
+            elif self.sampling == 'tail':
+                pool = np.arange(min(self.early_cycle_threshold, n), n + 1)   # lengths early_cycle_threshold..n
+                k = 1 if K is None else K
+                chosen = pool if len(pool) <= k else np.sort(rng.choice(pool, size=k, replace=False))
             else:
                 chosen = np.arange(1, n + 1) if (K is None or n <= K) else np.sort(rng.choice(n, size=K, replace=False)) + 1
             cell_idx.append(np.full(len(chosen), ci, dtype=np.int64))

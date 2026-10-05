@@ -1,0 +1,19 @@
+
+
+1. Remaining useful life is how many cycles until a battery is below 80% capacity. 
+    capacity is integral of current over time
+    a manufacturer would do a set charge and discharch cycle and when it falls below some percent, it is considered end of life (EOL).
+    These tests are time consuming and expensive. 
+
+2.  They developed a model to predict RUL for 4 different battery chemistries.  They don't have one model architecture that wins all of them.  They train each chemistry in isolation. 
+
+3.  They are low on data.  The transformer model, dominates state of the art models in lots of tasks, is not the winner on their biggest sample count battery chemistry.  Transformers are notoriously data hungry. 
+4.  They take their data and throw away the cycle readings that happen after their 100 cycles.  
+5.  capacity fade is not stationary, a "knee" point is not uncommon, much later than the 100 cycles they see.  
+
+6.  First, can a unified model perform better.  they did domain adaptation, but they didn't alter their architecutre.  can you condition on the chemistries and incorporate other chemistries into your learning. 
+7.  Second, can you learn from the "thrown away" data.  At least their transformer model can accomodate it.  
+    State space models exhibit linear time invariance, I am particularly interested in that class of models.  They learn temporal dynamics that are static and i wonder if learning late cycle dynamics can help early cycle RUL prediction. 
+    Mamba is a descendant of state space models, it has more expresivity than state space models.  They perform better than state space models on variety of tasks, and can match transformers of similar parameters counts.  They are efficient on long sequences and open up some architecture options that i want to try. 
+
+8.  Does data from other sources beside these chemistries improve prediction on them.  (does it exist)

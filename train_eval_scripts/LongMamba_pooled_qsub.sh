@@ -21,6 +21,12 @@
 #   MAMBA_LAYER     vanilla (default) | mamba_init | s4d (time-invariant S4D in the same block; models/S4D.py)
 #   S4_DT_MIN S4_DT_MAX  1e-5 1e-1 (defaults; s4d only): initial step-size range, memory ~ 2/dt steps
 #                   (tag _dtmin<v> / _dtmax<v> if not default)
+#   S4_BACKEND      fft (default) | scan (s4d only): same LTI model run by mamba_ssm's selective-scan kernel with constant
+#                   dt/B/C -- linear in length, use it for full-history / long-tail runs           (tag _scan)
+#   INIT_CKPT       "" (default) | checkpoint dir or model.safetensors to start from (finetune after pretraining).
+#                   "{seed}" in it is replaced by the seed, e.g.
+#                   INIT_CKPT=/projectnb/.../checkpoints/LongMamba_POOLED_s4d_breadout_rfirst_..._fulltailK1_Lionly_seed{seed}
+#   INIT_TAG        short name for the checkpoint, required with INIT_CKPT                          (tag _ft<INIT_TAG>)
 #   BOUNDARY        none (default) | shared | index | readout   (cycle-boundary token in front of every cycle; see LongMamba.py)
 #                   readout = R token between cycles + training-only guidance head (eval uses the output CLS F only):
 #   R_FIRST         0 (default) | 1: also an R in front of cycle 1 (never supervised)            (tag _rfirst)
@@ -33,8 +39,10 @@
 #   POOLED_CHEMS    "" / all = all four (default); e.g. "CALB Zn-ion Na-ion" for a fast test (logs get a _quick tag)
 #   CHEM_TAG        log tag used instead of _quick when POOLED_CHEMS is set on purpose, e.g. CHEM_TAG=Lionly
 #   FULL            0 (default) | 1: full-timescale training loader (prefixes past cycle 100; batch 1, ACCUM default 32;
-#                   val/test unchanged). Needs BOUNDARY none or shared. Log tag _full<sampling>K<K>[_max<M>]
+#                   val/test unchanged). Needs BOUNDARY none, shared or readout. Log tag _full<sampling>K<K>[_max<M>]
 #   FULL_SAMPLING   stratified (default) = every prefix 1..100 + FULL_K longer ones per cell per epoch | uniform
+#                   | tail = long-tail pretraining: FULL_K lengths per cell per epoch drawn from 100..L only; with
+#                   BOUNDARY=readout each sample is one pass (R before every cycle, F after the last drawn cycle)
 #   FULL_K          100 (default): random prefixes per cell per epoch (the longer ones, for stratified)
 #   FULL_MAX_CYCLES "" (default, no cap) | int: longest training prefix
 #   GRAD_CKPT       0 (default) | 1: recompute Mamba blocks in backward (memory for very long prefixes)  (tag _gc not added)
@@ -75,6 +83,9 @@ R_DIM=${R_DIM:-32}
 R_WEIGHT=${R_WEIGHT:-1.0}
 S4_DT_MIN=${S4_DT_MIN:-1e-5}
 S4_DT_MAX=${S4_DT_MAX:-1e-1}
+S4_BACKEND=${S4_BACKEND:-fft}
+INIT_CKPT=${INIT_CKPT:-}
+INIT_TAG=${INIT_TAG:-}
 CHEM_TAG=${CHEM_TAG:-}
 BATCH=${BATCH:-8}                                         # full-timescale: train batch is 1, BATCH is val/test only
 if [ "$FULL" = "1" ]; then ACCUM=${ACCUM:-32}; else ACCUM=${ACCUM:-4}; fi   # effective train batch 32 either way
@@ -98,6 +109,7 @@ fi
 if [ "$MAMBA_LAYER" = "s4d" ]; then
   [ "$S4_DT_MIN" != "1e-5" ] && TAG="${TAG}_dtmin${S4_DT_MIN}"
   [ "$S4_DT_MAX" != "1e-1" ] && TAG="${TAG}_dtmax${S4_DT_MAX}"
+  [ "$S4_BACKEND" != "fft" ] && TAG="${TAG}_scan"
 fi
 [ "$CHEM_CLS" = "1" ] && TAG="${TAG}_ccls"
 [ "$CHEM_BOUNDARY" = "1" ] && TAG="${TAG}_cbnd"
@@ -108,7 +120,7 @@ fi
 [ "$PRED_MODE" = "geo_bins" ] && TAG="${TAG}_geobins"
 [ "$PRED_MODE" = "dual" ] && TAG="${TAG}_dual"
 [ "$WD" != "0.0" ] && [ "$WD" != "0" ] && TAG="${TAG}_wd${WD}"
-EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT --long_r_first $R_FIRST --long_r_dim $R_DIM --long_r_weight $R_WEIGHT --s4_dt_min $S4_DT_MIN --s4_dt_max $S4_DT_MAX"
+EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT --long_r_first $R_FIRST --long_r_dim $R_DIM --long_r_weight $R_WEIGHT --s4_dt_min $S4_DT_MIN --s4_dt_max $S4_DT_MAX --s4_backend $S4_BACKEND"
 if [ "$FULL" = "1" ]; then
   if [ "$BOUNDARY" = "index" ]; then echo "FULL=1 needs BOUNDARY none, shared or readout (index has 100 cycle tokens)"; exit 1; fi
   TAG="${TAG}_full${FULL_SAMPLING}K${FULL_K}"
@@ -117,6 +129,10 @@ if [ "$FULL" = "1" ]; then
     TAG="${TAG}_max${FULL_MAX_CYCLES}"
     EXTRA_ARGS="$EXTRA_ARGS --full_max_cycles $FULL_MAX_CYCLES"
   fi
+fi
+if [ -n "$INIT_CKPT" ]; then
+  if [ -z "$INIT_TAG" ]; then echo "INIT_CKPT needs INIT_TAG (short name for the log tag)"; exit 1; fi
+  TAG="${TAG}_ft${INIT_TAG}"
 fi
 if [ -n "$POOLED_CHEMS" ]; then
   if [ -n "$CHEM_TAG" ]; then TAG="${TAG}_${CHEM_TAG}"; else TAG="${TAG}_quick"; fi
@@ -130,6 +146,12 @@ run_one () {
   case "$seed" in 2021|42|2024) ;; *) local _splits=(2021 42 2024); split_seed=${_splits[$((seed % 3))]} ;; esac
   local ckpt="/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/LongMamba_POOLED${TAG}_seed${seed}"
   local log="${RESULTS_DIR}/LongMamba_Pooled${TAG}_seed${seed}.log"
+  local init_args=""
+  if [ -n "$INIT_CKPT" ]; then
+    local init="${INIT_CKPT//\{seed\}/$seed}"
+    [ -e "$init" ] || { echo "INIT_CKPT $init does not exist"; return 1; }
+    init_args="--init_checkpoint $init"
+  fi
   mkdir -p "$ckpt"
   echo "=== LongMamba | POOLED${TAG} seed=$seed (split_seed=$split_seed) epochs=$EPOCHS batch=$BATCH x accum $ACCUM ==="
   accelerate launch --num_processes 1 --main_process_port 20445 run_main.py \
@@ -141,7 +163,7 @@ run_one () {
     --train_epochs "$EPOCHS" --model_comment "LongMamba_Pooled${TAG}_s${seed}" --accumulation_steps "$ACCUM" \
     --charge_discharge_length 300 --dataset POOLED --num_workers 4 --print_every "$PRINT_EVERY" \
     --patience "$PATIENCE" --early_cycle_threshold 100 --lradj constant --loss MSE \
-    --pooled --pooled_split_seed "$split_seed" $EXTRA_ARGS \
+    --pooled --pooled_split_seed "$split_seed" $EXTRA_ARGS $init_args \
     --checkpoints "$ckpt" 2>&1 | tee "$log"
 }
 

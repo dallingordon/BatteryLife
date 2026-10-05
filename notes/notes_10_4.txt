@@ -1,0 +1,66 @@
+Notes 10/4
+
+--- Queue cleanup ---
+Released: Lvshared x3 (7787275/77/80) -- finishes the Long Mamba boundary comparison (none / shared / index).
+Deleted: geo_bins tol 0.03 jobs (7787313-17) -- wider/narrower bins already don't beat default (see below).
+Still held (hqw): mamba_init Long Mamba x9 (Linone/Lishared/Liindex) -- mamba_init was worse than vanilla for CPMamba.
+                  Long Mamba arch sweep x27 (LA*) -- all on boundary index, which is not the best base.
+sashimi_ma (7762372) queued since 9/27 -- check `qstat -j 7762372 | grep -A5 "scheduling info"` or qdel.
+ck* jobs (6 running, 8 queued) not covered here; they don't write LongMamba_* logs.
+
+Results: module load python3; python3 collect_results.py
+         python3 collect_results.py --logs 'results_logs/LongMamba_*.log' --out_prefix results_logs/longmamba
+
+--- Long Mamba results (vanilla, geo_bins, wd 1e-3, single-checkpoint test MAPE) ---
+Pooled, 3 seeds:                     Li     CALB   Zn     Na     macro  15%acc
+  boundary none                      0.317  0.256  0.490  0.273  0.334  36.3
+  boundary index                     0.319  0.289  0.514  0.312  0.358  38.0
+  index + chem CLS                   0.330  0.234  0.437  0.305  0.326  34.6
+  index + chem CLS + chem boundary   0.326  0.233  0.632  0.372  0.391  31.7
+  ref CPMLP pooled uncond (8 seeds)  0.217  0.141  0.527  0.290  0.294  49.4
+  ref CPMamba vanilla max100         0.293  0.256  0.443  0.303  0.324
+  -> Long Mamba behind CPMLP (Li-ion, CALB), ~level with CPMamba. none >= index (per-chem-best-val: none 0.316 best).
+     Chem boundary token hurts. Na-ion unseen MAPE 0.4052 std 0 again (constant prediction).
+Li-ion only, seed 2021 (1 seed):     MAPE   15%acc RMSE
+  bnone, prefixes <=100              0.295  46.5   565
+  bnone, full history stratified     0.424  35.4   552   <- full history hurt early prediction (1 seed)
+  readout                            0.313  49.2   568
+  readout + R_FIRST                  0.267  49.1   362   <- best Long Mamba Li-ion so far, needs more seeds
+  readout, R_WEIGHT 0                0.326  46.2   538
+Conditioned R tokens (readout + CHEM_BOUNDARY) never ran: all readout runs were Li-ion only. Code supports it.
+
+--- geo_bins width (CPMLP pooled, wd 1e-3) ---
+  default tol (8 seeds)   macro 0.294  acc 49.4
+  tol 0.07 (8 seeds)      macro 0.297  acc 41.1  (Zn-ion 0.453 better, CALB worse)
+  tol 0.07 + ec16 (8)     macro 0.329  acc 41.2
+  tol 0.03 (3 seeds)      macro 0.304  acc 41.2
+  -> neither beats default, both lose ~8 pts 15%-acc.
+Best CPMLP at 8 seeds still dual ec16 bins head (0.282). 3-seed rows above it (E0 0.276 etc.) are the lucky paper seeds.
+
+--- Submitted ---
+7871243 LRrf_s42: Long Mamba readout + R_FIRST, Li-ion only, seed 42 -- does 0.267 hold up?
+        If ~0.27: then R_FIRST + R_WEIGHT=0 control (token vs guidance loss) and pooled readout + R_FIRST.
+
+--- Long S4D (new code, test_s4d.py ALL PASSED on SCC) ---
+Why: Mamba is selective (dt/B/C input-dependent) -> not LTI. S4D = fixed kernel at every step. Swap only the SSM
+  -> Mamba vs S4D isolates selectivity; direct test of "LTI dynamics learned late help early prediction".
+models/S4D.py: S4DMixer = Mamba block with selective scan replaced by diagonal S4D (S4D-Lin, ZOH, FFT conv).
+  Same in_proj / conv(4) / SiLU / D skip / gate / out_proj, d_state 16 (8 complex modes), expand 2, same stack init.
+  No mamba_ssm kernels needed.
+--mamba_layer s4d (LongMamba only), --s4_dt_min 1e-5, --s4_dt_max 1e-1. qsub: MAMBA_LAYER=s4d, S4_DT_MIN, S4_DT_MAX.
+  Log tag _s4d_b<boundary>...
+Init: mode decays exp(-0.5*dt) per step -> memory ~2/dt steps. 100 cycles = 30k steps needs dt ~7e-5.
+  dt log-uniform in [1e-5, 1e-1] per channel = ~20 steps (within cycle) to ~200k steps (~670 cycles).
+  Standard S4D [1e-3, 1e-1] only reaches ~2000 steps (~7 cycles) = effectively per-cycle.
+run_main: S4D dt/A/C excluded from weight decay (coupled L2 on log_dt pushes dt -> 1, kills long memory).
+  Nothing else tagged, other models unchanged. Check: grep "optimizer: Adam" log -> "(16 S4D SSM tensors with weight_decay=0)".
+Kernel materialised [128, 8, T] per layer (~250 MB at 30k): fine for <=100 cycles, full history would need chunking.
+Submitted (seed 2021, compare with Mamba seed 2021):
+  7871273 S4Lrf: Li-ion only, readout + R_FIRST   (Mamba 0.267)
+  7871274 S4Pn:  pooled, boundary none            (Mamba bnone 3-seed macro 0.334)
+
+--- Next ---
+- LRrf_s42, S4Lrf, S4Pn results; check S4D epoch time vs Mamba (~30 min/epoch pooled).
+- If S4D competitive: S4D full-history Li-ion (the actual LTI question) -- needs chunked kernel first.
+- Decide on held arch sweep: rerun on the best base (none or readout + R_FIRST) instead of index.
+- Na-ion constant-prediction issue still open.

@@ -4,7 +4,10 @@ runs on the SCC login node:
 
     source venv_mamba/bin/activate
     python test_s4d.py            # CPU checks
-    python test_s4d.py --gpu      # also: real size (100 cycles x 300 points, ~30k steps) fwd+bwd time / peak memory
+    python test_s4d.py --gpu      # also: real size (100 cycles x 300 points, ~30k steps) fwd+bwd time / peak memory,
+                                  #       scan backend (CUDA selective scan) == fft, and their speed side by side
+    python test_s4d.py --gpu --long   # also: scan backend at full-history lengths (1000 / 2000 / 3842 cycles, B=1,
+                                      #       readout + r_first, grad ckpt): fwd+bwd time and peak memory
 
 What it checks:
   1. S4D FFT convolution == explicit complex recurrence (the kernel math, ZOH discretisation, D skip, gating)
@@ -13,6 +16,8 @@ What it checks:
      ignored (causality), every parameter gets gradient, readout R outputs padded == unpadded
   4. long memory: with dt_min=1e-5 the kernel of the slowest channel is still non-negligible after 30k steps,
      with the old default dt_min=1e-3 it is ~0
+  5. --s4_backend scan (needs mamba_ssm importable; skipped otherwise): outputs and gradients == fft backend, on CPU
+     via selective_scan_ref; with --gpu also via the CUDA kernel (complex A/B/C)
 """
 import argparse
 import math
@@ -27,6 +32,7 @@ from models.S4D import S4DMixer, S4DKernel
 
 p = argparse.ArgumentParser()
 p.add_argument('--gpu', action='store_true')
+p.add_argument('--long', action='store_true', help='with --gpu: full-history lengths with the scan backend')
 cli = p.parse_args()
 fails = []
 
@@ -127,9 +133,55 @@ for boundary, rf in (('none', 0), ('shared', 0), ('readout', 0), ('readout', 1))
     with torch.no_grad():
         check('geo_bins head shape', tuple(m28(xb, mb).shape) == (4, 28))
 
+
+def scan_vs_fft(dev, scan_impl, B=2, T=300, d=16, tol=1e-3):
+    """Same S4DMixer weights, backend fft vs scan: outputs and every parameter gradient."""
+    torch.manual_seed(0)
+    mix = S4DMixer(d, d_state=16, d_conv=4, expand=2, dt_min=1e-4, dt_max=1e-1, scan_impl=scan_impl).to(dev)
+    x = torch.randn(B, T, d, device=dev)
+    outs, grads = {}, {}
+    for be in ('fft', 'scan'):
+        mix.backend = be
+        mix.zero_grad()
+        y = mix(x)
+        (y * torch.linspace(-1, 1, y.numel(), device=dev).view_as(y)).sum().backward()
+        outs[be] = y.detach()
+        grads[be] = {n: q.grad.detach().clone() for n, q in mix.named_parameters()}
+    scale = outs['fft'].abs().max().item()
+    dy = (outs['scan'] - outs['fft']).abs().max().item() / scale
+    check(f'scan ({scan_impl}, {dev}) == fft: output', dy < tol, f'max rel diff {dy:.2e}')
+    worst = max(((grads['scan'][n] - grads['fft'][n]).abs().max() / grads['fft'][n].abs().max().clamp_min(1e-12)).item()
+                for n in grads['fft'])
+    check(f'scan ({scan_impl}, {dev}) == fft: every parameter gradient', worst < 10 * tol, f'max rel diff {worst:.2e}')
+
+
+print('=== --s4_backend scan ===')
+try:
+    import mamba_ssm.ops.selective_scan_interface  # noqa: F401
+    HAVE_MAMBA = True
+except Exception as e:   # login node without the kernels' libs, etc.
+    HAVE_MAMBA = False
+    print(f'  [skip] mamba_ssm not importable here ({e!r}); scan backend not tested')
+if HAVE_MAMBA:
+    scan_vs_fft('cpu', 'ref', T=200)
+    torch.manual_seed(0)
+    mf = LongMamba.Model(make_args(long_boundary='readout', long_r_first=1, long_r_dim=8)).eval()
+    ms = LongMamba.Model(make_args(long_boundary='readout', long_r_first=1, long_r_dim=8, s4_backend='scan')).eval()
+    ms.load_state_dict(mf.state_dict())
+    check('LongMamba s4_backend scan builds scan mixers', all(b.mixer.backend == 'scan' for b in ms.mamba_layers))
+    xb, mb = padded_batch([2, 5], 5, 20)
+    with torch.no_grad():
+        a, ra, _ = mf(xb, mb, return_r=True)
+        b, rb, _ = ms(xb, mb, return_r=True)
+    d1 = max((a - b).abs().max().item(), (ra - rb).abs().max().item())
+    check('LongMamba readout: scan == fft (F and R outputs)', d1 < 1e-3, f'{d1:.2e}')
+
 if cli.gpu:
     assert torch.cuda.is_available()
     dev = 'cuda'
+    if HAVE_MAMBA:
+        scan_vs_fft(dev, 'cuda', T=300)
+        scan_vs_fft(dev, 'cuda', B=1, T=30000, d=64, tol=2e-3)
     for boundary, rf in (('none', 0), ('readout', 1)):
         for B in (1, 4, 8, 16):
             torch.cuda.empty_cache(); torch.cuda.reset_peak_memory_stats()
@@ -149,6 +201,40 @@ if cli.gpu:
                 print(f'  s4d B={B} OUT OF MEMORY'); break
             finally:
                 del m, x, y
+    if HAVE_MAMBA:   # same real-size run, scan backend (CUDA kernel)
+        for B in (1, 8):
+            torch.cuda.empty_cache(); torch.cuda.reset_peak_memory_stats()
+            m = LongMamba.Model(make_args(d_model=64, mamba_n_layers=4, charge_discharge_length=300, early_cycle_threshold=100,
+                                          long_boundary='readout', long_r_first=1, output_num=28, s4_dt_min=1e-5,
+                                          s4_dt_max=1e-1, s4_backend='scan', mamba_scan='cuda')).float().to(dev).train()
+            x = torch.randn(B, 100, 3, 300, device=dev)
+            y = m(x, torch.ones(B, 100, device=dev)); y.sum().backward(); m.zero_grad()
+            torch.cuda.synchronize(); t = time.time()
+            y = m(x, torch.ones(B, 100, device=dev)); y.sum().backward()
+            torch.cuda.synchronize()
+            print(f'  s4d SCAN boundary=readout r_first=1 B={B:2d} 100 cycles: fwd+bwd {time.time() - t:.2f}s, '
+                  f'peak mem {torch.cuda.max_memory_allocated() / 2**20:.0f} MiB')
+            del m, x, y
+    if cli.long and HAVE_MAMBA:   # full-history lengths: one cell, readout + r_first, grad ckpt, F + R loss
+        for n_cyc in (1000, 2000, 3842):
+            torch.cuda.empty_cache(); torch.cuda.reset_peak_memory_stats()
+            m = x = None
+            try:
+                m = LongMamba.Model(make_args(d_model=64, mamba_n_layers=4, charge_discharge_length=300,
+                                              early_cycle_threshold=100, long_boundary='readout', long_r_first=1,
+                                              output_num=28, s4_dt_min=1e-5, s4_dt_max=1e-1, s4_backend='scan',
+                                              mamba_scan='cuda', long_grad_ckpt=1)).float().to(dev).train()
+                x = torch.randn(1, n_cyc, 3, 300, device=dev)
+                torch.cuda.synchronize(); t = time.time()
+                f, rp, rm = m(x, torch.ones(1, n_cyc, device=dev), return_r=True)
+                (f.sum() + (rp.sum(-1) * rm).sum() / rm.sum()).backward()
+                torch.cuda.synchronize()
+                print(f'  s4d SCAN long: {n_cyc} cycles ({n_cyc * 301} steps), B=1, grad ckpt: fwd+bwd '
+                      f'{time.time() - t:.2f}s, peak mem {torch.cuda.max_memory_allocated() / 2**20:.0f} MiB')
+            except torch.cuda.OutOfMemoryError:
+                print(f'  s4d SCAN long: {n_cyc} cycles OUT OF MEMORY'); break
+            finally:
+                del m, x
 
 print('\nALL PASSED' if not fails else f'\n{len(fails)} FAILED: {fails}')
 sys.exit(1 if fails else 0)

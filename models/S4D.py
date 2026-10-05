@@ -28,6 +28,15 @@ timescales the init sets up.
 
 Memory: the kernel is materialised as [E, N/2, T] complex per layer (E=128, N/2=8, T=30k: ~250 MB), independent
 of batch size. Fine for 100-cycle prefixes; full-history prefixes (up to 1.5M steps) would need a chunked kernel.
+
+Backends (--s4_backend), same parameters, same model, same outputs up to float error:
+  fft   (default) materialised kernel + FFT convolution, pure PyTorch. O(T log T), kernel memory O(E * N/2 * T).
+  scan  the recurrence  x_t = exp(dt*A) x_{t-1} + (exp(dt*A) - 1)/A * u_t,  y_t = 2 Re(C x_t) + D u_t,  * SiLU(z)
+        run by mamba_ssm's fused selective-scan CUDA kernel (selective_scan_fn) with dt, B, C held CONSTANT over time
+        (delta = dt broadcast to [B, E, T]; B = (exp(dt*A) - 1)/(dt*A), so that the kernel's delta*B*u is exactly the
+        ZOH input term; complex A/B/C, the kernel's y = 2*Re(C x)). Still LTI: only the algorithm changes. Linear
+        in T, no kernel tensor, ~Mamba speed; needed for full-history (up to ~1.15M step) sequences.
+        On CPU, or with --mamba_scan ref, it uses mamba_ssm's selective_scan_ref (pure PyTorch, slow; tests).
 """
 import math
 
@@ -53,11 +62,20 @@ class S4DKernel(nn.Module):
         for p in (self.log_dt, self.C, self.log_A_real, self.A_imag):
             p._ssm_no_wd = True
 
-    def forward(self, T):
-        """Kernel K [H, T] (float32)."""
+    def discretize(self):
+        """dt [H], A [H, N2], dB [H, N2] = (exp(dt*A) - 1)/A (ZOH input term, B = 1), C [H, N2]; complex64 / float32.
+        Shared by both backends so they compute the same model."""
         dt = torch.exp(self.log_dt.float())                                     # [H]
         C = torch.view_as_complex(self.C.float().contiguous())                  # [H, N2]
         A = -torch.exp(self.log_A_real.float()) + 1j * self.A_imag.float()      # [H, N2]
+        dB = (torch.exp(A * dt.unsqueeze(-1)) - 1.) / A                         # [H, N2]
+        return dt, A, dB, C
+
+    def forward(self, T):
+        """Kernel K [H, T] (float32)."""
+        dt = torch.exp(self.log_dt.float())                                     # [H]   (kept bit-identical to the
+        C = torch.view_as_complex(self.C.float().contiguous())                  # [H, N2] original fft code; same
+        A = -torch.exp(self.log_A_real.float()) + 1j * self.A_imag.float()      # [H, N2] math as discretize())
         dtA = A * dt.unsqueeze(-1)                                              # [H, N2]
         C = C * (torch.exp(dtA) - 1.) / A                                       # ZOH: fold B=1 and discretisation into C
         steps = torch.arange(T, device=dt.device, dtype=torch.float32)
@@ -76,8 +94,17 @@ def fft_causal_conv(u, K):
 class S4DMixer(nn.Module):
     """Drop-in for mamba_ssm Mamba(d_model, d_state, d_conv, expand, layer_idx): [B, T, D] -> [B, T, D], causal."""
 
-    def __init__(self, d_model, d_state=16, d_conv=4, expand=2, dt_min=1e-5, dt_max=1e-1, layer_idx=None):
+    def __init__(self, d_model, d_state=16, d_conv=4, expand=2, dt_min=1e-5, dt_max=1e-1, layer_idx=None,
+                 backend='fft', scan_impl='cuda'):
+        """backend: 'fft' | 'scan' (see module docstring). scan_impl: 'cuda' (selective_scan_fn on GPU tensors,
+        selective_scan_ref on CPU) | 'ref' (always selective_scan_ref)."""
         super().__init__()
+        if backend not in ('fft', 'scan'):
+            raise ValueError(f'S4D backend must be fft or scan, got {backend}')
+        if scan_impl not in ('cuda', 'ref'):
+            raise ValueError(f'S4D scan_impl must be cuda or ref, got {scan_impl}')
+        self.backend = backend
+        self.scan_impl = scan_impl
         self.d_model = d_model
         self.d_inner = expand * d_model
         self.layer_idx = layer_idx
@@ -92,9 +119,22 @@ class S4DMixer(nn.Module):
         B, T, _ = hidden_states.shape
         u, z = self.in_proj(hidden_states).transpose(1, 2).chunk(2, dim=1)     # [B, E, T] each
         u = F.silu(self.conv1d(u)[..., :T])                                     # causal depthwise conv
+        if self.backend == 'scan':
+            return self.out_proj(self._scan(u, z).transpose(1, 2))
         y = fft_causal_conv(u.float(), self.kernel(T)) + self.D.float().unsqueeze(-1) * u.float()
         y = y.to(u.dtype) * F.silu(z)
         return self.out_proj(y.transpose(1, 2))
+
+    def _scan(self, u, z):
+        """u, z [B, E, T] -> (S4D(u) + D*u) * SiLU(z) [B, E, T], via the selective-scan kernel with constant dt/B/C."""
+        from mamba_ssm.ops.selective_scan_interface import selective_scan_fn, selective_scan_ref
+        fn = selective_scan_fn if (u.is_cuda and self.scan_impl == 'cuda') else selective_scan_ref
+        dt, A, dB, C = self.kernel.discretize()
+        Bm = dB / dt.unsqueeze(-1)                                              # kernel computes delta * B * u
+        delta = dt.view(1, -1, 1).expand(u.shape[0], -1, u.shape[-1]).contiguous().to(u.dtype)   # [B, E, T]
+        y = fn(u.contiguous(), delta, A.contiguous(), Bm.contiguous(), C.contiguous(), D=self.D.float(),
+               z=z.contiguous(), delta_bias=None, delta_softplus=False)
+        return y
 
     def step_reference(self, hidden_states):
         """Same output computed by the explicit complex recurrence (slow; tests only)."""

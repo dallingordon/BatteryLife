@@ -40,7 +40,8 @@ Compared with CPMamba, the sequence runs over POINTS (300 per cycle, ~30k for 10
 MLP summaries (<= 100 steps); there is no per-cycle MLP encoder. --chem_fusion is not used here (see above).
 Mixers: same mamba-init fork / --mamba_layer / --mamba_scan options as CPMamba, plus --mamba_layer s4d: the same
 block with the selective scan replaced by a time-invariant diagonal S4D SSM (models/S4D.py; --s4_dt_min / --s4_dt_max
-set its timescales). s4d needs no mamba_ssm kernels.
+set its timescales). s4d needs no mamba_ssm kernels with --s4_backend fft (default); --s4_backend scan runs the same
+LTI SSM through mamba_ssm's selective-scan kernel (linear in length, for full-history sequences).
 """
 import torch
 import torch.nn as nn
@@ -101,7 +102,9 @@ class Model(nn.Module):
             mixer_cls = lambda d, i: S4DMixer(d, d_state=getattr(configs, 'mamba_d_state', 16),
                                               d_conv=getattr(configs, 'mamba_d_conv', 4),
                                               expand=getattr(configs, 'mamba_expand', 2),
-                                              dt_min=dt_min, dt_max=dt_max, layer_idx=i)
+                                              dt_min=dt_min, dt_max=dt_max, layer_idx=i,
+                                              backend=getattr(configs, 's4_backend', 'fft'),
+                                              scan_impl=getattr(configs, 'mamba_scan', 'cuda'))
             use_s4d_init = True
         if mixer_cls is None:
             cls = get_mamba_mixer_cls(getattr(configs, 'mamba_layer', 'vanilla'), getattr(configs, 'mamba_scan', 'cuda'))

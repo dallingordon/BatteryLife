@@ -159,6 +159,13 @@ parser.add_argument('--s4_dt_min', type=float, default=1e-5,
                     help='--mamba_layer s4d: smallest initial step size; memory ~ 2/dt steps (1e-5 ~ 200k steps ~ 670 cycles)')
 parser.add_argument('--s4_dt_max', type=float, default=1e-1,
                     help='--mamba_layer s4d: largest initial step size (1e-1 ~ 20 steps); channels are log-uniform in between')
+parser.add_argument('--s4_backend', type=str, default='fft', choices=['fft', 'scan'],
+                    help='--mamba_layer s4d: fft = materialised kernel + FFT conv (pure PyTorch); scan = same LTI SSM run '
+                         'by the mamba_ssm selective-scan kernel with constant dt/B/C (linear in length; full-history runs)')
+parser.add_argument('--init_checkpoint', type=str, default='',
+                    help='start from these weights (e.g. a long-tail pretraining run): a model.safetensors file or a '
+                         'checkpoint directory containing exactly one. Loaded strict; the architecture args saved next to '
+                         'it (args.json) must match. Fresh optimizer. Empty = random init')
 parser.add_argument('--mamba_n_layers', type=int, default=4, help='number of Mamba blocks over the cycle axis')
 parser.add_argument('--mamba_d_state', type=int, default=16, help='Mamba SSM state size N')
 parser.add_argument('--mamba_d_conv', type=int, default=4, help='Mamba causal depthwise conv width')
@@ -234,6 +241,8 @@ if args.long_chem_cls or args.long_chem_boundary:
 # the model gets chemistry ids when any chemistry conditioning is on
 if args.mamba_layer == 's4d':
     assert args.model == 'LongMamba', '--mamba_layer s4d is only wired into LongMamba'
+if args.s4_backend != 'fft':
+    assert args.mamba_layer == 's4d', '--s4_backend only applies to --mamba_layer s4d'
 if args.long_boundary == 'readout':
     assert args.model == 'LongMamba', '--long_boundary readout is a LongMamba option'
     assert args.prediction_mode == 'geo_bins' or (args.prediction_mode == 'regression' and args.loss == 'MSE'), \
@@ -251,6 +260,59 @@ if args.prediction_mode == 'dual':
     assert not args.full_timescale, '--prediction_mode dual is not implemented for the full-timescale loader'
     args.output_num = geo_bins.num_bins + 1   # last output = regression head
 DUAL_HEADS = ('bins', 'reg')
+
+# --init_checkpoint: architecture / target args that must match between the checkpoint's run and this one
+INIT_MATCH_KEYS = ('model', 'd_model', 'mamba_layer', 'mamba_n_layers', 'mamba_d_state', 'mamba_d_conv', 'mamba_expand',
+                   'long_boundary', 'long_r_first', 'long_r_dim', 'long_chem_cls', 'long_chem_boundary',
+                   'charge_discharge_length', 'prediction_mode', 'geo_bin_min', 'geo_bin_max', 'geo_bin_tol', 'output_num')
+
+
+def load_init_checkpoint(model, args, accelerator):
+    """Load --init_checkpoint into the (not yet prepared) model, strict. Returns the checkpoint directory."""
+    import glob as _glob
+    from safetensors.torch import load_file
+    p = args.init_checkpoint
+    if os.path.isdir(p):
+        found = sorted(_glob.glob(os.path.join(p, '**', 'model.safetensors'), recursive=True))
+        if len(found) != 1:
+            raise FileNotFoundError(f'--init_checkpoint {p}: expected exactly one model.safetensors below it, found {found}')
+        p = found[0]
+    if not os.path.isfile(p):
+        raise FileNotFoundError(f'--init_checkpoint {p} not found')
+    ckpt_dir = os.path.dirname(p)
+    saved_args_path = os.path.join(ckpt_dir, 'args.json')
+    if os.path.exists(saved_args_path):
+        saved = json.load(open(saved_args_path))
+        bad = {k: (saved.get(k), getattr(args, k, None)) for k in INIT_MATCH_KEYS
+               if k in saved and saved.get(k) != getattr(args, k, None)}
+        if bad:
+            raise ValueError(f'--init_checkpoint {ckpt_dir}: architecture args differ (checkpoint, this run): {bad}')
+        accelerator.print(f'init checkpoint run: model_comment={saved.get("model_comment")} full_sampling={saved.get("full_sampling")} '
+                          f'full_prefixes_per_cell={saved.get("full_prefixes_per_cell")} s4_backend={saved.get("s4_backend", "fft")}')
+    else:
+        accelerator.print(f'WARNING: no args.json next to {p}; architecture match not checked')
+    sd = load_file(p)
+    model.load_state_dict(sd, strict=True)
+    accelerator.print(f'Loaded --init_checkpoint {p} ({len(sd)} tensors, strict)')
+    return ckpt_dir
+
+
+def check_init_scaler(ckpt_dir, label_scaler, accelerator):
+    """Regression heads output SCALED labels, so a different scaler would silently shift them: refuse. geo_bins heads
+    output bins of the raw label (the scaler is only undone before binning), so there a mismatch is only reported."""
+    sp = os.path.join(ckpt_dir, 'label_scaler')
+    if not os.path.exists(sp):
+        accelerator.print(f'WARNING: no label_scaler in {ckpt_dir}; label scaling match not checked')
+        return
+    old = joblib.load(sp)
+    same = np.allclose(old.mean_, label_scaler.mean_) and np.allclose(old.var_, label_scaler.var_)
+    accelerator.print(f'init checkpoint label scaler mean {float(old.mean_[-1]):.2f} std {float(np.sqrt(old.var_[-1])):.2f} | '
+                      f'this run mean {float(label_scaler.mean_[-1]):.2f} std {float(np.sqrt(label_scaler.var_[-1])):.2f}')
+    if not same:
+        msg = '--init_checkpoint: label scaler differs from the checkpoint run (different training cells?)'
+        if args.prediction_mode in ('regression', 'dual'):
+            raise ValueError(msg)
+        accelerator.print('WARNING: ' + msg + ' -- harmless for geo_bins')
 
 nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 set_seed(args.seed)
@@ -325,6 +387,10 @@ for ii in range(args.itr):
         model = LongMamba.Model(args).float()
     else:
         raise Exception(f'The {args.model} is not an implemented baseline!')
+
+    init_dir = None
+    if args.init_checkpoint:
+        init_dir = load_init_checkpoint(model, args, accelerator)
         
     
     path = os.path.join(args.checkpoints,
@@ -342,6 +408,8 @@ for ii in range(args.itr):
         label_scaler = train_data.return_label_scaler()
         life_class_scaler = train_data.return_life_class_scaler()
         accelerator.print(f"pooled train samples per chemistry: {train_data.chemistry_counts()}")
+        if init_dir is not None:
+            check_init_scaler(init_dir, label_scaler, accelerator)
         pooled_eval_sets = {}   # (chemistry, 'val'|'test') -> (dataset, loader); evaluation stays split by chemistry
         for c in pooled_chems:
             for flag in ('val', 'test'):
