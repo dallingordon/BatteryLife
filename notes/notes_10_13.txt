@@ -104,3 +104,62 @@ Chosen: DT_C=12.25, DT_CLIP=10 (filled in experiments/sweep_10_13_dt.tsv).
 S4Lreg x3 seeds: the 0.203 recipe (Li-ion, <=100, readout + R_FIRST, fft) with PRED_MODE=regression (MSE, standardized
 label, as the paper). Tag _s4d_breadout_rfirst_wd1e-3_Lionly. Compare vs geo_bins 0.203 and paper/rerun CPMLP 0.179/0.178.
 Not yet run: CP-S4D (S4D over <=100 cycle tokens, paper-style CyclePatch encoder).
+
+--- Li-ion leaderboard snapshot (test MAPE / 15%-acc; published = BatteryLife Table 3, mean +- std over 3 runs) ---
+published: CPMLP 0.179/62.0 | CPTransformer 0.184/57.3 | CPGRU 0.189/58.5 | CPBiGRU 0.190/56.6 | CPBiLSTM 0.191/42.1 |
+  CPLSTM 0.196/58.5 | iTransformer 0.209/51.6 | MLP 0.233/50.3 | MICN 0.249/49.4 | PatchTST 0.288/43.0 | CNN 0.337/37.1 |
+  Autoformer 0.437/28.7 | DLinear 0.586/27.5   (source: arxiv 2502.18807v7, Table 3)
+ours:  CPMLP rerun (regression, Li-ion only, paper setup)       0.178 / 61.2  3 seeds
+       CPMLP pooled dual ec16 bins head                          0.199         8 seeds
+       BEST S4:    Long S4D Li-ion readout+R_FIRST geo_bins fft  0.203 / 56.0  3 seeds  (MAE 178, RMSE 359)
+       Long S4D pooled bnone                                     0.207 / 58.2  1 seed
+       Long S4D tail pretrain -> ft                              0.257 / 54.4  1 seed
+       BEST Mamba: Long Mamba Li-ion readout+R_FIRST geo_bins     0.267 / 48.9  2 seeds  (MAE 229, RMSE 453)
+       CPMamba pooled max100                                     0.293         3 seeds
+-> S4D is level with the CP-RNNs / iTransformer, ~0.02 MAPE behind CPMLP. Our 15%-acc is geo_bins (+-15% bins), not
+   directly comparable to the paper's regression 15%-acc -> MAPE is the cleaner comparison (hence the regression run).
+
+--- Jobs in flight / to submit (10/13 evening) ---
+queued:   sweep_10_13_s4d.tsv     S4Pn_s42/s2024 (pooled bnone fft), S4Prf x3 (pooled readout+R_FIRST scan)
+          test_time_ssm: CPU + GPU + loader checks ALL ok after the CLS-tau fix (boundary none only; sweep uses readout)
+to submit (after git pull):
+          sweep_10_13_dt.tsv      16 jobs: S4tc / Mtc (tau=1 controls), S4tr / Mtr (recorded clock), S4tri (+log tau input),
+                                  Lrf_s2024 (old Mamba missing seed). DT_C=12.25, DT_CLIP=10.
+          sweep_10_13_s4d_reg.tsv S4Lreg x3 (regression target)
+Readouts when done: python3 collect_results.py --logs 'results_logs/LongMamba_*.log' --out_prefix results_logs/longmamba
+  [dt train] line at the top of each real-clock log confirms tau stats (c=12.25s clip=10).
+
+--- Next / ideas ---
+- CP-S4D: S4D over <=100 cycle tokens (CPMamba with the S4D mixer), Li-ion, geo_bins + regression -> is the S4D gain the
+  LTI SSM or reading raw points?
+- Rest token (rest duration at cycle / half boundaries; first-step tau p99 147).
+- Hierarchical simulator (inner cycle SSM + outer cycle SSM, rollout to 80%), after the dt results.
+- Still open from 10/5: FULL_K=4 tail pretrain retry; Option B late-life windows.
+
+--- LAST: "simulation-generative" life prediction (idea, not built) ---
+Instead of regressing EOL directly, learn a simulator of the cell and run it forward until capacity < 80%.
+  Inner model (points within one cycle): INPUT = current profile (the protocol: C-rate, phase CC/CV/rest) + dt,
+    OUTPUT = voltage response. Initial state comes from the outer model. Run in "simulation mode" (no observed V fed
+    back) -> one parallel scan per cycle, no point-level teacher forcing needed.
+  Outer model (one step per cycle): input = encoded cycle k (+ cycle-level controls: protocol, rest / calendar time),
+    state h_k -> initial state of cycle k+1's inner model (+ direct capacity head as a sanity check / fallback).
+  Capacity of a simulated cycle = integral of current over time, Q = sum_t |I_t| * dt_t, over the discharge, stopped
+    when the simulated voltage hits the cutoff (that is how the tester ends discharge). Needs the real dt (-> the
+    explicit-dt work above is the prerequisite).
+  Prediction: observe cycles 1..100 (teacher forced), then roll the outer model forward cycle by cycle; predicted EOL =
+    first cycle whose Q / nominal < 0.8.
+Training / teacher forcing:
+  - Teacher forcing over ALL cycles (incl. past 100 -> uses the thrown-away late-life data): observed cycles 1..k -> predict
+    cycle k+1, all k in parallel.
+  - Exposure bias in the rollout: latent autoregression (outer predicts the next cycle's encoding z_{k+1} and feeds it back)
+    + multi-step rollout loss from random start cycles (mostly near 100), horizon curriculum. Scheduled sampling = fallback.
+  - Losses: voltage curve, per-cycle capacity (vs observed end-of-discharge Q), z prediction; EOL MAPE from the rollout.
+Watch-outs:
+  - A linear time-invariant outer rollout with no input can only decay (sum of exponentials) -> no knee. Needs closed-loop
+    feedback through nonlinear layers (LTI shared dynamics + nonlinear feedback).
+  - In CV, voltage is held and current is the response; discharge length = capacity -> for future cycles the input must be
+    the PROTOCOL (set-points + cutoffs), not the measured trace (its length leaks the answer).
+  - Data today: V normalized by each cycle's own max (hides resistance growth), points evenly spaced in record index, rests
+    dropped, curve always charge-then-discharge -> rebuild the inputs on real time / raw volts for this.
+  - Check first: does "first cycle with discharge Q < 0.8 x nominal" in the data reproduce the EOL label JSONs?
+  - Error compounding over hundreds-thousands of rollout cycles; capacity is nearly flat in cycles 1..100.
