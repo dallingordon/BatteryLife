@@ -1,0 +1,8 @@
+# Long S4D with a REGRESSION target, 10/13. Li-ion only, <=100 cycles, readout + R_FIRST, fft backend: the 0.203 geo_bins
+#   recipe (s4d_breadout_rfirst_geobins_wd1e-3_Lionly) with ONLY PRED_MODE changed -> isolates the target choice.
+#   Regression = MSE on the standardized cycle-life label, as in the BatteryLife paper (published CPMLP 0.179; our rerun 0.178).
+#   The R guidance loss uses the same MSE target. Log tag: _s4d_breadout_rfirst_wd1e-3_Lionly.
+short	group	script	PRED_MODE	BOUNDARY	R_FIRST	MAMBA_LAYER	S4_BACKEND	WD	POOLED_CHEMS	CHEM_TAG	SEEDS	H_RT	purpose
+S4Lreg_s2021	s4d_regression	train_eval_scripts/LongMamba_pooled_qsub.sh	regression	readout	1	s4d	fft	1e-3	Li-ion	Lionly	2021	30:00:00	Long S4D Li-ion readout+R_FIRST, regression target (vs geo_bins 0.203)
+S4Lreg_s42	s4d_regression	train_eval_scripts/LongMamba_pooled_qsub.sh	regression	readout	1	s4d	fft	1e-3	Li-ion	Lionly	42	30:00:00	Long S4D Li-ion readout+R_FIRST, regression target (vs geo_bins 0.203)
+S4Lreg_s2024	s4d_regression	train_eval_scripts/LongMamba_pooled_qsub.sh	regression	readout	1	s4d	fft	1e-3	Li-ion	Lionly	2024	30:00:00	Long S4D Li-ion readout+R_FIRST, regression target (vs geo_bins 0.203)

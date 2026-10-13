@@ -99,3 +99,8 @@ Per-dataset median tau: MATR 0.85, HUST 0.88, RWTH 0.91, ISU-ILCC 1.1, HNEI 1.2,
   Tongji 2.4-2.7, SNL 3.3, CALCE 3.4, UL-PUR 5.2 -> ~6x spread in step length across datasets (the information dt adds).
 Cycle durations (median): MATR 47 min ... UL-PUR 305 min.
 Chosen: DT_C=12.25, DT_CLIP=10 (filled in experiments/sweep_10_13_dt.tsv).
+
+--- Regression target for Long S4D (experiments/sweep_10_13_s4d_reg.tsv) ---
+S4Lreg x3 seeds: the 0.203 recipe (Li-ion, <=100, readout + R_FIRST, fft) with PRED_MODE=regression (MSE, standardized
+label, as the paper). Tag _s4d_breadout_rfirst_wd1e-3_Lionly. Compare vs geo_bins 0.203 and paper/rerun CPMLP 0.179/0.178.
+Not yet run: CP-S4D (S4D over <=100 cycle tokens, paper-style CyclePatch encoder).
