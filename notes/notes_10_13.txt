@@ -68,3 +68,24 @@ Experiments (Li-ion readout + R_FIRST, 3 seeds each): S4D + log-dt input channel
 - Stats pass over the cache: per-dataset dt distributions, cycle durations, cells with missing/bad time_in_s.
 - Build: cache dt channel, S4D/Mamba time-dt, tests, experiment TSV.
 - Pooled S4D results (above jobs). Mamba R_FIRST seed 2024. Maybe FULL_K=4 tail pretrain.
+
+--- Explicit dt: implemented 10/13 (uncommitted at time of writing) ---
+New:
+  models/time_ssm.py            TimeS4DMixer (S4D block, scan only), TimeMambaMixer (Mamba block, x_proj -> B, C only,
+                                no dt_proj), both delta[b,e,t] = exp(log_dt[e]) * tau[b,t]; log_dt [E] per layer, no wd,
+                                init log-uniform [s4_dt_min, s4_dt_max] (1e-5..1e-1 for BOTH). Kernel's Euler input term.
+                                Mamba A_log / D keep the old Mamba wd treatment (decayed). TimeResidualMixerBlock passes tau.
+  data_provider/data_loader_dt.py  Dataset_pooled_dt: baseline curves unchanged (3 ch) + cycle_tau [100, 300] as batch
+                                item 9. tau = step / DT_C inside each half; points 0,1 of each half = 1 (cycle start,
+                                half start, rest-spanning step); negative -> 1; zero stays 0; missing cycles -> 1; clip.
+                                Prints "[dt train/val/test] ... tau p1/p50/p99/max, at clip %, zero %" per split.
+  test_time_ssm.py (+ train_eval_scripts/test_time_ssm_qsub.sh), dt_stats.py (+ dt_stats_qsub.sh, run earlier)
+  experiments/sweep_10_13_dt.tsv   dt_const (S4tc, Mtc x3 seeds; no DT_C needed), dt_real (S4tr, S4tri, Mtr x3; DT_C /
+                                DT_CLIP = TBD), baseline (Lrf_s2024 = missing old Mamba R_FIRST seed).
+Hooks (flags off = unchanged): LongMamba (--long_time_dt off|const|real, --long_dt_input 0|1; forward(..., tau=)),
+  run_main (--long_time_dt --long_dt_input --dt_c --dt_clip; pooled <=100 loader only; s4d needs --s4_backend scan;
+  tau -> model_kwargs), utils/tools.py vali_baseline (tau), qsub vars TIME_DT DT_INPUT DT_C DT_CLIP
+  (tags _tdt<mode>, _dtin, _clip<v>), data_loader.get_charge_discharge_curves(return_times=True).
+NOTE: const is NOT the old model (Euler input term; Mamba dt not input dependent) -> compare real vs const.
+Order: commit/push -> qsub test_time_ssm_qsub.sh -> ALL PASSED -> GROUP=dt_const + GROUP=baseline submit ->
+  read dt_stats.qlog, fill DT_C / DT_CLIP in the tsv -> GROUP=dt_real submit.

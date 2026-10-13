@@ -192,6 +192,17 @@ parser.add_argument('--long_chem_cls', type=int, default=0, choices=[0, 1],
 parser.add_argument('--long_chem_boundary', type=int, default=0, choices=[0, 1],
                     help='LongMamba: 1 = per-chemistry cycle-start embedding; replaces the token for --long_boundary shared, '
                          'is added to the cycle-index token for --long_boundary index. Needs --pooled.')
+# recorded time step (10/13): models/time_ssm.py, data_provider/data_loader_dt.py. Off by default = unchanged runs.
+parser.add_argument('--long_time_dt', type=str, default='off', choices=['off', 'const', 'real'],
+                    help='LongMamba: off = usual mixers; const = time-aware mixers (s4d -> TimeS4DMixer, vanilla -> '
+                         'TimeMambaMixer: delta = exp(log_dt) per channel, no input-dependent dt) with tau = 1 (control); '
+                         'real = same mixers with delta = exp(log_dt) * tau, tau = recorded step / --dt_c per point')
+parser.add_argument('--long_dt_input', type=int, default=0, choices=[0, 1],
+                    help='LongMamba: 1 = log(tau) as a 4th per-point input feature (any mixer)')
+parser.add_argument('--dt_c', type=float, default=0.0,
+                    help='seconds: tau = step / dt_c, one global constant (median interior step over Li-ion train cells, '
+                         'from dt_stats.py). Needed for --long_time_dt real / --long_dt_input 1')
+parser.add_argument('--dt_clip', type=float, default=0.0, help='upper clip on tau (0 = none)')
 parser.add_argument('--print_every', type=int, default=5, help='print training loss every N iterations')
 
 # optimization
@@ -248,6 +259,16 @@ if args.long_boundary == 'readout':
     assert args.prediction_mode == 'geo_bins' or (args.prediction_mode == 'regression' and args.loss == 'MSE'), \
         '--long_boundary readout guidance loss is implemented for geo_bins and regression with --loss MSE'
 USE_R = args.model == 'LongMamba' and args.long_boundary == 'readout' and args.long_r_weight > 0
+if args.long_time_dt != 'off' or args.long_dt_input:
+    assert args.model == 'LongMamba', '--long_time_dt / --long_dt_input are LongMamba options'
+    assert args.pooled and not args.full_timescale, '--long_time_dt / --long_dt_input are wired into the pooled <=100 loader only'
+if args.long_time_dt != 'off':
+    assert args.mamba_layer in ('s4d', 'vanilla'), '--long_time_dt needs --mamba_layer s4d or vanilla'
+    if args.mamba_layer == 's4d':
+        assert args.s4_backend == 'scan', '--long_time_dt runs S4D through the selective scan: pass --s4_backend scan'
+args.uses_tau = args.model == 'LongMamba' and (args.long_time_dt == 'real' or bool(args.long_dt_input))
+if args.uses_tau:
+    assert args.dt_c > 0, '--long_time_dt real / --long_dt_input 1 need --dt_c (seconds, from dt_stats.py)'
 args.uses_chem_ids = args.chem_fusion != 'none' or bool(args.long_chem_cls) or bool(args.long_chem_boundary)
 args.chem_num = len(CHEMISTRIES)
 
@@ -264,6 +285,7 @@ DUAL_HEADS = ('bins', 'reg')
 # --init_checkpoint: architecture / target args that must match between the checkpoint's run and this one
 INIT_MATCH_KEYS = ('model', 'd_model', 'mamba_layer', 'mamba_n_layers', 'mamba_d_state', 'mamba_d_conv', 'mamba_expand',
                    'long_boundary', 'long_r_first', 'long_r_dim', 'long_chem_cls', 'long_chem_boundary',
+                   'long_time_dt', 'long_dt_input',
                    'charge_discharge_length', 'prediction_mode', 'geo_bin_min', 'geo_bin_max', 'geo_bin_tol', 'output_num')
 
 
@@ -399,12 +421,15 @@ for ii in range(args.itr):
     
     if args.pooled:
         accelerator.print(f"Loading POOLED samples: chemistries={pooled_chems}, split_seed={args.pooled_split_seed}")
+        pooled_provider = data_provider_pooled
+        if args.uses_tau:   # same samples + per-point tau as a 9th batch item (data_provider/data_loader_dt.py)
+            from data_provider.data_loader_dt import data_provider_pooled_dt as pooled_provider
         if args.full_timescale:
             accelerator.print(f"FULL-TIMESCALE training loader: sampling={args.full_sampling}, max_cycles={args.full_max_cycles}, "
                               f"prefixes_per_cell={args.full_prefixes_per_cell}, batch size 1 (--batch_size only applies to val/test)")
             train_data, train_loader = data_provider_full(args, chemistries=pooled_chems, split_seed=args.pooled_split_seed)
         else:
-            train_data, train_loader = data_provider_pooled(args, 'train', chemistries=pooled_chems, split_seed=args.pooled_split_seed)
+            train_data, train_loader = pooled_provider(args, 'train', chemistries=pooled_chems, split_seed=args.pooled_split_seed)
         label_scaler = train_data.return_label_scaler()
         life_class_scaler = train_data.return_life_class_scaler()
         accelerator.print(f"pooled train samples per chemistry: {train_data.chemistry_counts()}")
@@ -414,7 +439,7 @@ for ii in range(args.itr):
         for c in pooled_chems:
             for flag in ('val', 'test'):
                 accelerator.print(f"Loading {c} {flag} samples......")
-                pooled_eval_sets[(c, flag)] = data_provider_pooled(args, flag, label_scaler, life_class_scaler, chemistries=[c], split_seed=args.pooled_split_seed)
+                pooled_eval_sets[(c, flag)] = pooled_provider(args, flag, label_scaler, life_class_scaler, chemistries=[c], split_seed=args.pooled_split_seed)
     else:
         accelerator.print("Loading training samples......")
         train_data, train_loader = data_provider_func(args, 'train', None, sample_weighted=args.weighted_sampling)
@@ -568,6 +593,8 @@ for ii in range(args.itr):
 
                 # encoder - decoder
                 model_kwargs = {'chemistry_ids': chemistry_ids.to(accelerator.device)} if args.uses_chem_ids else {}
+                if args.uses_tau:   # data_loader_dt: tau is the 9th batch item
+                    model_kwargs['tau'] = batch[8].float().to(accelerator.device)
                 if USE_R:   # LongMamba readout: F output + guidance-head outputs at the R tokens
                     outputs, r_preds, r_mask = model(cycle_curve_data, curve_attn_mask, return_r=True, **model_kwargs)
                 else:

@@ -46,6 +46,11 @@
 #   FULL_K          100 (default): random prefixes per cell per epoch (the longer ones, for stratified)
 #   FULL_MAX_CYCLES "" (default, no cap) | int: longest training prefix
 #   GRAD_CKPT       0 (default) | 1: recompute Mamba blocks in backward (memory for very long prefixes)  (tag _gc not added)
+#   TIME_DT         off (default) | const | real: time-aware mixers (models/time_ssm.py; MAMBA_LAYER s4d needs
+#                   S4_BACKEND=scan, or vanilla). const = tau 1 (control), real = recorded step / DT_C   (tag _tdt<TIME_DT>)
+#   DT_INPUT        0 (default) | 1: log(tau) as a 4th per-point input feature                        (tag _dtin)
+#   DT_C            seconds, needed for TIME_DT=real / DT_INPUT=1 (median interior step from dt_stats.py; not in the tag)
+#   DT_CLIP         0 (default, none) | upper clip on tau                                              (tag _clip<DT_CLIP>)
 #   BATCH ACCUM     8 4 (defaults; effective batch 32 like CPMLP)
 #   LR WD           1e-4 1e-3 (defaults)
 #   D_MODEL N_LAYERS D_STATE MAMBA_EXPAND   64 4 16 2 (defaults, same as CPMamba); non-default values add
@@ -85,6 +90,10 @@ S4_DT_MIN=${S4_DT_MIN:-1e-5}
 S4_DT_MAX=${S4_DT_MAX:-1e-1}
 S4_BACKEND=${S4_BACKEND:-fft}
 INIT_CKPT=${INIT_CKPT:-}
+TIME_DT=${TIME_DT:-off}
+DT_INPUT=${DT_INPUT:-0}
+DT_C=${DT_C:-0}
+DT_CLIP=${DT_CLIP:-0}
 INIT_TAG=${INIT_TAG:-}
 CHEM_TAG=${CHEM_TAG:-}
 BATCH=${BATCH:-8}                                         # full-timescale: train batch is 1, BATCH is val/test only
@@ -111,6 +120,12 @@ if [ "$MAMBA_LAYER" = "s4d" ]; then
   [ "$S4_DT_MAX" != "1e-1" ] && TAG="${TAG}_dtmax${S4_DT_MAX}"
   [ "$S4_BACKEND" != "fft" ] && TAG="${TAG}_scan"
 fi
+[ "$TIME_DT" != "off" ] && TAG="${TAG}_tdt${TIME_DT}"
+[ "$DT_INPUT" = "1" ] && TAG="${TAG}_dtin"
+if [ "$TIME_DT" = "real" ] || [ "$DT_INPUT" = "1" ]; then
+  if [ "$DT_C" = "0" ]; then echo "TIME_DT=real / DT_INPUT=1 need DT_C (seconds, from dt_stats.py)"; exit 1; fi
+  [ "$DT_CLIP" != "0" ] && TAG="${TAG}_clip${DT_CLIP}"
+fi
 [ "$CHEM_CLS" = "1" ] && TAG="${TAG}_ccls"
 [ "$CHEM_BOUNDARY" = "1" ] && TAG="${TAG}_cbnd"
 [ "$D_MODEL" != "64" ] && TAG="${TAG}_dm${D_MODEL}"
@@ -120,7 +135,7 @@ fi
 [ "$PRED_MODE" = "geo_bins" ] && TAG="${TAG}_geobins"
 [ "$PRED_MODE" = "dual" ] && TAG="${TAG}_dual"
 [ "$WD" != "0.0" ] && [ "$WD" != "0" ] && TAG="${TAG}_wd${WD}"
-EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT --long_r_first $R_FIRST --long_r_dim $R_DIM --long_r_weight $R_WEIGHT --s4_dt_min $S4_DT_MIN --s4_dt_max $S4_DT_MAX --s4_backend $S4_BACKEND"
+EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT --long_r_first $R_FIRST --long_r_dim $R_DIM --long_r_weight $R_WEIGHT --s4_dt_min $S4_DT_MIN --s4_dt_max $S4_DT_MAX --s4_backend $S4_BACKEND --long_time_dt $TIME_DT --long_dt_input $DT_INPUT --dt_c $DT_C --dt_clip $DT_CLIP"
 if [ "$FULL" = "1" ]; then
   if [ "$BOUNDARY" = "index" ]; then echo "FULL=1 needs BOUNDARY none, shared or readout (index has 100 cycle tokens)"; exit 1; fi
   TAG="${TAG}_full${FULL_SAMPLING}K${FULL_K}"

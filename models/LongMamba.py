@@ -42,6 +42,14 @@ Mixers: same mamba-init fork / --mamba_layer / --mamba_scan options as CPMamba, 
 block with the selective scan replaced by a time-invariant diagonal S4D SSM (models/S4D.py; --s4_dt_min / --s4_dt_max
 set its timescales). s4d needs no mamba_ssm kernels with --s4_backend fft (default); --s4_backend scan runs the same
 LTI SSM through mamba_ssm's selective-scan kernel (linear in length, for full-history sequences).
+
+Recorded time (10/13; models/time_ssm.py, data_provider/data_loader_dt.py). Both off by default = unchanged model:
+  --long_time_dt off    (default) the mixers above
+                 const  time-aware mixers (TimeS4DMixer for --mamba_layer s4d, TimeMambaMixer for vanilla) with tau = 1:
+                        delta = exp(log_dt) per channel, constant. Control arm for `real` (same code, same discretisation)
+                 real   same mixers, delta[b, e, t] = exp(log_dt[e]) * tau[b, t], tau = recorded Δt / c per point
+                        (forward(..., tau=[B, L, P])). Boundary / R / CLS tokens get tau = 1.
+  --long_dt_input 1     log(max(tau, 1e-3)) as a 4th per-point input feature (in_proj 4 -> d_model); works with any mixer.
 """
 import torch
 import torch.nn as nn
@@ -79,7 +87,11 @@ class Model(nn.Module):
         if self.chem_boundary and self.boundary == 'none':
             raise ValueError('--long_chem_boundary needs --long_boundary shared, index or readout (there is no boundary token)')
 
-        self.in_proj = nn.Linear(self.n_channels, self.d_model)
+        self.time_dt = getattr(configs, 'long_time_dt', 'off') or 'off'
+        if self.time_dt not in ('off', 'const', 'real'):
+            raise ValueError(f'--long_time_dt must be off, const or real, got {self.time_dt}')
+        self.dt_input = bool(getattr(configs, 'long_dt_input', 0))
+        self.in_proj = nn.Linear(self.n_channels + int(self.dt_input), self.d_model)
         if self.boundary in ('shared', 'readout') and not self.chem_boundary:
             self.boundary_token = nn.Parameter(torch.randn(self.d_model) * 0.02)
         if self.boundary == 'index':
@@ -96,6 +108,17 @@ class Model(nn.Module):
 
         layer_kind = getattr(configs, 'mamba_layer', 'vanilla')
         use_s4d_init = False
+        if self.time_dt != 'off' and mixer_cls is None:
+            from models.time_ssm import time_mixer_cls, TimeResidualMixerBlock, init_time_stack
+            tcls = time_mixer_cls(layer_kind)
+            self.mamba_layers = nn.ModuleList([TimeResidualMixerBlock(self.d_model, tcls(
+                self.d_model, d_state=getattr(configs, 'mamba_d_state', 16), d_conv=getattr(configs, 'mamba_d_conv', 4),
+                expand=getattr(configs, 'mamba_expand', 2), dt_min=getattr(configs, 's4_dt_min', 1e-5),
+                dt_max=getattr(configs, 's4_dt_max', 1e-1), layer_idx=i, scan_impl=getattr(configs, 'mamba_scan', 'cuda')))
+                for i in range(self.n_mamba)])
+            init_time_stack(self.mamba_layers, self.n_mamba)
+            self._build_rest(configs)
+            return
         if mixer_cls is None and layer_kind == 's4d':
             from models.S4D import S4DMixer
             dt_min, dt_max = getattr(configs, 's4_dt_min', 1e-5), getattr(configs, 's4_dt_max', 1e-1)
@@ -116,7 +139,6 @@ class Model(nn.Module):
             use_mamba_init_weights = False
         self.mamba_layers = nn.ModuleList([ResidualMixerBlock(self.d_model, mixer_cls(self.d_model, i))
                                            for i in range(self.n_mamba)])
-        self.norm_f = nn.LayerNorm(self.d_model)
         if use_mamba_init_weights:
             from functools import partial
             from mamba_ssm.models.mixer_seq_simple import _init_weights
@@ -124,7 +146,10 @@ class Model(nn.Module):
         if use_s4d_init:   # same init as the Mamba stack, without importing mamba_ssm
             from models.S4D import init_s4d_stack
             init_s4d_stack(self.mamba_layers, self.n_mamba)
+        self._build_rest(configs)
 
+    def _build_rest(self, configs):
+        self.norm_f = nn.LayerNorm(self.d_model)
         self.head_output = nn.Linear(self.d_model, configs.output_num)
         if self.boundary == 'readout':   # guidance head on the R tokens (training only)
             self.r_proj = nn.Linear(self.d_model, self.r_dim)
@@ -134,7 +159,7 @@ class Model(nn.Module):
     def steps_per_cycle(self):
         return self.n_points + (0 if self.boundary == 'none' else 1)
 
-    def forward(self, cycle_curve_data, curve_attn_mask, return_embedding=False, chemistry_ids=None, return_r=False):
+    def forward(self, cycle_curve_data, curve_attn_mask, return_embedding=False, chemistry_ids=None, return_r=False, tau=None):
         '''
         cycle_curve_data: [B, L, 3, n_points]  (the loaders' layout: channels, then points)
         curve_attn_mask:  [B, L], right-padded (1 for the first n_valid cycles, 0 after)
@@ -142,6 +167,8 @@ class Model(nn.Module):
                   cycles 1..L-1, r_preds [B, L-1, output_num], and r_mask [B, L-1] (1 where that R follows a real
                   cycle AND precedes one, i.e. k < n_valid). The R in front of cycle 1 (--long_r_first) has seen no
                   data and is never returned.
+        tau:      [B, L, n_points] normalised time step per point (data_loader_dt.py); needed for --long_time_dt real
+                  and --long_dt_input 1, ignored otherwise.
         '''
         if return_r and self.boundary != 'readout':
             raise ValueError('return_r needs --long_boundary readout')
@@ -158,7 +185,14 @@ class Model(nn.Module):
             raise ValueError(f'LongMamba --long_boundary index has {self.max_cycles} cycle tokens, got a {L}-cycle prefix '
                              f'(for full-history training use --long_boundary none or shared)')
 
+        needs_tau = self.time_dt == 'real' or self.dt_input
+        if needs_tau:
+            if tau is None:
+                raise ValueError('LongMamba --long_time_dt real / --long_dt_input 1 need tau (data_loader_dt.py)')
+            tau = tau[:, :L].float()                                             # [B, L, P]
         x = cycle_curve_data[:, :L].transpose(2, 3)                              # [B, L, P, 3]: time = points
+        if self.dt_input:
+            x = torch.cat([x, torch.log(tau.clamp(min=1e-3)).unsqueeze(-1).to(x.dtype)], dim=-1)   # [B, L, P, 4]
         x = self.in_proj(x)                                                      # [B, L, P, D]
         if self.boundary != 'none':
             if self.boundary in ('shared', 'readout'):
@@ -190,11 +224,28 @@ class Model(nn.Module):
         x = torch.where(is_cls, cls, x)
 
         hidden, residual = x, None
-        for layer in self.mamba_layers:
-            if self.grad_ckpt and self.training and torch.is_grad_enabled():
-                hidden, residual = checkpoint(layer, hidden, residual, use_reentrant=False)
+        if self.time_dt == 'off':
+            for layer in self.mamba_layers:
+                if self.grad_ckpt and self.training and torch.is_grad_enabled():
+                    hidden, residual = checkpoint(layer, hidden, residual, use_reentrant=False)
+                else:
+                    hidden, residual = layer(hidden, residual)
+        else:
+            # tau per flat position, laid out exactly like x: [token +] P points per cycle, minus off, + CLS (tau 1)
+            if self.time_dt == 'real':
+                ts = tau
+                if self.boundary != 'none':
+                    ts = torch.cat([ts.new_ones(B, L, 1), ts], dim=2)
+                ts = ts.reshape(B, L * S)[:, off:]
+                ts = torch.cat([ts, ts.new_ones(B, 1)], dim=1)
             else:
-                hidden, residual = layer(hidden, residual)
+                ts = x.new_ones(B, x.shape[1], dtype=torch.float32)
+            assert ts.shape == x.shape[:2], (ts.shape, x.shape)
+            for layer in self.mamba_layers:
+                if self.grad_ckpt and self.training and torch.is_grad_enabled():
+                    hidden, residual = checkpoint(layer, hidden, residual, ts, use_reentrant=False)
+                else:
+                    hidden, residual = layer(hidden, residual, ts)
         residual = hidden + residual if residual is not None else hidden
         hidden = self.norm_f(residual.to(dtype=self.norm_f.weight.dtype))
         emb = hidden[torch.arange(B, device=x.device), cls_pos]                 # [B, D]

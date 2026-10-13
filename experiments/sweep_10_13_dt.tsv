@@ -1,0 +1,26 @@
+# Recorded time step (explicit dt) in Long S4D / Long Mamba, 10/13. Li-ion only, readout + R_FIRST (the 0.203 / 0.267 setup), 3 seeds.
+# Code: models/time_ssm.py (TimeS4DMixer / TimeMambaMixer: delta = exp(log_dt[e]) * tau[b,t]), data_provider/data_loader_dt.py
+#   (tau = recorded step / DT_C per point, edges = 1), LongMamba --long_time_dt / --long_dt_input. Tests: test_time_ssm.py.
+# Arms: TIME_DT=const = same time-aware code with tau = 1 (the control for real; NOT identical to the old runs: Euler input
+#   term, and Mamba's dt is no longer input dependent); real = recorded clock; DT_INPUT=1 adds log(tau) as a 4th input.
+#   Compare real vs const within each model; old runs (S4D 0.203 fft, Mamba 0.267) stay as references.
+# Block dt_const: submittable now (no DT_C needed). Block dt_real: DT_C / DT_CLIP = TBD until dt_stats.qlog is read
+#   (submit_from_config refuses TBD rows). Block baseline: the missing Mamba R_FIRST seed 2024 (old model).
+# Run only one block: GROUP=dt_const bash train_eval_scripts/submit_from_config.sh experiments/sweep_10_13_dt.tsv
+short	group	script	PRED_MODE	BOUNDARY	R_FIRST	MAMBA_LAYER	S4_BACKEND	TIME_DT	DT_INPUT	DT_C	DT_CLIP	WD	POOLED_CHEMS	CHEM_TAG	SEEDS	H_RT	purpose
+S4tc_s2021	dt_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	const	0	-	-	1e-3	Li-ion	Lionly	2021	30:00:00	S4D time-aware, tau=1 (control for S4tr)
+S4tc_s42	dt_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	const	0	-	-	1e-3	Li-ion	Lionly	42	30:00:00	S4D time-aware, tau=1 (control for S4tr)
+S4tc_s2024	dt_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	const	0	-	-	1e-3	Li-ion	Lionly	2024	30:00:00	S4D time-aware, tau=1 (control for S4tr)
+Mtc_s2021	dt_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	const	0	-	-	1e-3	Li-ion	Lionly	2021	30:00:00	Mamba with fixed per-channel dt (B/C selective), tau=1 (control for Mtr)
+Mtc_s42	dt_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	const	0	-	-	1e-3	Li-ion	Lionly	42	30:00:00	Mamba with fixed per-channel dt (B/C selective), tau=1 (control for Mtr)
+Mtc_s2024	dt_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	const	0	-	-	1e-3	Li-ion	Lionly	2024	30:00:00	Mamba with fixed per-channel dt (B/C selective), tau=1 (control for Mtr)
+S4tr_s2021	dt_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	real	0	TBD	TBD	1e-3	Li-ion	Lionly	2021	30:00:00	S4D on the recorded clock: delta = exp(log_dt) * tau
+S4tr_s42	dt_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	real	0	TBD	TBD	1e-3	Li-ion	Lionly	42	30:00:00	S4D on the recorded clock: delta = exp(log_dt) * tau
+S4tr_s2024	dt_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	real	0	TBD	TBD	1e-3	Li-ion	Lionly	2024	30:00:00	S4D on the recorded clock: delta = exp(log_dt) * tau
+S4tri_s2021	dt_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	real	1	TBD	TBD	1e-3	Li-ion	Lionly	2021	30:00:00	S4D recorded clock + log(tau) input feature
+S4tri_s42	dt_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	real	1	TBD	TBD	1e-3	Li-ion	Lionly	42	30:00:00	S4D recorded clock + log(tau) input feature
+S4tri_s2024	dt_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	real	1	TBD	TBD	1e-3	Li-ion	Lionly	2024	30:00:00	S4D recorded clock + log(tau) input feature
+Mtr_s2021	dt_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	real	0	TBD	TBD	1e-3	Li-ion	Lionly	2021	30:00:00	Mamba (fixed per-channel rate, selective B/C) on the recorded clock
+Mtr_s42	dt_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	real	0	TBD	TBD	1e-3	Li-ion	Lionly	42	30:00:00	Mamba (fixed per-channel rate, selective B/C) on the recorded clock
+Mtr_s2024	dt_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	real	0	TBD	TBD	1e-3	Li-ion	Lionly	2024	30:00:00	Mamba (fixed per-channel rate, selective B/C) on the recorded clock
+Lrf_s2024	baseline	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	-	-	-	-	1e-3	Li-ion	Lionly	2024	30:00:00	old Long Mamba readout+R_FIRST, missing 3rd seed (matched 3-seed vs S4D 0.203)
