@@ -1,0 +1,12 @@
+# S4D follow-ups, 10/13 (after S4D Li-ion readout+R_FIRST 3-seed = 0.203 test MAPE vs Long Mamba 0.267; see notes / claude/s4d_results_10_13.md).
+# Block s4d_pooled_bnone: finishes pooled S4D boundary none to 3 seeds. Seed 2021 already ran (S4Pn, fft) -> keep fft so the log tag
+#   matches (s4d_bnone_geobins_wd1e-3) and collect_results groups all 3 seeds. Seed-2021 single-ckpt macro 0.329 (Li 0.207).
+# Block s4d_pooled_readout_rfirst: the best Li-ion setup (readout + R_FIRST), never run pooled. New config, so scan backend
+#   (test_s4d.qlog: scan == fft, ~3-4x faster, less memory). Compare vs pooled S4D bnone and CPMLP pooled (macro 0.294).
+# Defaults from LongMamba_pooled_qsub.sh: d_model 64, 4 layers, d_state 16, expand 2, batch 8 x accum 4, lr 1e-4, patience 5, s4 dt [1e-5, 1e-1].
+short	group	script	PRED_MODE	BOUNDARY	MAMBA_LAYER	S4_BACKEND	R_FIRST	WD	POOLED_CHEMS	SEEDS	H_RT	purpose
+S4Pn_s42	s4d_pooled_bnone	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	none	s4d	fft	0	1e-3	all	42	30:00:00	Pooled S4D boundary none, fft (matches seed-2021 S4Pn tag); 3-seed comparison vs Long Mamba bnone and CPMLP pooled
+S4Pn_s2024	s4d_pooled_bnone	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	none	s4d	fft	0	1e-3	all	2024	30:00:00	Pooled S4D boundary none, fft (matches seed-2021 S4Pn tag); 3-seed comparison vs Long Mamba bnone and CPMLP pooled
+S4Prf_s2021	s4d_pooled_readout_rfirst	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	s4d	scan	1	1e-3	all	2021	30:00:00	Pooled S4D readout + R_FIRST, scan backend; does the best Li-ion-only setup carry over to pooled
+S4Prf_s42	s4d_pooled_readout_rfirst	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	s4d	scan	1	1e-3	all	42	30:00:00	Pooled S4D readout + R_FIRST, scan backend; does the best Li-ion-only setup carry over to pooled
+S4Prf_s2024	s4d_pooled_readout_rfirst	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	s4d	scan	1	1e-3	all	2024	30:00:00	Pooled S4D readout + R_FIRST, scan backend; does the best Li-ion-only setup carry over to pooled

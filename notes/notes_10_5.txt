@@ -1,0 +1,69 @@
+=== 10/5 ===
+
+--- LongMamba results pulled 10/5 noon (collect_results.py, results_logs/longmamba_*) ---
+Mamba readout + R_FIRST, Li-ion only, 2 seeds now (LRrf_s42 finished):
+  seed 2021  MAPE 0.2666  acc15 49.1  MAE 206  RMSE 362
+  seed 42    MAPE 0.2678  acc15 48.7  MAE 252  RMSE 543
+  -> MAPE holds (0.267 +- 0.0006). The big MAE/RMSE drop on 2021 did NOT repeat. Claim "R_FIRST helps MAPE", not big errors.
+  Still needs seed 2024 (MAMBA_LAYER=vanilla,SEEDS=2024) for a matched 3-seed comparison with S4D.
+
+S4D jobs (fft backend, seed 2021) still running at noon:
+  S4Lrf 7871273 (V100)  Li-ion readout + R_FIRST   epoch 10: val 0.296 | test MAPE 0.199 acc15 57.5 MAE 179 RMSE 370
+        -> ahead of Mamba on VAL too (Mamba 2-seed val ~0.311). Would tie CPMLP best Li-ion (0.199 dual ec16). 1 seed, mid-run.
+  S4Pn  7871274 (L40S)  pooled bnone               epoch 5:  val 0.330 | test 0.383 (Na-ion test 0.4475)
+  Weight-decay exclusion confirmed in both logs: "(16 S4D SSM tensors with weight_decay=0)".
+  Epoch time (train only): S4D 1878 s (V100) / 2179 s (L40S) vs Mamba pooled 530 s -> ~4x, partly GPU type.
+  With val: ~37 / ~44 min per epoch. Both well inside h_rt 30h.
+Submitted S4D Li-ion readout + R_FIRST seeds 42 and 2024 (fft, same tag as S4Lrf):
+  qsub -N S4Lrf_s42 / S4Lrf_s2024 ... -v MAMBA_LAYER=s4d,BOUNDARY=readout,R_FIRST=1,POOLED_CHEMS=Li-ion,CHEM_TAG=Lionly,SEEDS=<seed>
+
+--- Speed-up discussion ---
+1. Single pass per cell (causal model: the hidden state at each cycle boundary IS the prefix answer) -> ~K x fewer steps
+   for full history; also could make the <=100 runs ~50x cheaper (one pass instead of prefixes 1..100). Not yet done for <=100.
+2. Run S4D through Mamba's fused selective scan (constant dt/B/C) instead of the FFT kernel -> linear memory, Mamba speed.
+3. Hardware: gpu_c=8.0 (A100/L40S/H100) ~2-3x over V100 for FFT; costs queue time.
+4. Downsampling 300 -> 100 points/cycle is an option; do NOT skip late cycles (breaks fixed time step = the LTI question).
+
+--- Long-tail pretrain -> finetune (Option A), Li-ion only ---
+Pretrain: each epoch every Li-ion train cell gets K (=1) random lengths n ~ U[100, L]. One pass: R token before every
+  cycle (guidance loss on each, EOL target), F after cycle n. Val/early stopping = usual F on prefixes <= 100.
+Finetune: normal Li-ion readout + R_FIRST run (<= 100), init from pretrained weights, fresh optimizer.
+Option B (100-cycle late-life windows, remaining-life target, head reset) NOT built yet.
+
+New code (uncommitted at time of writing):
+  models/S4D.py        --s4_backend scan: same LTI S4D via mamba_ssm selective_scan_fn, delta = dt, B = (exp(dtA)-1)/(dtA),
+                       complex A/B/C, D + SiLU(z) gate fused. fft stays default and bit-identical.
+                       Scan math checked in numpy vs the FFT kernel: max diff 1e-14.
+  data_loader_full.py  --full_sampling tail (K lengths from early_cycle_threshold..n; empty K = 1)
+  run_main.py          --s4_backend, --init_checkpoint (strict load of model.safetensors; checks arch args vs the
+                       checkpoint's args.json; label scaler mismatch = error for regression, warning for geo_bins)
+  LongMamba_pooled_qsub.sh  S4_BACKEND (tag _scan), FULL_SAMPLING=tail (tag _fulltailK<K>),
+                       INIT_CKPT (may contain {seed}) + INIT_TAG (tag _ft<INIT_TAG>)
+  test_s4d.py          scan == fft (outputs + every gradient), CPU via selective_scan_ref, GPU via CUDA incl. T=30k;
+                       --gpu --long: scan at 1000/2000/3842 cycles, B=1, grad ckpt, time + peak mem
+  train_eval_scripts/test_s4d_qsub.sh   batch version of the GPU test (no qrsh available) -> test_s4d.qlog
+  NOTE: torch couldn't be installed off-cluster, so nothing new has run yet. test_s4d.qlog is the first check.
+
+Submitted:
+  qsub train_eval_scripts/test_s4d_qsub.sh
+  qsub -N S4tail -o S4_tail_pretrain.qlog -v MAMBA_LAYER=s4d,S4_BACKEND=scan,BOUNDARY=readout,R_FIRST=1,FULL=1,FULL_SAMPLING=tail,FULL_K=1,GRAD_CKPT=1,POOLED_CHEMS=Li-ion,CHEM_TAG=Lionly,SEEDS=2021,PATIENCE=10 train_eval_scripts/LongMamba_pooled_qsub.sh
+  qsub -N S4ft -hold_jid S4tail -o S4_tail_ft.qlog -v MAMBA_LAYER=s4d,S4_BACKEND=scan,BOUNDARY=readout,R_FIRST=1,POOLED_CHEMS=Li-ion,CHEM_TAG=Lionly,SEEDS=2021,INIT_TAG=tail,INIT_CKPT=/projectnb/nsf-energize/dgordon/Projects/BatteryLife/checkpoints/LongMamba_POOLED_s4d_breadout_rfirst_scan_geobins_wd1e-3_fulltailK1_Lionly_seed{seed} train_eval_scripts/LongMamba_pooled_qsub.sh
+  Logs: results_logs/LongMamba_Pooled_s4d_breadout_rfirst_scan_geobins_wd1e-3_fulltailK1_Lionly_seed2021.log
+        results_logs/LongMamba_Pooled_s4d_breadout_rfirst_scan_geobins_wd1e-3_fttail_Lionly_seed2021.log
+
+Hold: S4ft sits in hqw, released automatically when S4tail leaves the queue (finished OR crashed).
+  Eqw on S4tail keeps it held -> qdel S4tail. -hold_jid by NAME waits on every job named S4tail; use the job id if
+  another S4tail gets submitted. qalter -hold_jid <id> <S4ft id> changes it in place.
+
+Failure modes to check:
+  - test_s4d.qlog FAIL on scan checks / S4tail dies on step 1 -> fork's CUDA scan rejects complex A -> write S4D-Real fallback.
+  - OUT OF MEMORY at 3842 cycles in the --long test, or S4tail dying mid-epoch -> resubmit with FULL_MAX_CYCLES=2000.
+  - S4ft runs even if S4tail crashed: "INIT_CKPT ... does not exist" if no checkpoint; if a checkpoint was saved before the
+    crash it finetunes from a PARTIAL pretrain -> read S4_tail_pretrain.qlog before trusting S4ft.
+  - K=1 epochs are short (one sample per Li-ion train cell, /32 optimizer steps; count is in the epoch summary line), val may cost more than training; FULL_K=4 is the alternative.
+
+--- Next ---
+- Read test_s4d.qlog (complex A ok? scan vs fft speed, memory at long lengths).
+- S4Lrf / S4Pn finals; then S4D Li-ion 3 seeds vs Mamba (needs Mamba R_FIRST seed 2024).
+- S4tail -> S4ft vs S4D from scratch (S4Lrf).
+- If it helps: Option B, single-pass <= 100 training, pooled.
