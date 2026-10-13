@@ -89,3 +89,13 @@ Hooks (flags off = unchanged): LongMamba (--long_time_dt off|const|real, --long_
 NOTE: const is NOT the old model (Euler input term; Mamba dt not input dependent) -> compare real vs const.
 Order: commit/push -> qsub test_time_ssm_qsub.sh -> ALL PASSED -> GROUP=dt_const + GROUP=baseline submit ->
   read dt_stats.qlog, fill DT_C / DT_CLIP in the tsv -> GROUP=dt_real submit.
+
+--- dt_stats.qlog (full-history pass, Li-ion, 843 cells) ---
+status: ok 831, no_label 6 (MICH), no_cycles 3 (MICH), stopped 3 (SNL, at cycles 136/191/194 -> past 100, irrelevant for <=100).
+c = 12.248 s (median interior step, train). interior tau p0.1 0.004  p1 0.025  p10 0.36  p50 1  p90 2.7  p99 5.4  p99.9 9.6  max 343.
+first-step (rest-spanning) tau: p50 0.44, p99 147 -> set to 1 in v1 (rest token later).
+All clocks absolute. RWTH: curve-order boundary -60 min (discharge first), as expected -> handled by edge tau = 1.
+Per-dataset median tau: MATR 0.85, HUST 0.88, RWTH 0.91, ISU-ILCC 1.1, HNEI 1.2, XJTU 1.7, MICH 2.0, Stanford 2.5,
+  Tongji 2.4-2.7, SNL 3.3, CALCE 3.4, UL-PUR 5.2 -> ~6x spread in step length across datasets (the information dt adds).
+Cycle durations (median): MATR 47 min ... UL-PUR 305 min.
+Chosen: DT_C=12.25, DT_CLIP=10 (filled in experiments/sweep_10_13_dt.tsv).

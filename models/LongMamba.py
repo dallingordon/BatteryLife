@@ -238,6 +238,9 @@ class Model(nn.Module):
                     ts = torch.cat([ts.new_ones(B, L, 1), ts], dim=2)
                 ts = ts.reshape(B, L * S)[:, off:]
                 ts = torch.cat([ts, ts.new_ones(B, 1)], dim=1)
+                # the CLS token replaces whatever sat at cls_pos (with --long_boundary none: the first point of the next,
+                # unseen cycle in a padded batch), so its step must be 1 there too, not that point's tau
+                ts = ts.masked_fill(is_cls.squeeze(-1), 1.0)
             else:
                 ts = x.new_ones(B, x.shape[1], dtype=torch.float32)
             assert ts.shape == x.shape[:2], (ts.shape, x.shape)
