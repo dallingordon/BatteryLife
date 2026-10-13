@@ -584,14 +584,18 @@ class Dataset_original(Dataset):
 
         return charge_discharge_curves, attn_masks, labels, eol, total_cj_aug_charge_discharge_curves
 
-    def get_charge_discharge_curves(self, file_name, df, early_cycle_threshold, nominal_capacity):
+    def get_charge_discharge_curves(self, file_name, df, early_cycle_threshold, nominal_capacity, return_times=False):
         '''
         Get the resampled charge and discharge curves from the dataframe
         file_name: the file name
         df: the dataframe for a cell
         early_cycle_threshold: obtain the charge and discharge curves from the required early cycles
+        return_times: (added 10/13) also return time_in_s interpolated at the same resampled points, [L, fixed_len]
+                      (charge half then discharge half, same order as the curves; zeros for missing cycles).
+                      Default False = unchanged behaviour and return value.
         '''
         curves = []
+        times_out = []
         unique_cycles = df['cycle_number'].unique()
         prefix = file_name.split('_')[0]
         if prefix == 'CALB':
@@ -659,6 +663,9 @@ class Dataset_original(Dataset):
                 # except:
                 #     print('file_name', file_name, cycle)
 
+                if return_times:   # same resampling grid as the curves (resample only depends on the segment length)
+                    times_out.append(np.concatenate([self.resample_charge_discharge_curves(charge_times, charge_times, charge_times)[0],
+                                                     self.resample_charge_discharge_curves(discharge_times, discharge_times, discharge_times)[0]]))
                 discharge_voltages, discharge_currents, discharge_capacities = self.resample_charge_discharge_curves(discharge_voltages, discharge_currents, discharge_capacities)
                 charge_voltages, charge_currents, charge_capacities = self.resample_charge_discharge_curves(charge_voltages, charge_currents, charge_capacities)
 
@@ -677,10 +684,14 @@ class Dataset_original(Dataset):
             else:
                 # fill zeros when the cell doesn't have enough cycles
                 curve_data = np.zeros((3, self.charge_discharge_len))
+                if return_times:
+                    times_out.append(np.zeros(self.charge_discharge_len))
 
             curves.append(curve_data.reshape(1, curve_data.shape[0], self.charge_discharge_len))
               
         curves = np.concatenate(curves, axis=0) # [L, 3, fixed_len]
+        if return_times:
+            return curves, np.stack(times_out).astype(np.float64)   # [L, fixed_len], seconds as recorded
         return curves
 
     def resample_charge_discharge_curves(self, voltages, currents, capacity_in_battery):

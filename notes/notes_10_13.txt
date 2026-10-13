@@ -1,0 +1,70 @@
+=== 10/13 ===
+
+--- Results pulled 10/13 (collect_results.py, results_logs/longmamba_*; 24 logs, 0 missing) ---
+Li-ion only, readout + R_FIRST, <=100 prefixes, test MAPE:
+  S4D (fft) 3 seeds 42/2021/2024   0.203 +- 0.006  acc15 56.0  MAE 178  RMSE 359  seen 0.178 / unseen 0.243  val 0.294
+  Mamba vanilla 2 seeds 42/2021    0.267 +- 0.001  acc15 48.9  MAE 229  RMSE 453  seen 0.261 / unseen 0.277  val 0.311
+  ref CPMLP pooled uncond 0.217 (8 seeds), dual ec16 0.199
+  -> LTI S4D beats selective Mamba by ~10x seed std, same block otherwise. First Long model matching best CPMLP Li-ion.
+  Mamba R_FIRST seed 2024 still never run.
+
+Pooled S4D bnone, seed 2021 (fft), single-ckpt: Li 0.207 / CALB 0.179 / Na 0.353 / Zn 0.579, macro 0.329
+  (Mamba bnone 3 seeds 0.334, CPMLP pooled 0.294). Zn blown up by unseen (1.26). Na unseen 0.407 again (constant-pred symptom?).
+
+Long-tail pretrain -> finetune (Option A, S4D scan, Li-ion, seed 2021):
+  S4tail evaluated on <=100: 0.465.  S4ft: 0.257 (unseen 0.340) vs from scratch 0.203 (unseen 0.243).
+  -> pretraining on long histories HURT early prediction. Same direction as Mamba full stratified K100 (0.295 -> 0.424).
+  1 seed, K=1 (few optimizer steps/epoch). FULL_K=4 retry is the cheap next check before giving up on it.
+
+test_s4d.qlog: ALL PASSED. scan == fft (CPU + CUDA, outputs + grads). Complex A fine in the CUDA scan.
+  100 cycles readout+R_FIRST: fft B=8 0.34 s / 9.5 GB (B=16 OOM); scan B=8 0.10 s / 4.8 GB.
+  scan full history: 3842 cycles (1.16M steps) B=1 grad ckpt 1.13 s / 8.8 GB -> no FULL_MAX_CYCLES cap needed.
+
+--- Submitted 10/13 15:37: experiments/sweep_10_13_s4d.tsv (submit_from_config.sh) ---
+  8066233 S4Pn_s42     pooled S4D bnone fft     (groups with seed-2021 S4Pn, tag s4d_bnone_geobins_wd1e-3)
+  8066235 S4Pn_s2024   pooled S4D bnone fft
+  8066238 S4Prf_s2021  pooled S4D readout + R_FIRST scan
+  8066240 S4Prf_s42    pooled S4D readout + R_FIRST scan
+  8066242 S4Prf_s2024  pooled S4D readout + R_FIRST scan
+  Duplicate set 8066282-86 (re-pasted terminal output; 8066284 had mangled vars) qdel'd before starting.
+
+--- Idea: hierarchical "simulator" (later) ---
+Inner SSM over points of one cycle: input = controls (protocol current / phase / dt), output = voltage response,
+  initial state from the outer model. Run in simulation mode (no observed V as input) -> parallel, no point-level
+  teacher forcing. For diagonal LTI S4D the initial-state response is closed form: y_t = 2 Re(sum_n C_n exp(A_n tau_t) x0_n).
+Outer SSM over cycles: input z_k (encoded observed cycle) + cycle-level controls, h_k -> inner init for k+1,
+  capacity head, z_{k+1} prediction. Roll out from cycle 100 until capacity < 0.8 -> EOL.
+Notes:
+  - Input-free LTI rollout (h_{k+1} = A h_k) can only decay -> no knee. Need closed loop through nonlinearity
+    (feed predicted z back). LTI shared dynamics + nonlinear feedback.
+  - Teacher forcing: TF over all cycles (parallel) + latent AR (predict z_{k+1}, feed back) + multi-step rollout loss
+    from random k0 (mostly near 100), curriculum on horizon. Scheduled sampling = weaker fallback.
+  - CV phase: voltage is controlled, current is the response; discharge ends at V cutoff -> the real input is the
+    protocol, not the measured trace (measured trace length leaks capacity).
+  - Check first: does "first cycle with discharge cap < 0.8 x nominal" in the cache reproduce the label JSONs?
+  - Data now: 300 points resampled by RECORD INDEX (150 charge + 150 discharge), time_in_s dropped,
+    V normalized by the cycle's own max V (hides resistance growth), I in C-rate, Q / nominal. Rests (|I| < 0.01C) dropped.
+Decided: do explicit dt in the current S4D / Mamba setups FIRST (one-variable test on the 0.203 / 0.267 baselines).
+
+--- Explicit dt plan ---
+Cache: interpolate time_in_s at the resampled points, store dt as a 4th channel. Global unit (not per cycle/cell).
+  Normalize tau = dt / c, c = one global constant (median within-segment dt over Li-ion train cells, from stats pass).
+  Any constant c is absorbed by the learned log_dt; c only sets the init range / numerics. With tau == 1 the model
+  reduces exactly to the current one (built-in control). Clip tau at a high percentile if the tail is extreme (stats pass).
+  Same c for all chemistries later so rates stay comparable.
+Rests: v1 leaves them out (boundary steps get typical dt). Thinking: a REST TOKEN at boundaries carrying the rest
+  duration (decay by exp(A * tau_rest), input term kept normal size). Not decided.
+S4D: scan backend only (FFT needs constant step). delta[b,e,t] = exp(log_dt[e]) * tau[b,t]. Drop exact-ZOH B fold,
+  use kernel's delta*B*u (same as Mamba). Test vs exact variable-dt recurrence.
+Mamba: "dumb down" dt to exactly the S4D form: delta = exp(log_dt[e]) * tau[b,t], NOT input dependent
+  (B, C stay selective). Remove the dt_rank part of x_proj and dt_proj; delta_softplus=False, delta_bias=None.
+  Unfused path. log_dt no weight decay (same tagging as S4D).
+Open: dt for R / boundary tokens (tau=0 -> token reads state but does not write; tau=1 -> current behaviour).
+  The causal depthwise conv (width 4) stays index-based, not time-aware.
+Experiments (Li-ion readout + R_FIRST, 3 seeds each): S4D + log-dt input channel only | S4D-time | S4D-time + input |
+  Mamba-time. Baselines exist (S4D 0.203, Mamba 0.267 + seed 2024 to run).
+
+--- Next ---
+- Stats pass over the cache: per-dataset dt distributions, cycle durations, cells with missing/bad time_in_s.
+- Build: cache dt channel, S4D/Mamba time-dt, tests, experiment TSV.
+- Pooled S4D results (above jobs). Mamba R_FIRST seed 2024. Maybe FULL_K=4 tail pretrain.

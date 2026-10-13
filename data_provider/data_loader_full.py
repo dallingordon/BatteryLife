@@ -121,9 +121,10 @@ def make_cell_reader(root_path, charge_discharge_length):
     return _CellReader(root_path, charge_discharge_length)
 
 
-def _one_cycle_curve(reader, file_name, sub_cycle_data, cycle_number, nominal_capacity):
+def _one_cycle_curve(reader, file_name, sub_cycle_data, cycle_number, nominal_capacity, return_times=False):
     """[3, charge_discharge_len] curve for one cycle, or None if the cycle has no usable rows.
-    Mirrors Dataset_original.read_cell_df (per-cycle cleaning) + get_charge_discharge_curves (per-cycle body)."""
+    Mirrors Dataset_original.read_cell_df (per-cycle cleaning) + get_charge_discharge_curves (per-cycle body).
+    return_times=True -> (curve, times [charge_discharge_len]) with time_in_s at the same resampled points (or None)."""
     cycle_df = pd.DataFrame()
     for key in reader.need_keys:
         cycle_df[key] = sub_cycle_data[key]
@@ -135,6 +136,9 @@ def _one_cycle_curve(reader, file_name, sub_cycle_data, cycle_number, nominal_ca
     if len(cycle_df) == 0:
         return None
     cycle_df['cycle_number'] = 1
+    if return_times:
+        curves, times = reader.get_charge_discharge_curves(file_name, cycle_df, 1, nominal_capacity, return_times=True)
+        return curves[0], times[0]
     return reader.get_charge_discharge_curves(file_name, cycle_df, 1, nominal_capacity)[0]
 
 
