@@ -163,3 +163,11 @@ Watch-outs:
     dropped, curve always charge-then-discharge -> rebuild the inputs on real time / raw volts for this.
   - Check first: does "first cycle with discharge Q < 0.8 x nominal" in the data reproduce the EOL label JSONs?
   - Error compounding over hundreds-thousands of rollout cycles; capacity is nearly flat in cycles 1..100.
+
+--- What the paper says (arxiv 2502.18807v7) vs the code ---
+Resampling: paper only says "linear interpolation to resample both charging and discharging data to 150 points" (Sec 4.1);
+  it never says along which axis. The code: evenly spaced in RECORD INDEX (np.interp over 1..n rows) -> real time per point
+  varies with the logger (our dt channel restores it).
+EOL: SOH = Q_k / Q_nominal, life = first cycle with SOH <= 80% (Sec 2.2; intro says "of the initial" - inconsistent).
+  CALB: threshold 90% and Q0 = Q_1 (first cycle). Cells not reaching the threshold get a linearly extrapolated label.
+  -> the Q-check script should expect: nominal@80% for Li-ion, Q1@90% for CALB, "no crossing" for extrapolated cells.
