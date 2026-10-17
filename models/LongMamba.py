@@ -50,6 +50,15 @@ Recorded time (10/13; models/time_ssm.py, data_provider/data_loader_dt.py). Both
                  real   same mixers, delta[b, e, t] = exp(log_dt[e]) * tau[b, t], tau = recorded Δt / c per point
                         (forward(..., tau=[B, L, P])). Boundary / R / CLS tokens get tau = 1.
   --long_dt_input 1     log(max(tau, 1e-3)) as a 4th per-point input feature (in_proj 4 -> d_model); works with any mixer.
+
+Raw records (10/17; --long_raw 1, data_provider/data_loader_raw.py). No 300-point grid: the input is the flat sequence of
+every logged record of the prefix, x [B, T, 4] (V, I, Q_charge, Q_discharge), with cid [B, T] (0-based cycle of each
+record, -1 = padding) and tau [B, T] (real step to the previous record / c). Records must come in cycle order, packed at
+the front (the loader does this). Cycle lengths differ per cycle and per cell; a cycle with no records still gets its
+token. Layout per sample, exactly the grid layout with P_k records in cycle k:
+    [tok_0] records of cycle 0, [tok_1] records of cycle 1, ..., CLS        (tok_0 dropped for readout without r_first)
+tokens / CLS get tau = 1. With every cycle holding exactly P records this is the same sequence (and output) as the
+grid path; test_raw.py checks that.
 """
 import torch
 import torch.nn as nn
@@ -91,6 +100,9 @@ class Model(nn.Module):
         if self.time_dt not in ('off', 'const', 'real'):
             raise ValueError(f'--long_time_dt must be off, const or real, got {self.time_dt}')
         self.dt_input = bool(getattr(configs, 'long_dt_input', 0))
+        self.raw = bool(getattr(configs, 'long_raw', 0))
+        if self.raw:
+            self.n_channels = int(getattr(configs, 'raw_n_channels', 4))   # V, I, Q_charge, Q_discharge per record
         self.in_proj = nn.Linear(self.n_channels + int(self.dt_input), self.d_model)
         if self.boundary in ('shared', 'readout') and not self.chem_boundary:
             self.boundary_token = nn.Parameter(torch.randn(self.d_model) * 0.02)
@@ -159,7 +171,8 @@ class Model(nn.Module):
     def steps_per_cycle(self):
         return self.n_points + (0 if self.boundary == 'none' else 1)
 
-    def forward(self, cycle_curve_data, curve_attn_mask, return_embedding=False, chemistry_ids=None, return_r=False, tau=None):
+    def forward(self, cycle_curve_data, curve_attn_mask, return_embedding=False, chemistry_ids=None, return_r=False, tau=None,
+                cid=None):
         '''
         cycle_curve_data: [B, L, 3, n_points]  (the loaders' layout: channels, then points)
         curve_attn_mask:  [B, L], right-padded (1 for the first n_valid cycles, 0 after)
@@ -172,6 +185,8 @@ class Model(nn.Module):
         '''
         if return_r and self.boundary != 'readout':
             raise ValueError('return_r needs --long_boundary readout')
+        if self.raw:
+            return self._forward_raw(cycle_curve_data, curve_attn_mask, return_embedding, chemistry_ids, return_r, tau, cid)
         B = cycle_curve_data.shape[0]
         if (self.chem_cls or self.chem_boundary) and chemistry_ids is None:
             raise ValueError('LongMamba chemistry conditioning needs chemistry_ids (pooled loader / --pooled)')
@@ -260,6 +275,105 @@ class Model(nn.Module):
             r_hidden = hidden[:, r_pos]                                          # [B, L-1, D]
             r_preds = self.r_head(F.relu(self.r_proj(r_hidden)))                 # [B, L-1, output_num]
             r_mask = (torch.arange(1, L, device=x.device).unsqueeze(0) < n_valid.unsqueeze(1)).to(preds.dtype)
+            if return_embedding:
+                return preds, emb, r_preds, r_mask
+            return preds, r_preds, r_mask
+        if return_embedding:
+            return preds, emb
+        return preds
+
+    def _run_stack(self, x, ts):
+        """mixer stack + final norm. ts: [B, T] step per position (time-aware mixers) or None."""
+        hidden, residual = x, None
+        for layer in self.mamba_layers:
+            args = (hidden, residual) if ts is None else (hidden, residual, ts)
+            if self.grad_ckpt and self.training and torch.is_grad_enabled():
+                hidden, residual = checkpoint(layer, *args, use_reentrant=False)
+            else:
+                hidden, residual = layer(*args)
+        residual = hidden + residual if residual is not None else hidden
+        return self.norm_f(residual.to(dtype=self.norm_f.weight.dtype))
+
+    def _forward_raw(self, x, curve_attn_mask, return_embedding, chemistry_ids, return_r, tau, cid):
+        """x [B, T, C] raw records, cid [B, T] (-1 pad), tau [B, T]. See the module docstring (Raw records)."""
+        if cid is None:
+            raise ValueError('LongMamba --long_raw needs cid (data_loader_raw.py)')
+        B, T, C = x.shape
+        assert C == self.n_channels, f'LongMamba --long_raw expects [B, T, {self.n_channels}], got {tuple(x.shape)}'
+        if (self.chem_cls or self.chem_boundary) and chemistry_ids is None:
+            raise ValueError('LongMamba chemistry conditioning needs chemistry_ids (pooled loader / --pooled)')
+        dev = x.device
+        n_valid = curve_attn_mask.sum(dim=1).round().long()                     # [B] cycles in the prefix
+        if bool((n_valid < 1).any()):
+            raise ValueError('LongMamba: every sample needs at least one cycle')
+        L = int(n_valid.max().item())
+        if self.boundary == 'index' and L > self.max_cycles:
+            raise ValueError(f'LongMamba --long_boundary index has {self.max_cycles} cycle tokens, got {L} cycles')
+        cid = cid.long()
+        valid = (cid >= 0) & (cid < n_valid.unsqueeze(1))                       # records of seen cycles  [B, T]
+        needs_tau = self.time_dt == 'real' or self.dt_input
+        if needs_tau and tau is None:
+            raise ValueError('LongMamba --long_time_dt real / --long_dt_input 1 need tau (data_loader_raw.py)')
+        if self.dt_input:
+            x = torch.cat([x, torch.log(tau.float().clamp(min=1e-3)).unsqueeze(-1).to(x.dtype)], dim=-1)
+        h = self.in_proj(x)                                                      # [B, T, D]
+        D = h.shape[-1]
+
+        has_tok = 0 if self.boundary == 'none' else 1
+        off = 1 if (self.boundary == 'readout' and not self.r_first) else 0
+        vl = valid.long()
+        n_pts = vl.sum(1)                                                        # [B]
+        cid0 = torch.where(valid, cid, torch.zeros_like(cid))
+        # records arrive packed in cycle order: record rank r in cycle k sits after k+1 tokens (tok_0..tok_k)
+        rank = vl.cumsum(1) - 1
+        pos_pt = rank + has_tok * (cid0 + 1) - off                               # [B, T]
+        cls_pos = n_pts + has_tok * n_valid - off                                # [B]
+        Tout = int(cls_pos.max().item()) + 1
+        bi = torch.arange(B, device=dev).unsqueeze(1).expand(B, T)
+        seq = h.new_zeros(B, Tout, D)
+        seq[bi[valid], pos_pt[valid]] = h[valid]
+
+        # cycle tokens: tok_k sits right before the first record of cycle k: (#records of cycles < k) + k - off
+        counts = torch.zeros(B, L, dtype=torch.long, device=dev).scatter_add_(1, cid0.clamp(max=L - 1), vl)
+        before = counts.cumsum(1) - counts                                       # [B, L]
+        ks = torch.arange(L, device=dev)
+        tok_pos = before + ks.unsqueeze(0) - off                                 # [B, L]
+        if has_tok:
+            tok_ok = ks.unsqueeze(0) < n_valid.unsqueeze(1)
+            if off:
+                tok_ok = tok_ok & (ks.unsqueeze(0) > 0)
+            if self.boundary in ('shared', 'readout'):
+                if self.chem_boundary:
+                    tok = self.chem_boundary_embed(chemistry_ids.long()).to(h.dtype).unsqueeze(1).expand(B, L, D)
+                else:
+                    tok = self.boundary_token.to(h.dtype).view(1, 1, D).expand(B, L, D)
+            else:
+                tok = self.cycle_embed(ks).to(h.dtype).unsqueeze(0).expand(B, L, D)
+                if self.chem_boundary:
+                    tok = tok + self.chem_boundary_embed(chemistry_ids.long()).to(h.dtype).unsqueeze(1)
+            bl = torch.arange(B, device=dev).unsqueeze(1).expand(B, L)
+            seq[bl[tok_ok], tok_pos[tok_ok]] = tok[tok_ok]
+        if self.chem_cls:
+            cls = self.chem_cls_embed(chemistry_ids.long()).to(h.dtype)          # [B, D]
+        else:
+            cls = self.cls_token.to(h.dtype).view(1, D).expand(B, D)
+        ar = torch.arange(B, device=dev)
+        seq[ar, cls_pos] = cls
+
+        ts = None
+        if self.time_dt != 'off':
+            ts = torch.ones(B, Tout, dtype=torch.float32, device=dev)            # tokens, CLS, padding: 1
+            if self.time_dt == 'real':
+                ts[bi[valid], pos_pt[valid]] = tau.float()[valid]
+        hidden = self._run_stack(seq, ts)
+        emb = hidden[ar, cls_pos]                                                # [B, D]
+        preds = self.head_output(F.relu(emb))
+        if return_r:
+            # R in front of cycle k+1 (k = 1..L-1) has seen cycles 1..k; same as the grid path
+            r_pos = tok_pos[:, 1:].clamp(min=0, max=Tout - 1)                    # [B, L-1]
+            r_hidden = hidden[ar.unsqueeze(1), r_pos]                            # [B, L-1, D]
+            r_preds = self.r_head(F.relu(self.r_proj(r_hidden)))
+            r_mask = (torch.arange(1, L, device=dev).unsqueeze(0) < n_valid.unsqueeze(1)).to(preds.dtype)
             if return_embedding:
                 return preds, emb, r_preds, r_mask
             return preds, r_preds, r_mask

@@ -203,6 +203,15 @@ parser.add_argument('--dt_c', type=float, default=0.0,
                     help='seconds: tau = step / dt_c, one global constant (median interior step over Li-ion train cells, '
                          'from dt_stats.py). Needed for --long_time_dt real / --long_dt_input 1')
 parser.add_argument('--dt_clip', type=float, default=0.0, help='upper clip on tau (0 = none)')
+# raw records (10/17): data_provider/data_loader_raw.py, LongMamba --long_raw. Off by default = unchanged runs.
+parser.add_argument('--long_raw', type=int, default=0, choices=[0, 1],
+                    help='LongMamba: 1 = feed every logged record of cycles 1..100 (rests included, no resampling) as '
+                         'one flat sequence with cycle ids; tau = real step to the previous record / --dt_c')
+parser.add_argument('--raw_v_norm', type=str, default='cycle_max', choices=['cycle_max', 'none'],
+                    help='--long_raw: voltage / that cycle\'s max voltage (like the 300-point loader) or raw volts')
+parser.add_argument('--raw_max_batch_steps', type=int, default=0,
+                    help='--long_raw: batches hold <= --batch_size samples AND samples x longest length <= this '
+                         '(0 = no step budget); a longer sample gets a batch of its own')
 parser.add_argument('--print_every', type=int, default=5, help='print training loss every N iterations')
 
 # optimization
@@ -266,6 +275,9 @@ if args.long_time_dt != 'off':
     assert args.mamba_layer in ('s4d', 'vanilla'), '--long_time_dt needs --mamba_layer s4d or vanilla'
     if args.mamba_layer == 's4d':
         assert args.s4_backend == 'scan', '--long_time_dt runs S4D through the selective scan: pass --s4_backend scan'
+if args.long_raw:
+    assert args.model == 'LongMamba' and args.pooled and not args.full_timescale, \
+        '--long_raw is a LongMamba option on the pooled <=100 loader'
 args.uses_tau = args.model == 'LongMamba' and (args.long_time_dt == 'real' or bool(args.long_dt_input))
 if args.uses_tau:
     assert args.dt_c > 0, '--long_time_dt real / --long_dt_input 1 need --dt_c (seconds, from dt_stats.py)'
@@ -285,7 +297,7 @@ DUAL_HEADS = ('bins', 'reg')
 # --init_checkpoint: architecture / target args that must match between the checkpoint's run and this one
 INIT_MATCH_KEYS = ('model', 'd_model', 'mamba_layer', 'mamba_n_layers', 'mamba_d_state', 'mamba_d_conv', 'mamba_expand',
                    'long_boundary', 'long_r_first', 'long_r_dim', 'long_chem_cls', 'long_chem_boundary',
-                   'long_time_dt', 'long_dt_input',
+                   'long_time_dt', 'long_dt_input', 'long_raw', 'raw_v_norm',
                    'charge_discharge_length', 'prediction_mode', 'geo_bin_min', 'geo_bin_max', 'geo_bin_tol', 'output_num')
 
 
@@ -422,7 +434,9 @@ for ii in range(args.itr):
     if args.pooled:
         accelerator.print(f"Loading POOLED samples: chemistries={pooled_chems}, split_seed={args.pooled_split_seed}")
         pooled_provider = data_provider_pooled
-        if args.uses_tau:   # same samples + per-point tau as a 9th batch item (data_provider/data_loader_dt.py)
+        if args.long_raw:   # same samples, raw records: x [B, T, 4], tau 9th item, cycle ids 10th (data_loader_raw.py)
+            from data_provider.data_loader_raw import data_provider_pooled_raw as pooled_provider
+        elif args.uses_tau:   # same samples + per-point tau as a 9th batch item (data_provider/data_loader_dt.py)
             from data_provider.data_loader_dt import data_provider_pooled_dt as pooled_provider
         if args.full_timescale:
             accelerator.print(f"FULL-TIMESCALE training loader: sampling={args.full_sampling}, max_cycles={args.full_max_cycles}, "
@@ -593,8 +607,10 @@ for ii in range(args.itr):
 
                 # encoder - decoder
                 model_kwargs = {'chemistry_ids': chemistry_ids.to(accelerator.device)} if args.uses_chem_ids else {}
-                if args.uses_tau:   # data_loader_dt: tau is the 9th batch item
+                if args.uses_tau:   # data_loader_dt / data_loader_raw: tau is the 9th batch item
                     model_kwargs['tau'] = batch[8].float().to(accelerator.device)
+                if args.long_raw:   # data_loader_raw: cycle id per record is the 10th batch item
+                    model_kwargs['cid'] = batch[9].long().to(accelerator.device)
                 if USE_R:   # LongMamba readout: F output + guidance-head outputs at the R tokens
                     outputs, r_preds, r_mask = model(cycle_curve_data, curve_attn_mask, return_r=True, **model_kwargs)
                 else:

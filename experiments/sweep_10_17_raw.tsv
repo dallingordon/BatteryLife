@@ -1,0 +1,24 @@
+# Raw records (no resampling) in Long S4D / Long Mamba, 10/17. Li-ion only, readout + R_FIRST, geo_bins, 3 seeds.
+# Code: data_provider/data_loader_raw.py (every logged record of cycles 1..100, rests kept, 4 channels V/I/Qc/Qd,
+#   tau = real step to the previous record / DT_C, across cycle boundaries too), LongMamba --long_raw (flat sequence +
+#   cycle ids, tokens at cycle starts). Tests: test_raw.py (train_eval_scripts/test_raw_qsub.sh) -- run first.
+# Arms: const = same raw records, tau = 1 per record (clock ignored); real = recorded clock. Compare real vs const, and
+#   both vs the 300-point grid runs (S4D 0.203 / tdtconst 0.208 / tdtreal 0.261; Mamba tdtconst 0.260 / tdtreal 0.260).
+# DT_C=5: the logging interval of MATR / HUST / ISU-ILCC / Stanford (most Li-ion cells), so tau = 1 for them; XJTU 0.2,
+#   SNL / UL-PUR 24 (120 s). DT_CLIP=100 (500 s) only cuts non-logging pauses, never a logging interval. Check the
+#   '[raw train] ... at clip' line in the log / test_raw.qlog.
+# Lengths: ~8k (SNL) .. ~690k (XJTU) steps per 100-cycle sample. BATCH=8 max samples, BATCH_STEPS=600000 per batch,
+#   GRAD_CKPT=1. H_RT is a guess (~5x the grid runs' steps per epoch); check s/iter in the first log.
+short	group	script	PRED_MODE	BOUNDARY	R_FIRST	MAMBA_LAYER	S4_BACKEND	RAW	TIME_DT	DT_INPUT	DT_C	DT_CLIP	GRAD_CKPT	BATCH_STEPS	WD	POOLED_CHEMS	CHEM_TAG	SEEDS	H_RT	purpose
+S4rc_s2021	raw_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	const	0	-	-	1	600000	1e-3	Li-ion	Lionly	2021	48:00:00	S4D on raw records, tau=1 per record (control for S4rr)
+S4rc_s42	raw_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	const	0	-	-	1	600000	1e-3	Li-ion	Lionly	42	48:00:00	S4D on raw records, tau=1 per record (control for S4rr)
+S4rc_s2024	raw_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	const	0	-	-	1	600000	1e-3	Li-ion	Lionly	2024	48:00:00	S4D on raw records, tau=1 per record (control for S4rr)
+S4rr_s2021	raw_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	real	0	5	100	1	600000	1e-3	Li-ion	Lionly	2021	48:00:00	S4D on raw records, delta = exp(log_dt) * real step / 5 s
+S4rr_s42	raw_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	real	0	5	100	1	600000	1e-3	Li-ion	Lionly	42	48:00:00	S4D on raw records, delta = exp(log_dt) * real step / 5 s
+S4rr_s2024	raw_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	real	0	5	100	1	600000	1e-3	Li-ion	Lionly	2024	48:00:00	S4D on raw records, delta = exp(log_dt) * real step / 5 s
+Mrc_s2021	raw_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	const	0	-	-	1	600000	1e-3	Li-ion	Lionly	2021	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, tau=1 (control for Mrr)
+Mrc_s42	raw_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	const	0	-	-	1	600000	1e-3	Li-ion	Lionly	42	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, tau=1 (control for Mrr)
+Mrc_s2024	raw_const	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	const	0	-	-	1	600000	1e-3	Li-ion	Lionly	2024	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, tau=1 (control for Mrr)
+Mrr_s2021	raw_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	real	0	5	100	1	600000	1e-3	Li-ion	Lionly	2021	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, real step / 5 s
+Mrr_s42	raw_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	real	0	5	100	1	600000	1e-3	Li-ion	Lionly	42	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, real step / 5 s
+Mrr_s2024	raw_real	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	real	0	5	100	1	600000	1e-3	Li-ion	Lionly	2024	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, real step / 5 s

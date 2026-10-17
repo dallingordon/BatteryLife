@@ -229,6 +229,8 @@ def vali_baseline(args, accelerator, model, vali_data, vali_loader, criterion, c
             model_kwargs = {'chemistry_ids': batch[7].to(accelerator.device)} if getattr(args, 'uses_chem_ids', getattr(args, 'chem_fusion', 'none') != 'none') else {}
             if getattr(args, 'uses_tau', False):   # data_loader_dt: per-point tau is the 9th batch item
                 model_kwargs['tau'] = batch[8].float().to(accelerator.device)
+            if getattr(args, 'long_raw', 0):   # data_loader_raw: cycle id per record is the 10th batch item
+                model_kwargs['cid'] = batch[9].long().to(accelerator.device)
             outputs = model(cycle_curve_data, curve_attn_mask, **model_kwargs)
             # self.accelerator.wait_for_everyone()
             std, mean_value = np.sqrt(vali_data.label_scaler.var_[-1]), vali_data.label_scaler.mean_[-1]

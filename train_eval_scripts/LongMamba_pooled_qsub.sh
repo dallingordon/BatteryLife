@@ -51,6 +51,11 @@
 #   DT_INPUT        0 (default) | 1: log(tau) as a 4th per-point input feature                        (tag _dtin)
 #   DT_C            seconds, needed for TIME_DT=real / DT_INPUT=1 (median interior step from dt_stats.py; not in the tag)
 #   DT_CLIP         0 (default, none) | upper clip on tau                                              (tag _clip<DT_CLIP>)
+#   RAW             0 (default) | 1: raw records instead of the 300-point grid (data_provider/data_loader_raw.py):
+#                   every logged record of cycles 1..100, rests kept, 4 channels (V, I, Q_charge, Q_discharge),
+#                   tau = real step to the previous record / DT_C                                       (tag _raw)
+#   RAW_VNORM       cycle_max (default) | none: voltage / that cycle's max, or volts                    (tag _vvolts)
+#   BATCH_STEPS     0 (default, none) | RAW=1: samples x longest length per batch <= BATCH_STEPS (BATCH = max samples)
 #   BATCH ACCUM     8 4 (defaults; effective batch 32 like CPMLP)
 #   LR WD           1e-4 1e-3 (defaults)
 #   D_MODEL N_LAYERS D_STATE MAMBA_EXPAND   64 4 16 2 (defaults, same as CPMamba); non-default values add
@@ -94,6 +99,9 @@ TIME_DT=${TIME_DT:-off}
 DT_INPUT=${DT_INPUT:-0}
 DT_C=${DT_C:-0}
 DT_CLIP=${DT_CLIP:-0}
+RAW=${RAW:-0}
+RAW_VNORM=${RAW_VNORM:-cycle_max}
+BATCH_STEPS=${BATCH_STEPS:-0}
 INIT_TAG=${INIT_TAG:-}
 CHEM_TAG=${CHEM_TAG:-}
 BATCH=${BATCH:-8}                                         # full-timescale: train batch is 1, BATCH is val/test only
@@ -110,6 +118,8 @@ PATIENCE=${PATIENCE:-5}
 PRINT_EVERY=${PRINT_EVERY:-200}
 
 TAG="_${MAMBA_LAYER}_b${BOUNDARY}"
+[ "$RAW" = "1" ] && TAG="_raw${TAG}"
+[ "$RAW" = "1" ] && [ "$RAW_VNORM" = "none" ] && TAG="${TAG}_vvolts"
 if [ "$BOUNDARY" = "readout" ]; then
   [ "$R_FIRST" = "1" ] && TAG="${TAG}_rfirst"
   [ "$R_DIM" != "32" ] && TAG="${TAG}_rd${R_DIM}"
@@ -135,7 +145,7 @@ fi
 [ "$PRED_MODE" = "geo_bins" ] && TAG="${TAG}_geobins"
 [ "$PRED_MODE" = "dual" ] && TAG="${TAG}_dual"
 [ "$WD" != "0.0" ] && [ "$WD" != "0" ] && TAG="${TAG}_wd${WD}"
-EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT --long_r_first $R_FIRST --long_r_dim $R_DIM --long_r_weight $R_WEIGHT --s4_dt_min $S4_DT_MIN --s4_dt_max $S4_DT_MAX --s4_backend $S4_BACKEND --long_time_dt $TIME_DT --long_dt_input $DT_INPUT --dt_c $DT_C --dt_clip $DT_CLIP"
+EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT --long_r_first $R_FIRST --long_r_dim $R_DIM --long_r_weight $R_WEIGHT --s4_dt_min $S4_DT_MIN --s4_dt_max $S4_DT_MAX --s4_backend $S4_BACKEND --long_time_dt $TIME_DT --long_dt_input $DT_INPUT --dt_c $DT_C --dt_clip $DT_CLIP --long_raw $RAW --raw_v_norm $RAW_VNORM --raw_max_batch_steps $BATCH_STEPS"
 if [ "$FULL" = "1" ]; then
   if [ "$BOUNDARY" = "index" ]; then echo "FULL=1 needs BOUNDARY none, shared or readout (index has 100 cycle tokens)"; exit 1; fi
   TAG="${TAG}_full${FULL_SAMPLING}K${FULL_K}"
