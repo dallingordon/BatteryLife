@@ -1,0 +1,16 @@
+# Cosine lr schedule on the best S4 recipe, 10/18. Recipe = Long S4D (fft), Li-ion only, readout + R_FIRST, geo_bins,
+#   wd 1e-3, <=100 prefixes: 0.203 +- 0.006 test MAPE (3 seeds) with constant lr 1e-4, patience 5, best epochs ~10.
+# Change: --lradj cosine = per-optimizer-step cosine, 1 epoch linear warmup, decay over 20 epochs to 1% of peak. PATIENCE=20
+#   so early stopping never cuts the schedule; selection is still the best-val epoch (single-checkpoint / per-chem-best-val).
+# Peak lr {1e-4 (same peak as the baseline: isolates the schedule), 3e-4, 1e-3} x seeds {2021, 42, 2024}.
+# ~37 min/epoch on a V100 (10/5) -> ~12.5 h for 20 epochs; H_RT 30 h. First log line to check: 'lr schedule: cosine | ...'.
+short	group	script	PRED_MODE	BOUNDARY	R_FIRST	MAMBA_LAYER	S4_BACKEND	WD	POOLED_CHEMS	CHEM_TAG	LR	LRADJ	EPOCHS	COS_EPOCHS	WARMUP	PATIENCE	SEEDS	H_RT	purpose
+S4c1e4_s2021	s4d_cosine_lr1e-4	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	fft	1e-3	Li-ion	Lionly	1e-4	cosine	20	20	1	20	2021	30:00:00	best S4D recipe (0.203), cosine peak 1e-4, 1 ep warmup, 20 ep decay
+S4c1e4_s42	s4d_cosine_lr1e-4	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	fft	1e-3	Li-ion	Lionly	1e-4	cosine	20	20	1	20	42	30:00:00	best S4D recipe (0.203), cosine peak 1e-4, 1 ep warmup, 20 ep decay
+S4c1e4_s2024	s4d_cosine_lr1e-4	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	fft	1e-3	Li-ion	Lionly	1e-4	cosine	20	20	1	20	2024	30:00:00	best S4D recipe (0.203), cosine peak 1e-4, 1 ep warmup, 20 ep decay
+S4c3e4_s2021	s4d_cosine_lr3e-4	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	fft	1e-3	Li-ion	Lionly	3e-4	cosine	20	20	1	20	2021	30:00:00	best S4D recipe (0.203), cosine peak 3e-4, 1 ep warmup, 20 ep decay
+S4c3e4_s42	s4d_cosine_lr3e-4	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	fft	1e-3	Li-ion	Lionly	3e-4	cosine	20	20	1	20	42	30:00:00	best S4D recipe (0.203), cosine peak 3e-4, 1 ep warmup, 20 ep decay
+S4c3e4_s2024	s4d_cosine_lr3e-4	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	fft	1e-3	Li-ion	Lionly	3e-4	cosine	20	20	1	20	2024	30:00:00	best S4D recipe (0.203), cosine peak 3e-4, 1 ep warmup, 20 ep decay
+S4c1e3_s2021	s4d_cosine_lr1e-3	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	fft	1e-3	Li-ion	Lionly	1e-3	cosine	20	20	1	20	2021	30:00:00	best S4D recipe (0.203), cosine peak 1e-3, 1 ep warmup, 20 ep decay
+S4c1e3_s42	s4d_cosine_lr1e-3	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	fft	1e-3	Li-ion	Lionly	1e-3	cosine	20	20	1	20	42	30:00:00	best S4D recipe (0.203), cosine peak 1e-3, 1 ep warmup, 20 ep decay
+S4c1e3_s2024	s4d_cosine_lr1e-3	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	fft	1e-3	Li-ion	Lionly	1e-3	cosine	20	20	1	20	2024	30:00:00	best S4D recipe (0.203), cosine peak 1e-3, 1 ep warmup, 20 ep decay

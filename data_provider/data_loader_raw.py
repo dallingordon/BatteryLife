@@ -12,6 +12,10 @@ Per cell (built once, shared by all of the cell's prefix samples):
                            First record of the cell = 1. Negative / non-finite steps = 1. Zero steps stay 0. Upper clip
                            --dt_clip (0 = none), meant for non-logging pauses, not for the logging interval itself.
                            Without --dt_c (TIME_DT const / off): all ones.
+                           --raw_tau_mode cycle_norm (10/18) instead: tau = --raw_tau_scale * step / that cycle's
+                           duration, so every cycle's tau sums to --raw_tau_scale (300 = the grid's 300 steps x tau 1),
+                           rests included. The first record of each cycle (the gap since the previous cycle) gets
+                           --raw_tau_boundary (1 or 0). See raw_times_to_tau_cycle_norm.
     cid   [N]    int16     0-based cycle index of each record
     starts [L+1] int64     record offset where cycle k+1 starts; a k-cycle prefix is records [:starts[k]].
                            A cycle the cell does not have contributes no records (the model still puts its token there).
@@ -84,11 +88,46 @@ def raw_times_to_tau(times, c, clip=0.0):
     return tau.astype(np.float32)
 
 
+def raw_times_to_tau_cycle_norm(times, starts, scale=300.0, boundary=1.0, clip_s=0.0):
+    """Per-cycle-normalized tau (10/18). times [N] seconds, starts [L+1] record offsets per cycle -> tau [N] float32.
+    Inside cycle k (records starts[k]..starts[k+1]-1):
+        first record           -> boundary (the gap since the previous cycle is not counted)
+        others                 -> scale * d_i / sum(d), d_i = t_i - t_{i-1}, so the cycle's tau sums to scale
+    d: negative / non-finite steps -> that cycle's median valid step (all bad -> equal steps); zero steps stay 0;
+    clip_s > 0 caps d at clip_s seconds before normalizing (non-logging pauses). A cycle whose steps sum to 0 gets
+    equal steps scale / (n - 1). Rests stay in and take their share of the cycle."""
+    times = np.asarray(times, dtype=np.float64)
+    tau = np.ones(len(times), dtype=np.float64)
+    for k in range(len(starts) - 1):
+        s, e = int(starts[k]), int(starts[k + 1])
+        if e <= s:
+            continue
+        tau[s] = boundary
+        if e - s < 2:
+            continue
+        d = np.diff(times[s:e])
+        bad = ~np.isfinite(d) | (d < 0)
+        if bad.all():
+            d = np.ones_like(d)
+        elif bad.any():
+            d[bad] = np.median(d[~bad])
+        if clip_s and clip_s > 0:
+            np.minimum(d, clip_s, out=d)
+        tot = d.sum()
+        tau[s + 1:e] = scale * d / tot if tot > 0 else scale / (e - s - 1)
+    return tau.astype(np.float32)
+
+
 class Dataset_pooled_raw(Dataset_pooled):
     def __init__(self, args, flag='train', chemistries=None, split_seed=2021, **kwargs):
         self._dt_c = float(getattr(args, 'dt_c', 0) or 0)
         self._dt_clip = float(getattr(args, 'dt_clip', 0) or 0)
         self._v_norm = getattr(args, 'raw_v_norm', 'cycle_max')
+        self._tau_mode = getattr(args, 'raw_tau_mode', 'real') or 'real'
+        self._tau_scale = float(getattr(args, 'raw_tau_scale', 300.0))
+        self._tau_boundary = float(getattr(args, 'raw_tau_boundary', 1.0))
+        if self._tau_mode not in ('real', 'cycle_norm'):
+            raise ValueError(f'raw_tau_mode must be real or cycle_norm, got {self._tau_mode}')
         self._cells = []            # one dict per cell: feats, tau, cid, starts, name
         self._sample_cell = []      # cell index per sample
         self._pending = None
@@ -106,11 +145,24 @@ class Dataset_pooled_raw(Dataset_pooled):
         n_rec = np.array([c['starts'][-1] for c in self._cells])
         allt = np.concatenate([c['tau'] for c in self._cells])
         q = np.quantile(allt, [0.01, 0.5, 0.99, 0.999])
-        frac_clip = float((allt >= self._dt_clip).mean()) if self._dt_clip > 0 else 0.0
+        frac_clip = float((allt >= self._dt_clip).mean()) if self._dt_clip > 0 and self._tau_mode == 'real' else 0.0
         print(f'[raw {flag}] {len(self._cells)} cells | records per cell (<= {self.early_cycle_threshold} cycles) '
               f'p10 {np.percentile(n_rec, 10):.0f} p50 {np.median(n_rec):.0f} p90 {np.percentile(n_rec, 90):.0f} '
               f'max {n_rec.max()} | sample length p50 {np.median(self.lengths):.0f} max {self.lengths.max()}')
-        if self._dt_c > 0:
+        if self._tau_mode == 'cycle_norm':
+            sums = np.concatenate([np.add.reduceat(c['tau'], c['starts'][:-1][np.diff(c['starts']) > 0])
+                                   - self._tau_boundary for c in self._cells if c['starts'][-1] > 0])
+            clip_s = self._dt_c * self._dt_clip if self._dt_c > 0 and self._dt_clip > 0 else 0
+            print(f'[raw {flag}] tau cycle_norm scale={self._tau_scale:g} boundary={self._tau_boundary:g} '
+                  f'clip={clip_s or "none"}s | tau p1 {q[0]:.3g} p50 {q[1]:.3g} p99 {q[2]:.3g} p99.9 {q[3]:.3g} '
+                  f'max {allt.max():.3g} | zero {100 * (allt == 0).mean():.2f}% | per-cycle sum (excl. boundary) '
+                  f'min {sums.min():.4g} max {sums.max():.4g}')
+            by_ds = {}
+            for c in self._cells:
+                by_ds.setdefault(c['name'].split('_')[0], []).append(c['tau'])
+            print(f'[raw {flag}] median tau by dataset: ' + ', '.join(
+                f'{k} {np.median(np.concatenate(v)):.3g}' for k, v in sorted(by_ds.items())))
+        elif self._dt_c > 0:
             print(f'[raw {flag}] c={self._dt_c:g}s clip={self._dt_clip or "none"} | tau p1 {q[0]:.3g} p50 {q[1]:.3g} '
                   f'p99 {q[2]:.3g} p99.9 {q[3]:.3g} max {allt.max():.3g} | at clip {100 * frac_clip:.3f}% | '
                   f'zero {100 * (allt == 0).mean():.2f}%')
@@ -127,7 +179,12 @@ class Dataset_pooled_raw(Dataset_pooled):
         feats, times, cid, starts = raw_cell_arrays(df, early_cycle_threshold, nominal_capacity, self._v_norm)
         if np.any(~np.isfinite(feats)):
             raise ValueError(f'{file_name}: non-finite raw features')
-        self._pending = dict(feats=feats, tau=raw_times_to_tau(times, self._dt_c, self._dt_clip), cid=cid,
+        if self._tau_mode == 'cycle_norm':
+            clip_s = self._dt_c * self._dt_clip if self._dt_c > 0 and self._dt_clip > 0 else 0.0
+            tau = raw_times_to_tau_cycle_norm(times, starts, self._tau_scale, self._tau_boundary, clip_s)
+        else:
+            tau = raw_times_to_tau(times, self._dt_c, self._dt_clip)
+        self._pending = dict(feats=feats, tau=tau, cid=cid,
                              starts=starts, name=file_name)
         return super().get_charge_discharge_curves(file_name, df, early_cycle_threshold, nominal_capacity)
 

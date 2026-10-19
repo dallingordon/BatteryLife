@@ -5,6 +5,7 @@ Checks for the raw-record code (10/17): data_provider/data_loader_raw.py, LongMa
     python test_raw.py                          # CPU checks (needs mamba_ssm importable: selective_scan_ref)
     python test_raw.py --gpu                    # + real-size fwd+bwd time / peak memory at raw lengths
     python test_raw.py --data --dt_c 5 --dt_clip 100   # + Dataset_pooled_raw vs Dataset_pooled on the Li-ion val cells
+    python test_raw.py --data --raw_tau_mode cycle_norm --dt_c 5 --dt_clip 100   # same, per-cycle-normalized tau
 
 What it checks:
   1. raw_times_to_tau / raw_cell_arrays / make_budget_batches (numpy only)
@@ -24,13 +25,15 @@ from types import SimpleNamespace
 import numpy as np
 import torch
 
-from data_provider.data_loader_raw import raw_times_to_tau, make_budget_batches, my_collate_fn_pooled_raw
+from data_provider.data_loader_raw import raw_times_to_tau, raw_times_to_tau_cycle_norm, make_budget_batches, my_collate_fn_pooled_raw
 
 p = argparse.ArgumentParser()
 p.add_argument('--gpu', action='store_true')
 p.add_argument('--data', action='store_true')
 p.add_argument('--dt_c', type=float, default=5.0)
 p.add_argument('--dt_clip', type=float, default=0.0)
+p.add_argument('--raw_tau_mode', default='real', choices=['real', 'cycle_norm'])
+p.add_argument('--raw_tau_boundary', type=float, default=1.0)
 p.add_argument('--root_path', default='./dataset')
 cli = p.parse_args()
 fails = []
@@ -52,6 +55,21 @@ tt = np.array([0, 10, 10, 5, np.nan, 100.])
 check('tau: first 1, step/c, zero stays 0, negative/nan -> 1, clip',
       raw_times_to_tau(tt, 5.0, clip=3).tolist() == [1, 2, 0, 1, 1, 1])
 check('tau: no c -> ones', (raw_times_to_tau(tt, 0) == 1).all())
+# cycle_norm: cycle 0 = records 0..3, cycle 1 empty, cycle 2 = records 4..8 (one negative step, one long pause),
+# cycle 3 = 1 record
+tc = np.array([0, 1, 3, 6, 1000, 1002, 1004, 1003, 3000, 5000.])
+st = np.array([0, 4, 4, 9, 10])
+for bnd in (1.0, 0.0):
+    t = raw_times_to_tau_cycle_norm(tc, st, scale=300, boundary=bnd).astype(np.float64)
+    sums = [t[1:4].sum(), t[5:9].sum()]
+    check(f'tau cycle_norm (boundary {bnd:g}): firsts = boundary, each cycle sums to 300, spacing kept',
+          np.allclose(t[[0, 4, 9]], bnd) and np.allclose(sums, 300, rtol=1e-6) and np.allclose(t[1:4], [50, 100, 150]),
+          f'{np.round(t, 3).tolist()}')
+t = raw_times_to_tau_cycle_norm(tc, st, scale=300, clip_s=10).astype(np.float64)
+check('tau cycle_norm: negative step -> cycle median, clip_s caps pauses before normalizing',
+      np.allclose(t[5:9], 300 * np.array([2, 2, 2, 10]) / 16, rtol=1e-6), f'{np.round(t[5:9], 3).tolist()}')
+t = raw_times_to_tau_cycle_norm(np.array([5, 5, 5.]), np.array([0, 3]), scale=300)
+check('tau cycle_norm: zero-duration cycle -> equal steps', np.allclose(t[1:], 150))
 rng = np.random.default_rng(0)
 Ls = rng.integers(10, 1000, size=300)
 Ls[3] = 5000
@@ -270,7 +288,8 @@ if cli.data:
     from data_provider.data_loader_raw import Dataset_pooled_raw, data_provider_pooled_raw
     da = SimpleNamespace(root_path=cli.root_path, seq_len=1, charge_discharge_length=300, dataset='POOLED',
                          early_cycle_threshold=100, weighted_loss=False, chem_loss_alpha=0.0, target_dataset=None,
-                         dt_c=cli.dt_c, dt_clip=cli.dt_clip, raw_v_norm='cycle_max', batch_size=8, num_workers=0,
+                         dt_c=cli.dt_c, dt_clip=cli.dt_clip, raw_v_norm='cycle_max', raw_tau_mode=cli.raw_tau_mode,
+                         raw_tau_boundary=cli.raw_tau_boundary, raw_tau_scale=300.0, batch_size=8, num_workers=0,
                          raw_max_batch_steps=600000)
     sc = StandardScaler().fit(np.array([[100.0], [3000.0]]))
     a = Dataset_pooled(da, flag='val', chemistries=['Li-ion'], label_scaler=sc, life_class_scaler=sc)

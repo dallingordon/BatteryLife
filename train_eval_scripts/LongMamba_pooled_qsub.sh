@@ -55,6 +55,14 @@
 #                   every logged record of cycles 1..100, rests kept, 4 channels (V, I, Q_charge, Q_discharge),
 #                   tau = real step to the previous record / DT_C                                       (tag _raw)
 #   RAW_VNORM       cycle_max (default) | none: voltage / that cycle's max, or volts                    (tag _vvolts)
+#   RAW_TAU         real (default) | cycle_norm (10/18, needs RAW=1 TIME_DT=real): tau = RAW_TAU_SCALE * step / that
+#                   cycle's duration, rests included; DT_C x DT_CLIP (s) still caps steps if both set   (tag _cnorm)
+#   RAW_TAU_SCALE   300 (default): tau per cycle under cycle_norm                                     (tag _cs<S>)
+#   RAW_TAU_BND     1 (default) | 0: tau of each cycle's first record under cycle_norm                (tag _cb<B>)
+#   LRADJ           constant (default) | cosine (10/18): per-step cosine, peak LR, warmup + floor     (tag _cos<E>w<W>)
+#   COS_EPOCHS      epochs the cosine spans (default EPOCHS); WARMUP epochs of linear warmup (0); MIN_LR_RATIO floor (0.01,
+#                   tag _min<R> if not 0.01). With cosine, set PATIENCE >= EPOCHS so early stopping doesn't cut the schedule.
+#   LR              1e-4 (default)                                                                   (tag _lr<LR> if not 1e-4)
 #   BATCH_STEPS     0 (default, none) | RAW=1: samples x longest length per batch <= BATCH_STEPS (BATCH = max samples)
 #   BATCH ACCUM     8 4 (defaults; effective batch 32 like CPMLP)
 #   LR WD           1e-4 1e-3 (defaults)
@@ -102,6 +110,12 @@ DT_CLIP=${DT_CLIP:-0}
 RAW=${RAW:-0}
 RAW_VNORM=${RAW_VNORM:-cycle_max}
 BATCH_STEPS=${BATCH_STEPS:-0}
+RAW_TAU=${RAW_TAU:-real}
+LRADJ=${LRADJ:-constant}
+WARMUP=${WARMUP:-0}
+MIN_LR_RATIO=${MIN_LR_RATIO:-0.01}
+RAW_TAU_SCALE=${RAW_TAU_SCALE:-300}
+RAW_TAU_BND=${RAW_TAU_BND:-1}
 INIT_TAG=${INIT_TAG:-}
 CHEM_TAG=${CHEM_TAG:-}
 BATCH=${BATCH:-8}                                         # full-timescale: train batch is 1, BATCH is val/test only
@@ -116,6 +130,7 @@ SEEDS=${SEEDS:-"2021 42 2024"}
 EPOCHS=${EPOCHS:-100}
 PATIENCE=${PATIENCE:-5}
 PRINT_EVERY=${PRINT_EVERY:-200}
+COS_EPOCHS=${COS_EPOCHS:-$EPOCHS}
 
 TAG="_${MAMBA_LAYER}_b${BOUNDARY}"
 [ "$RAW" = "1" ] && TAG="_raw${TAG}"
@@ -132,7 +147,13 @@ if [ "$MAMBA_LAYER" = "s4d" ]; then
 fi
 [ "$TIME_DT" != "off" ] && TAG="${TAG}_tdt${TIME_DT}"
 [ "$DT_INPUT" = "1" ] && TAG="${TAG}_dtin"
-if [ "$TIME_DT" = "real" ] || [ "$DT_INPUT" = "1" ]; then
+if [ "$RAW_TAU" = "cycle_norm" ]; then
+  if [ "$RAW" != "1" ] || [ "$TIME_DT" != "real" ]; then echo "RAW_TAU=cycle_norm needs RAW=1 TIME_DT=real"; exit 1; fi
+  TAG="${TAG}_cnorm"
+  [ "$RAW_TAU_SCALE" != "300" ] && TAG="${TAG}_cs${RAW_TAU_SCALE}"
+  TAG="${TAG}_cb${RAW_TAU_BND}"
+  [ "$DT_CLIP" != "0" ] && [ "$DT_C" != "0" ] && TAG="${TAG}_clip${DT_CLIP}"
+elif [ "$TIME_DT" = "real" ] || [ "$DT_INPUT" = "1" ]; then
   if [ "$DT_C" = "0" ]; then echo "TIME_DT=real / DT_INPUT=1 need DT_C (seconds, from dt_stats.py)"; exit 1; fi
   [ "$DT_CLIP" != "0" ] && TAG="${TAG}_clip${DT_CLIP}"
 fi
@@ -145,7 +166,14 @@ fi
 [ "$PRED_MODE" = "geo_bins" ] && TAG="${TAG}_geobins"
 [ "$PRED_MODE" = "dual" ] && TAG="${TAG}_dual"
 [ "$WD" != "0.0" ] && [ "$WD" != "0" ] && TAG="${TAG}_wd${WD}"
-EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT --long_r_first $R_FIRST --long_r_dim $R_DIM --long_r_weight $R_WEIGHT --s4_dt_min $S4_DT_MIN --s4_dt_max $S4_DT_MAX --s4_backend $S4_BACKEND --long_time_dt $TIME_DT --long_dt_input $DT_INPUT --dt_c $DT_C --dt_clip $DT_CLIP --long_raw $RAW --raw_v_norm $RAW_VNORM --raw_max_batch_steps $BATCH_STEPS"
+[ "$LR" != "1e-4" ] && TAG="${TAG}_lr${LR}"
+if [ "$LRADJ" = "cosine" ]; then
+  TAG="${TAG}_cos${COS_EPOCHS}w${WARMUP}"
+  [ "$MIN_LR_RATIO" != "0.01" ] && TAG="${TAG}_min${MIN_LR_RATIO}"
+elif [ "$LRADJ" != "constant" ]; then
+  TAG="${TAG}_lradj${LRADJ}"
+fi
+EXTRA_ARGS="--prediction_mode $PRED_MODE --long_boundary $BOUNDARY --long_chem_cls $CHEM_CLS --long_chem_boundary $CHEM_BOUNDARY --wd $WD --long_grad_ckpt $GRAD_CKPT --long_r_first $R_FIRST --long_r_dim $R_DIM --long_r_weight $R_WEIGHT --s4_dt_min $S4_DT_MIN --s4_dt_max $S4_DT_MAX --s4_backend $S4_BACKEND --long_time_dt $TIME_DT --long_dt_input $DT_INPUT --dt_c $DT_C --dt_clip $DT_CLIP --long_raw $RAW --raw_v_norm $RAW_VNORM --raw_max_batch_steps $BATCH_STEPS --raw_tau_mode $RAW_TAU --raw_tau_scale $RAW_TAU_SCALE --raw_tau_boundary $RAW_TAU_BND --cos_epochs $COS_EPOCHS --warmup_epochs $WARMUP --min_lr_ratio $MIN_LR_RATIO"
 if [ "$FULL" = "1" ]; then
   if [ "$BOUNDARY" = "index" ]; then echo "FULL=1 needs BOUNDARY none, shared or readout (index has 100 cycle tokens)"; exit 1; fi
   TAG="${TAG}_full${FULL_SAMPLING}K${FULL_K}"
@@ -187,7 +215,7 @@ run_one () {
     --mamba_layer "$MAMBA_LAYER" --mamba_n_layers "$N_LAYERS" --mamba_d_state "$D_STATE" --mamba_expand "$MAMBA_EXPAND" \
     --train_epochs "$EPOCHS" --model_comment "LongMamba_Pooled${TAG}_s${seed}" --accumulation_steps "$ACCUM" \
     --charge_discharge_length 300 --dataset POOLED --num_workers 4 --print_every "$PRINT_EVERY" \
-    --patience "$PATIENCE" --early_cycle_threshold 100 --lradj constant --loss MSE \
+    --patience "$PATIENCE" --early_cycle_threshold 100 --lradj "$LRADJ" --loss MSE \
     --pooled --pooled_split_seed "$split_seed" $EXTRA_ARGS $init_args \
     --checkpoints "$ckpt" 2>&1 | tee "$log"
 }

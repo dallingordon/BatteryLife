@@ -17,6 +17,7 @@ from data_provider.data_loader_full import add_full_timescale_args
 from data_provider.data_loader import CHEMISTRIES
 from utils.pooled_eval import macro_tuple, PooledTracker
 import time
+import math
 import json
 import random
 import numpy as np
@@ -212,6 +213,14 @@ parser.add_argument('--raw_v_norm', type=str, default='cycle_max', choices=['cyc
 parser.add_argument('--raw_max_batch_steps', type=int, default=0,
                     help='--long_raw: batches hold <= --batch_size samples AND samples x longest length <= this '
                          '(0 = no step budget); a longer sample gets a batch of its own')
+parser.add_argument('--raw_tau_mode', type=str, default='real', choices=['real', 'cycle_norm'],
+                    help='--long_raw: real = step / --dt_c; cycle_norm (10/18) = --raw_tau_scale * step / that '
+                         'cycle\'s duration (every cycle sums to the same tau). Needs --long_time_dt real')
+parser.add_argument('--raw_tau_scale', type=float, default=300.0,
+                    help='--raw_tau_mode cycle_norm: tau per cycle (300 = the grid: 300 steps x tau 1)')
+parser.add_argument('--raw_tau_boundary', type=float, default=1.0,
+                    help='--raw_tau_mode cycle_norm: tau of the first record of each cycle (gap since the previous '
+                         'cycle not counted); 1 or 0 (0 = that record does not write to the state)')
 parser.add_argument('--print_every', type=int, default=5, help='print training loss every N iterations')
 
 # optimization
@@ -229,6 +238,13 @@ parser.add_argument('--des', type=str, default='test', help='exp description')
 parser.add_argument('--loss', type=str, default='MSE', help='loss function, [MSE, BMSE, MAPE]')
 parser.add_argument('--lradj', type=str, default='constant', help='adjust learning rate')
 parser.add_argument('--pct_start', type=float, default=0.2, help='pct_start')
+# --lradj cosine (10/18): per-optimizer-step cosine decay with linear warmup (the old COS = per-epoch, T_max 20, untouched)
+parser.add_argument('--cos_epochs', type=float, default=0.0,
+                    help='--lradj cosine: epochs the cosine spans (0 = --train_epochs); lr stays at the floor after')
+parser.add_argument('--warmup_epochs', type=float, default=0.0,
+                    help='--lradj cosine: linear warmup from ~0 to --learning_rate over this many epochs')
+parser.add_argument('--min_lr_ratio', type=float, default=0.01,
+                    help='--lradj cosine: floor = min_lr_ratio x --learning_rate')
 parser.add_argument('--use_amp', action='store_true', help='use automatic mixed precision training', default=False)
 parser.add_argument('--percent', type=int, default=100)
 parser.add_argument('--accumulation_steps', type=int, default=1, help='gradient accumulation steps')
@@ -278,8 +294,10 @@ if args.long_time_dt != 'off':
 if args.long_raw:
     assert args.model == 'LongMamba' and args.pooled and not args.full_timescale, \
         '--long_raw is a LongMamba option on the pooled <=100 loader'
+if args.raw_tau_mode != 'real':
+    assert args.long_raw and args.long_time_dt == 'real', '--raw_tau_mode cycle_norm needs --long_raw 1 --long_time_dt real'
 args.uses_tau = args.model == 'LongMamba' and (args.long_time_dt == 'real' or bool(args.long_dt_input))
-if args.uses_tau:
+if args.uses_tau and args.raw_tau_mode == 'real':
     assert args.dt_c > 0, '--long_time_dt real / --long_dt_input 1 need --dt_c (seconds, from dt_stats.py)'
 args.uses_chem_ids = args.chem_fusion != 'none' or bool(args.long_chem_cls) or bool(args.long_chem_boundary)
 args.chem_num = len(CHEMISTRIES)
@@ -297,7 +315,7 @@ DUAL_HEADS = ('bins', 'reg')
 # --init_checkpoint: architecture / target args that must match between the checkpoint's run and this one
 INIT_MATCH_KEYS = ('model', 'd_model', 'mamba_layer', 'mamba_n_layers', 'mamba_d_state', 'mamba_d_conv', 'mamba_expand',
                    'long_boundary', 'long_r_first', 'long_r_dim', 'long_chem_cls', 'long_chem_boundary',
-                   'long_time_dt', 'long_dt_input', 'long_raw', 'raw_v_norm',
+                   'long_time_dt', 'long_dt_input', 'long_raw', 'raw_v_norm', 'raw_tau_mode',
                    'charge_discharge_length', 'prediction_mode', 'geo_bin_min', 'geo_bin_max', 'geo_bin_tol', 'output_num')
 
 
@@ -524,6 +542,24 @@ for ii in range(args.itr):
     
     if args.lradj == 'COS':
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(model_optim, T_max=20, eta_min=1e-8)
+    elif args.lradj == 'cosine':
+        # stepped once per optimizer step (accelerate's prepared scheduler skips accumulation micro-steps)
+        _opt_per_epoch = math.ceil(train_steps / max(1, args.accumulation_steps))
+        _cos_ep = args.cos_epochs if args.cos_epochs > 0 else args.train_epochs
+        _total = max(1, int(round(_cos_ep * _opt_per_epoch)))
+        _warm = int(round(args.warmup_epochs * _opt_per_epoch))
+        _floor = args.min_lr_ratio
+
+        def _cos_lambda(step, _total=_total, _warm=_warm, _floor=_floor):
+            if step < _warm:
+                return (step + 1) / _warm
+            prog = min(1.0, (step - _warm) / max(1, _total - _warm))
+            return _floor + (1.0 - _floor) * 0.5 * (1.0 + math.cos(math.pi * prog))
+
+        scheduler = lr_scheduler.LambdaLR(model_optim, _cos_lambda)
+        accelerator.print(f'lr schedule: cosine | peak {args.learning_rate} floor {args.learning_rate * _floor:.3g} | '
+                          f'{_opt_per_epoch} optimizer steps/epoch | warmup {_warm} steps ({args.warmup_epochs:g} ep) | '
+                          f'cosine over {_total} steps ({_cos_ep:g} ep)')
     elif args.lradj == 'TST':
         scheduler = lr_scheduler.OneCycleLR(
             optimizer=model_optim,
@@ -686,6 +722,8 @@ for ii in range(args.itr):
                 if args.lradj == 'TST':
                     adjust_learning_rate(accelerator, model_optim, scheduler, epoch + 1, args, printout=False)
                     scheduler.step()
+                elif args.lradj == 'cosine':
+                    scheduler.step()
                 
                 if (i + 1) % args.print_every == 0:
                     r_txt = f' | r_loss: {print_r_loss:.7f}' if USE_R else ''
@@ -778,7 +816,9 @@ for ii in range(args.itr):
         if accelerator.check_trigger():
             break
 
-        if args.lradj != 'TST':
+        if args.lradj == 'cosine':
+            accelerator.print('cosine | lr at end of epoch {}: {:.4g}'.format(epoch + 1, model_optim.param_groups[0]['lr']))
+        elif args.lradj != 'TST':
             if args.lradj == 'COS':
                 scheduler.step()
                 accelerator.print("lr = {:.10f}".format(model_optim.param_groups[0]['lr']))

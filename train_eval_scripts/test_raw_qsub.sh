@@ -13,9 +13,10 @@
 # val cells (+ raw tau stats per dataset, accelerate-prepared loader).
 #   qsub train_eval_scripts/test_raw_qsub.sh                      -> test_raw.qlog (ends with ALL PASSED or the failures)
 #   qsub -v DT_C=5,DT_CLIP=100 train_eval_scripts/test_raw_qsub.sh
+#   qsub -N test_cnorm -o test_cnorm.qlog -v RAW_TAU=cycle_norm,NO_GPU=1 train_eval_scripts/test_raw_qsub.sh   (10/18)
 module load gcc/12.2.0
 module load cuda/12.2
 cd /projectnb/nsf-energize/dgordon/Projects/BatteryLife
 source venv_mamba/bin/activate
 nvidia-smi --query-gpu=name,memory.total --format=csv
-python test_raw.py --gpu --data --dt_c "${DT_C:-5}" --dt_clip "${DT_CLIP:-100}"
+python test_raw.py $([ -z "$NO_GPU" ] && echo --gpu) --data --dt_c "${DT_C:-5}" --dt_clip "${DT_CLIP:-100}" --raw_tau_mode "${RAW_TAU:-real}" --raw_tau_boundary "${RAW_TAU_BND:-1}"

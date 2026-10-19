@@ -1,0 +1,24 @@
+# Per-cycle-normalized tau on raw records, 10/18. Li-ion only, readout + R_FIRST, geo_bins, 3 seeds. Same as
+#   sweep_10_17_raw.tsv except tau: RAW_TAU=cycle_norm -> tau = 300 * step / that cycle's duration (rests included), so
+#   every cycle sums to tau 300 like the 300-point grid (300 steps x tau 1), but every logged record stays in and the
+#   real spacing inside a cycle is kept. The first record of each cycle (gap since the previous cycle) gets RAW_TAU_BND:
+#   1 vs 0 is the ablation (0 = that record does not write to the state).
+# Question: does per-cycle time normalization (what the grid did implicitly) recover S4D's grid result on raw records?
+#   Compare to: S4D grid off 0.203 / tdtconst 0.208 / tdtreal 0.261; S4D raw const 0.260 / real 0.252 (2 seeds);
+#   Mamba grid tdtconst 0.260 / tdtreal 0.260; Mamba raw const / real (pending).
+# DT_C=5 x DT_CLIP=100 = steps capped at 500 s before normalizing (only non-logging pauses), same cap as the raw real arm.
+# Not built: separate charge / discharge normalization (150 + 150 like the grid, rests own share) -- option (b);
+#   log(cycle duration) on the R token. Run test_raw.py first (numpy cycle_norm checks; --data --raw_tau_mode cycle_norm).
+short	group	script	PRED_MODE	BOUNDARY	R_FIRST	MAMBA_LAYER	S4_BACKEND	RAW	TIME_DT	RAW_TAU	RAW_TAU_BND	DT_INPUT	DT_C	DT_CLIP	GRAD_CKPT	BATCH_STEPS	WD	POOLED_CHEMS	CHEM_TAG	SEEDS	H_RT	purpose
+S4cn1_s2021	raw_cnorm_b1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	real	cycle_norm	1	0	5	100	1	600000	1e-3	Li-ion	Lionly	2021	48:00:00	S4D on raw records, tau = 300 * step / cycle duration, boundary tau 1
+S4cn1_s42	raw_cnorm_b1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	real	cycle_norm	1	0	5	100	1	600000	1e-3	Li-ion	Lionly	42	48:00:00	S4D on raw records, tau = 300 * step / cycle duration, boundary tau 1
+S4cn1_s2024	raw_cnorm_b1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	real	cycle_norm	1	0	5	100	1	600000	1e-3	Li-ion	Lionly	2024	48:00:00	S4D on raw records, tau = 300 * step / cycle duration, boundary tau 1
+S4cn0_s2021	raw_cnorm_b0	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	real	cycle_norm	0	0	5	100	1	600000	1e-3	Li-ion	Lionly	2021	48:00:00	S4D on raw records, tau = 300 * step / cycle duration, boundary tau 0
+S4cn0_s42	raw_cnorm_b0	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	real	cycle_norm	0	0	5	100	1	600000	1e-3	Li-ion	Lionly	42	48:00:00	S4D on raw records, tau = 300 * step / cycle duration, boundary tau 0
+S4cn0_s2024	raw_cnorm_b0	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	1	real	cycle_norm	0	0	5	100	1	600000	1e-3	Li-ion	Lionly	2024	48:00:00	S4D on raw records, tau = 300 * step / cycle duration, boundary tau 0
+Mcn1_s2021	raw_cnorm_b1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	real	cycle_norm	1	0	5	100	1	600000	1e-3	Li-ion	Lionly	2021	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, tau = 300 * step / cycle duration, boundary tau 1
+Mcn1_s42	raw_cnorm_b1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	real	cycle_norm	1	0	5	100	1	600000	1e-3	Li-ion	Lionly	42	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, tau = 300 * step / cycle duration, boundary tau 1
+Mcn1_s2024	raw_cnorm_b1	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	real	cycle_norm	1	0	5	100	1	600000	1e-3	Li-ion	Lionly	2024	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, tau = 300 * step / cycle duration, boundary tau 1
+Mcn0_s2021	raw_cnorm_b0	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	real	cycle_norm	0	0	5	100	1	600000	1e-3	Li-ion	Lionly	2021	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, tau = 300 * step / cycle duration, boundary tau 0
+Mcn0_s42	raw_cnorm_b0	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	real	cycle_norm	0	0	5	100	1	600000	1e-3	Li-ion	Lionly	42	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, tau = 300 * step / cycle duration, boundary tau 0
+Mcn0_s2024	raw_cnorm_b0	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	vanilla	-	1	real	cycle_norm	0	0	5	100	1	600000	1e-3	Li-ion	Lionly	2024	48:00:00	Mamba (fixed per-channel dt, selective B/C) on raw records, tau = 300 * step / cycle duration, boundary tau 0
