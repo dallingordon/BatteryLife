@@ -1,0 +1,45 @@
+# Long S4D architecture ablation, 10/18. One factor at a time around the best recipe (Li-ion only, readout + R_FIRST,
+#   geo_bins, wd 1e-3, constant lr 1e-4, patience 5; default arch d_model 64 / 4 layers / d_state 16 / expand 2 /
+#   dt init [1e-5, 1e-1]; fft run = 0.203 +- 0.006).
+# All arms use S4_BACKEND=scan (same LTI S4D, ZOH, matches fft to 1e-4 in test_s4d; ~3-4x faster, ~half the memory), so
+#   the deep / wide arms fit the time limit. S4aBase = the default arch on scan, the in-sweep reference.
+# GRAD_CKPT=1 (memory only, same math) on the deep / wide arms. Batch 8 x accum 4 everywhere (effective 32).
+# Depth {8, 16, 24}, d_model {32, 128}, expand {1, 4}, d_state {32, 64, 98}, dt init standard [1e-3, 1e-1].
+# H_RT guesses: 30 h, 48 h for 16 / 24 layers -- check s/iter in the first log of S4aL24.
+short	group	script	PRED_MODE	BOUNDARY	R_FIRST	MAMBA_LAYER	S4_BACKEND	D_MODEL	N_LAYERS	D_STATE	MAMBA_EXPAND	S4_DT_MIN	S4_DT_MAX	GRAD_CKPT	WD	POOLED_CHEMS	CHEM_TAG	SEEDS	H_RT	purpose
+S4aBase_s2021	s4arch_base	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2021	30:00:00	reference: default arch on scan (scan == fft numerically; fft run = 0.203)
+S4aBase_s42	s4arch_base	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	42	30:00:00	reference: default arch on scan (scan == fft numerically; fft run = 0.203)
+S4aBase_s2024	s4arch_base	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2024	30:00:00	reference: default arch on scan (scan == fft numerically; fft run = 0.203)
+S4aL8_s2021	s4arch_depth	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	8	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	2021	30:00:00	depth 8 layers
+S4aL8_s42	s4arch_depth	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	8	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	42	30:00:00	depth 8 layers
+S4aL8_s2024	s4arch_depth	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	8	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	2024	30:00:00	depth 8 layers
+S4aL16_s2021	s4arch_depth	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	16	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	2021	48:00:00	depth 16 layers
+S4aL16_s42	s4arch_depth	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	16	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	42	48:00:00	depth 16 layers
+S4aL16_s2024	s4arch_depth	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	16	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	2024	48:00:00	depth 16 layers
+S4aL24_s2021	s4arch_depth	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	24	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	2021	48:00:00	depth 24 layers
+S4aL24_s42	s4arch_depth	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	24	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	42	48:00:00	depth 24 layers
+S4aL24_s2024	s4arch_depth	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	24	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	2024	48:00:00	depth 24 layers
+S4aDm32_s2021	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	32	4	16	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2021	30:00:00	d_model 32
+S4aDm32_s42	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	32	4	16	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	42	30:00:00	d_model 32
+S4aDm32_s2024	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	32	4	16	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2024	30:00:00	d_model 32
+S4aDm128_s2021	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	128	4	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	2021	30:00:00	d_model 128
+S4aDm128_s42	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	128	4	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	42	30:00:00	d_model 128
+S4aDm128_s2024	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	128	4	16	2	1e-5	1e-1	1	1e-3	Li-ion	Lionly	2024	30:00:00	d_model 128
+S4aEx1_s2021	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	1	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2021	30:00:00	expand 1 (d_inner = d_model)
+S4aEx1_s42	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	1	1e-5	1e-1	0	1e-3	Li-ion	Lionly	42	30:00:00	expand 1 (d_inner = d_model)
+S4aEx1_s2024	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	1	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2024	30:00:00	expand 1 (d_inner = d_model)
+S4aEx4_s2021	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	4	1e-5	1e-1	1	1e-3	Li-ion	Lionly	2021	30:00:00	expand 4
+S4aEx4_s42	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	4	1e-5	1e-1	1	1e-3	Li-ion	Lionly	42	30:00:00	expand 4
+S4aEx4_s2024	s4arch_width	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	4	1e-5	1e-1	1	1e-3	Li-ion	Lionly	2024	30:00:00	expand 4
+S4aDs32_s2021	s4arch_state	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	32	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2021	30:00:00	d_state 32 (16 complex modes)
+S4aDs32_s42	s4arch_state	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	32	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	42	30:00:00	d_state 32 (16 complex modes)
+S4aDs32_s2024	s4arch_state	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	32	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2024	30:00:00	d_state 32 (16 complex modes)
+S4aDs64_s2021	s4arch_state	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	64	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2021	30:00:00	d_state 64 (32 complex modes)
+S4aDs64_s42	s4arch_state	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	64	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	42	30:00:00	d_state 64 (32 complex modes)
+S4aDs64_s2024	s4arch_state	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	64	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2024	30:00:00	d_state 64 (32 complex modes)
+S4aDs98_s2021	s4arch_state	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	98	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2021	30:00:00	d_state 98 (49 complex modes)
+S4aDs98_s42	s4arch_state	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	98	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	42	30:00:00	d_state 98 (49 complex modes)
+S4aDs98_s2024	s4arch_state	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	98	2	1e-5	1e-1	0	1e-3	Li-ion	Lionly	2024	30:00:00	d_state 98 (49 complex modes)
+S4aDtStd_s2021	s4arch_dt	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	2	1e-3	1e-1	0	1e-3	Li-ion	Lionly	2021	30:00:00	standard S4D dt init [1e-3, 1e-1]: memory ~2000 steps (~7 cycles) vs ours ~670 cycles
+S4aDtStd_s42	s4arch_dt	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	2	1e-3	1e-1	0	1e-3	Li-ion	Lionly	42	30:00:00	standard S4D dt init [1e-3, 1e-1]: memory ~2000 steps (~7 cycles) vs ours ~670 cycles
+S4aDtStd_s2024	s4arch_dt	train_eval_scripts/LongMamba_pooled_qsub.sh	geo_bins	readout	1	s4d	scan	64	4	16	2	1e-3	1e-1	0	1e-3	Li-ion	Lionly	2024	30:00:00	standard S4D dt init [1e-3, 1e-1]: memory ~2000 steps (~7 cycles) vs ours ~670 cycles
