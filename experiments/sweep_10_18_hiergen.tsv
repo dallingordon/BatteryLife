@@ -1,0 +1,14 @@
+# HierGen (generative, two time scales), 10/18. Li-ion MIX_large, full histories, 300-point grid in volts.
+# Cycle stack (one step per cycle) + reading stack (one step per grid point, conditioned on the cycle state, predicts V
+#   and dQ given I). Every run evaluates BOTH rollout modes on the same weights (the ablation): latent (cycle stack
+#   feeds back its own predicted z, SOH head gives capacity) and full (reading stack generates every cycle, capacity =
+#   generated Q at end of discharge; also full_head). EOL = first generated cycle with SOH <= 0.8, conditioned on
+#   cycles 1..100 -> compare with the baseline AT PREFIX 100 (its 0.203 averages prefixes 1..100).
+# Arms: mixer {vanilla Mamba, S4D} for both stacks x 3 seeds. Before submitting: precompute_gen_qsub.sh, test_hiergen_qsub.sh.
+short	group	script	CYCLE_LAYER	READ_LAYER	SEEDS	H_RT	purpose
+HGm_s2021	hiergen_mamba	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	2021	24:00:00	HierGen, Mamba both stacks
+HGm_s42	hiergen_mamba	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	42	24:00:00	HierGen, Mamba both stacks
+HGm_s2024	hiergen_mamba	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	2024	24:00:00	HierGen, Mamba both stacks
+HGs_s2021	hiergen_s4d	train_eval_scripts/HierGen_qsub.sh	s4d	s4d	2021	24:00:00	HierGen, S4D both stacks
+HGs_s42	hiergen_s4d	train_eval_scripts/HierGen_qsub.sh	s4d	s4d	42	24:00:00	HierGen, S4D both stacks
+HGs_s2024	hiergen_s4d	train_eval_scripts/HierGen_qsub.sh	s4d	s4d	2024	24:00:00	HierGen, S4D both stacks

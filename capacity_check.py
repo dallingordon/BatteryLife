@@ -15,9 +15,9 @@ for XJTU):
                           of 0.8, linearly interpolated between cycles, rounded up (extrapolation as above if needed)
 The model only sees cycles 1..100, and only cells with label > 100 are used.
 
-    python capacity_check.py                                  # plot one Li-ion train cell (MATR_b1c5) + compare all
-    python capacity_check.py --cell HUST_1-6.pkl --no_compare  # just the plots for another cell
-    python capacity_check.py --splits train val test           # comparison over every Li-ion split
+    python capacity_check.py                          # one Li-ion train cell (MATR_b1c5): plots + label vs recomputed
+    python capacity_check.py --cell HUST_1-6.pkl      # another cell
+    python capacity_check.py --compare_all --no_plot  # every Li-ion train cell (slow)
 
 Outputs (figures/capacity_check/): <cell>_all_data.png, <cell>_cycles.png, label_check.csv, label_check.png
 """
@@ -209,8 +209,10 @@ def plot_cell(data, file_name, label, out_dir, model_cycles=100):
 # ------------------------------------------------------------------ comparison over many cells
 def compare(root, files, out_dir):
     import csv
-    rows = []
-    for fn in files:
+    import time
+    rows, t0 = [], time.time()
+    for j, fn in enumerate(files):
+        print(f'  [{j + 1}/{len(files)}] {fn} ({time.time() - t0:.0f}s)', flush=True)
         label = load_label(root, fn)
         try:
             data = load_cell(root, fn)
@@ -267,7 +269,8 @@ if __name__ == '__main__':
     ap.add_argument('--cell', default='MATR_b1c5.pkl', help='a Li-ion (MIX_large) train cell')
     ap.add_argument('--out_dir', default='figures/capacity_check')
     ap.add_argument('--splits', nargs='+', default=['train'], choices=['train', 'val', 'test'])
-    ap.add_argument('--no_compare', action='store_true')
+    ap.add_argument('--compare_all', action='store_true', help='also recompute every Li-ion cell (slow: use the qsub script)')
+    ap.add_argument('--datasets', nargs='+', default=None, help='only these dataset prefixes, e.g. MATR HUST')
     ap.add_argument('--no_plot', action='store_true')
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
@@ -275,8 +278,11 @@ if __name__ == '__main__':
         in_train = a.cell in split_recorder.MIX_large_train_files
         print(f'{a.cell}: {"in" if in_train else "NOT in"} the Li-ion (MIX_large) train split')
         plot_cell(load_cell(a.root_path, a.cell), a.cell, load_label(a.root_path, a.cell), a.out_dir)
-    if not a.no_compare:
+    if a.compare_all:
         files = []
         for s in a.splits:
             files += getattr(split_recorder, f'MIX_large_{s}_files')
-        compare(a.root_path, list(dict.fromkeys(files)), a.out_dir)
+        files = list(dict.fromkeys(files))
+        if a.datasets:
+            files = [f for f in files if f.split('_')[0] in a.datasets]
+        compare(a.root_path, files, a.out_dir)
