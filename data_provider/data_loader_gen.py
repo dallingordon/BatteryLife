@@ -14,7 +14,11 @@ rests dropped -- the same segmentation and resampling as Dataset_original.get_ch
 Cache (built once by precompute_gen_cells.py) in <root_path>/gen_cycle_cache:
     <cell>.npy        [n_cycles, 4, 300] float32   channels V (V), I (C), Q (/nominal), t (s)
     <cell>.meta.json  eol (json label), nominal, soc_span, discharge_first, soh [n_cycles] (raw), n_cycles,
-                      truncated_at_cycle / truncate_reason (cache stops at the first unusable cycle), split
+                      filled_cycles [[cycle, reason], ...], dropped_leading, dropped_trailing, split
+Unusable cycles (empty, non-finite, no raw capacity) in the middle of a cell are filled with a copy of the previous
+cycle (grid and SOH), so row k is still cycle k + 1 and rollout lengths stay comparable with the eol label. Unusable
+cycles at the end are dropped (typically an empty last record, e.g. Stanford); unusable leading cycles are dropped
+too (then rows are shifted by dropped_leading; rare, counted in meta).
 Cells with no pkl / no label / eol <= 100 are recorded (status) and skipped by the dataset, same as the baseline.
 """
 import json
@@ -28,7 +32,7 @@ from torch.utils.data import Dataset
 
 from data_provider.data_split_recorder import split_recorder
 
-CACHE_VERSION = 1
+CACHE_VERSION = 2       # 2 (11/03): unusable cycles are filled with the previous cycle instead of ending the cache
 GEN_CHANNELS = ('V', 'I', 'Q', 't')
 DISCHARGE_FIRST_PREFIXES = ('RWTH', 'CALB_0', 'CALB_25', 'CALB_45')
 
@@ -89,11 +93,21 @@ def cycle_grid(cycle_df, nominal, discharge_first, n_points=300):
     dv, di, dq, dt = resample_half(h, dv, di, dq, dt)
     cv, ci, cq, ct = resample_half(h, cv, ci, cq, ct)
     dt, ct = dt - dt[0], ct - ct[0]
-    if discharge_first:   # order on the grid = order in the cycle (same as the baseline curves)
+    if discharge_first:   # order on the grid = order in the cycle (the baseline curves are always charge half first)
         V, I, Q, T = [np.concatenate(x) for x in ((dv, cv), (di, ci), (dq, cq), (dt, ct))]
     else:
         V, I, Q, T = [np.concatenate(x) for x in ((cv, dv), (ci, di), (cq, dq), (ct, dt))]
     return np.stack([V, I / nominal, Q / nominal, T]).astype(np.float32)
+
+
+def _max_run(cycles):
+    """Longest run of consecutive cycle numbers."""
+    best = run = 0
+    prev = None
+    for c in cycles:
+        run = run + 1 if prev is not None and c == prev + 1 else 1
+        best, prev = max(best, run), c
+    return best
 
 
 def build_gen_cache(reader, file_name, cache_dir, split, overwrite=False):
@@ -116,7 +130,8 @@ def build_gen_cache(reader, file_name, cache_dir, split, overwrite=False):
         _, _, soh_raw, nominal, span = cycle_capacity(data, file_name)
         dfirst = is_discharge_first(file_name, reader.ZN_coin_charge_first_file_names)
         meta.update(eol=float(eol), nominal=float(nominal), soc_span=float(span), discharge_first=bool(dfirst),
-                    valid_cycle_number=len(data['cycle_data']), truncated_at_cycle=None, truncate_reason=None)
+                    valid_cycle_number=len(data['cycle_data']))
+        sohs, filled, lead = [], [], 0
         for idx, sub in enumerate(data['cycle_data']):
             df = pd.DataFrame({k: sub[k] for k in reader.need_keys})
             df.loc[df['charge_capacity_in_Ah'] < 0] = np.nan     # same cleaning as Dataset_original.read_cell_df
@@ -134,11 +149,23 @@ def build_gen_cache(reader, file_name, cache_dir, split, overwrite=False):
             except Exception as e:
                 g, reason = None, f'{type(e).__name__}: {e}'
             if reason is not None:
-                meta['truncated_at_cycle'], meta['truncate_reason'] = idx + 1, reason
-                break
+                if not grids:                       # nothing to copy yet
+                    lead += 1
+                    continue
+                filled.append([idx + 1, reason])
+                grids.append(grids[-1])
+                sohs.append(sohs[-1])
+                continue
             grids.append(g)
-        meta['n_cycles'] = len(grids)
-        meta['soh'] = [float(x) for x in soh_raw[:len(grids)]]
+            sohs.append(float(soh_raw[idx]))
+        trail = 0
+        while filled and filled[-1][0] == lead + len(grids) and grids:   # trailing fills -> drop
+            filled.pop()
+            grids.pop()
+            sohs.pop()
+            trail += 1
+        meta.update(n_cycles=len(grids), soh=sohs, filled_cycles=filled, dropped_leading=lead, dropped_trailing=trail,
+                    max_fill_run=_max_run([c for c, _ in filled]))
         if not grids:
             meta['status'] = 'no_cycles'
         elif eol <= 100:
@@ -178,7 +205,7 @@ class GenCells(Dataset):
         self.cells, missing, dropped = [], [], {}
         for f in split_files(split):
             m = load_meta(self.cache_dir, f)
-            if m is None:
+            if m is None or m.get('version') != CACHE_VERSION:
                 missing.append(f)
                 continue
             if m['status'] != 'ok':
@@ -193,8 +220,9 @@ class GenCells(Dataset):
                                    soh=np.asarray(m['soh'][:n], dtype=np.float32),
                                    unseen=su.get(f, 'seen') == 'unseen'))
         if missing:
-            raise FileNotFoundError(f'{len(missing)} {split} cells have no cache in {self.cache_dir} (e.g. {missing[:3]}). '
-                                    f'Build it: python precompute_gen_cells.py --root_path {root_path}')
+            raise FileNotFoundError(f'{len(missing)} {split} cells have no cache (or a cache older than version '
+                                    f'{CACHE_VERSION}) in {self.cache_dir} (e.g. {missing[:3]}). '
+                                    f'Build it: python precompute_gen_cells.py --root_path {root_path} --overwrite')
         self._mm = {}
         if verbose:
             ns = np.array([c['n'] for c in self.cells])

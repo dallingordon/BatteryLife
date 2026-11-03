@@ -11,4 +11,5 @@
 module load gcc/12.2.0
 cd /projectnb/nsf-energize/dgordon/Projects/BatteryLife
 source venv_mamba/bin/activate
-python precompute_gen_cells.py --root_path ./dataset --workers 8 --check
+# 11/03: CACHE_VERSION 2 (mid-run unusable cycles filled, not truncated) -> --overwrite; check every cell
+python precompute_gen_cells.py --root_path ./dataset --workers 8 --overwrite --check --check_n 0
