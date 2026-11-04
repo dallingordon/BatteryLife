@@ -97,7 +97,7 @@ def run_checks(layer, dev):
         c2[:, 5, 0] += 0.5
         mu1, zh1 = cyc_preds(c2)
     check('causal over cycles: cycle 5 does not change predictions for cycles 0..5',
-          torch.allclose(mu0[:, :6], mu1[:, :6]) and torch.allclose(zh0[:, :6], zh1[:, :6]))
+          torch.allclose(mu0[:, :6], mu1[:, :6], atol=1e-5) and torch.allclose(zh0[:, :6], zh1[:, :6], atol=1e-5))  # fft S4D leaks ~1e-7 (float32)
     check('... and does change cycle 6', not torch.allclose(mu0[:, 6], mu1[:, 6]))
 
     # 2b. causality inside a cycle: V and Q at point 7 do not reach outputs 0..7, do reach 8
@@ -114,7 +114,7 @@ def run_checks(layer, dev):
         g2[:, 0, 7] += 0.5
         g2[:, 2, 7] += 0.1
         o1, _ = read_out(g2, hc, dfirst)
-    check('causal inside a cycle: V/Q at point 7 do not change outputs 0..7', torch.allclose(o0[:, :8], o1[:, :8]))
+    check('causal inside a cycle: V/Q at point 7 do not change outputs 0..7', torch.allclose(o0[:, :8], o1[:, :8], atol=1e-5))
     check('... and do change output 8', not torch.allclose(o0[:, 8], o1[:, 8]))
     check('Q counter restarts at the half boundary (prev Q = 0 at points 0 and P/2)',
           bool((f0[:, 0, 1] == 0).all() and (f0[:, P // 2, 1] == 0).all()))
