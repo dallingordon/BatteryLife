@@ -181,13 +181,13 @@ def run_checks(layer, dev):
             ref.append(hs)
         ref = torch.stack(ref, 1)
         z2 = z.clone()
-        z2[:, 1] += 1.0
+        z2[:, 1] += torch.randn_like(z2[:, 1])          # random, not a constant: the pre-norm LayerNorms remove a shift
         hu2 = m.unrolled_h(z2, cut, K)
     exact = max(rel(hu[b, :int(cut[b]) + K + 1], ref[b, :int(cut[b]) + K + 1]) for b in range(B))
     check(f'unrolled_h (K={K}) == free-running step mode for cycles <= cut + K', exact < 1e-3, f'(rel {exact:.1e})')
     check('... and only approximate beyond (the test can tell)', rel(hu[0, 3 + K + 1:], ref[0, 3 + K + 1:]) > 1e-4)
-    check('unrolled_h causal: z of cycle 1 does not change h for cycles 0..1',
-          torch.allclose(hu[:, :2], hu2[:, :2], atol=1e-5) and not torch.allclose(hu[:, 2], hu2[:, 2]))
+    check('unrolled_h causal: z of cycle 1 does not change h for cycles 0..1', torch.allclose(hu[:, :2], hu2[:, :2], atol=1e-5))
+    check('... and does change cycle 2', not torch.allclose(hu[:, 2], hu2[:, 2]))
 
     # 4. rollout
     span = torch.ones(B, device=dev)
