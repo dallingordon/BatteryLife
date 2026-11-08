@@ -26,6 +26,20 @@ Rollout (eval; condition on cycles 1..P, then generate until SOH <= 0.8 or max_c
             template), the generated grid goes through the encoder -> z, back into the CYCLE stack. The cycle's SOH is
             the generated Q at the end of discharge / SOC span (reported as `full`); the SOH head along the same path
             is reported as `full_head`.
+    fullcc  (11/08) like full, but Q is NOT generated: the cycle's capacity is the SOH head's prediction, and Q is
+            coulomb-counted = the last observed cycle's Q template scaled by (predicted SOH / last observed SOH), i.e.
+            the same current over a proportionally shorter half. The reading stack generates V against that Q
+            (q_prev given, not fed back), and [V_gen, I_tmpl, Q_cc] goes through the encoder -> z. Removes the 300-step
+            dQ integration, which drifts badly when free-running (11/08 diagnosis: teacher-forced capacity error 8e-4,
+            first free-running cycle off by ~0.3 SOH).
+
+Training additions (11/08, all off by default):
+    unroll_k K   K-pass parallel unroll of the cycle stack on its own zhat after a random cut per cell (pass k feeds the
+                 zhat of pass k-1 for cycles >= cut; after K passes h is exactly the free-running h for cycles
+                 <= cut + K, a K-deep approximation beyond). Passes 1..K-1 without grad. Losses unroll_soh_nll /
+                 unroll_latent_mse on cycles > cut. Targets the latent rollout's collapse to a population-mean fade.
+    read_vnoise / read_qnoise   Gaussian noise on the reading stack's v_prev (normalized V) / q_prev (Q / nominal)
+                 inputs; the dQ target is taken relative to the NOISY q_prev, so the model learns to correct drift.
 Both stacks run recurrently in rollout (S4D: explicit complex recurrence; Mamba: mamba_ssm's step()).
 """
 import math
@@ -157,6 +171,9 @@ class HierGen(nn.Module):
         self.read_cond = nn.Linear(D, D)
         self.pos = nn.Embedding(P, D)
         nn.init.normal_(self.pos.weight, std=0.02)
+        self.unroll_k = int(getattr(cfg, 'unroll_k', 0))
+        self.read_vnoise = float(getattr(cfg, 'read_vnoise', 0.0))
+        self.read_qnoise = float(getattr(cfg, 'read_qnoise', 0.0))
         self.read_head = nn.Linear(D, 4)          # V mean, V logvar, dQ mean, dQ logvar
 
     # -------------------------------------------------------------------------------------------- pieces
@@ -195,6 +212,22 @@ class HierGen(nn.Module):
         vn = (V - self.chan_mean[0, 0, 0]) / self.chan_std[0, 0, 0]
         return vn, (Q - q_prev) * self.H
 
+    def unrolled_h(self, z, cut, K, h0=None):
+        """Cycle-stack states with cycles >= cut[b] fed the model's own zhat instead of z, by K parallel passes
+        (passes before the last without grad). z [B, N, D], cut [B] long. Exact free-running h for cycles <= cut + K.
+        h0: the teacher-forced h (pass 0) if already computed."""
+        B, N, D = z.shape
+        keep = (torch.arange(N, device=z.device).unsqueeze(0) < cut.unsqueeze(1)).unsqueeze(-1)
+        start = self.start.expand(B, 1, D)
+        with torch.no_grad():
+            h = h0.detach() if h0 is not None else self.cycle_stack(torch.cat([start, z[:, :-1]], 1))
+            for _ in range(K - 1):
+                x = torch.where(keep, z, self.latent_head(h))
+                h = self.cycle_stack(torch.cat([start, x[:, :-1]], 1))
+            zhat = self.latent_head(h)
+        x = torch.where(keep, z, zhat)
+        return self.cycle_stack(torch.cat([start, x[:, :-1]], 1))
+
     # -------------------------------------------------------------------------------------------- training
     def forward(self, curves, mask, soh, discharge_first, read_idx):
         """curves [B, N, 4, P], mask [B, N], soh [B, N], discharge_first [B], read_idx [B, R] (cycles for the reading
@@ -212,6 +245,16 @@ class HierGen(nn.Module):
         lat = (((zhat - z.detach()) ** 2).mean(-1) * m).sum() / m.sum()
 
         out = dict(soh_nll=soh_nll, soh_mae=soh_mae, latent_mse=lat)
+        if self.unroll_k > 0:
+            n = mask.sum(1)
+            cut = (torch.rand(B, device=z.device) * (n - 1).clamp(min=1).float()).long() + 1     # in [1, n-1]
+            hu = self.unrolled_h(z, cut, self.unroll_k, h0=h)
+            mu_u, lv_u = self.soh_out(hu)
+            um = m * (torch.arange(N, device=z.device).unsqueeze(0) > cut.unsqueeze(1)).float()
+            den = um.sum().clamp(min=1.0)
+            out['unroll_soh_nll'] = (gaussian_nll(mu_u, lv_u, soh) * um).sum() / den
+            out['unroll_soh_mae'] = ((mu_u - soh).abs() * um).sum() / den
+            out['unroll_latent_mse'] = (((self.latent_head(hu) - z.detach()) ** 2).mean(-1) * um).sum() / den
         valid = read_idx >= 0
         if valid.any():
             bi, ri = valid.nonzero(as_tuple=True)
@@ -220,6 +263,15 @@ class HierGen(nn.Module):
             hc = h[bi, ci]                                                      # [M, D]
             dmask = self.discharge_half_mask(discharge_first[bi])
             feats, q_prev = self.read_features(g[:, 0], g[:, 2], g[:, 1], dmask)
+            if self.training and (self.read_vnoise > 0 or self.read_qnoise > 0):
+                first_of_half = torch.zeros_like(q_prev, dtype=torch.bool)
+                first_of_half[:, 0] = True
+                first_of_half[:, self.H] = True
+                vn_noise = self.read_vnoise * torch.randn_like(q_prev)
+                vn_noise[:, 0] = 0.0                                                    # v_prev at t=0 stays 0
+                q_noise = (self.read_qnoise * torch.randn_like(q_prev)).masked_fill(first_of_half, 0.0)
+                q_prev = q_prev + q_noise                                               # dQ target vs the NOISY prev
+                feats = torch.cat([feats[..., :1] + vn_noise.unsqueeze(-1), q_prev.unsqueeze(-1), feats[..., 2:]], -1)
             x = self.read_in(feats) + self.pos.weight.unsqueeze(0) + self.read_cond(hc).unsqueeze(1)
             o = self.read_head(self.read_stack(x))                              # [M, P, 4]
             vt, qt = self.read_targets(g[:, 0], g[:, 2], q_prev)
@@ -234,8 +286,9 @@ class HierGen(nn.Module):
 
     # -------------------------------------------------------------------------------------------- generation
     @torch.no_grad()
-    def generate_cycle(self, h, I_tmpl, dmask, sample=False):
-        """h [B, D] (state before the cycle), I_tmpl [B, P] C-rate, dmask [B, P] -> grid [B, 3, P] (V, I, Q)."""
+    def generate_cycle(self, h, I_tmpl, dmask, sample=False, q_given=None):
+        """h [B, D] (state before the cycle), I_tmpl [B, P] C-rate, dmask [B, P] -> grid [B, 3, P] (V, I, Q).
+        q_given [B, P]: use this Q (coulomb-counted) instead of feeding back the predicted dQ; only V is generated."""
         B = h.shape[0]
         dev = h.device
         st = self.read_stack.init_state(B, dev)
@@ -259,7 +312,7 @@ class HierGen(nn.Module):
             if sample:
                 v_n = v_n + torch.randn_like(v_n) * torch.exp(0.5 * o[:, 1].clamp(LOGVAR_MIN, LOGVAR_MAX))
                 dq = dq + torch.randn_like(dq) * torch.exp(0.5 * o[:, 3].clamp(LOGVAR_MIN, LOGVAR_MAX))
-            q = q_prev + dq / self.H
+            q = q_prev + dq / self.H if q_given is None else q_given[:, t]
             V[:, t] = v_n * vs + vm
             Q[:, t] = q
             v_prev, q_prev = v_n, q
@@ -286,6 +339,8 @@ class HierGen(nn.Module):
         last = (n_obs - 1).clamp(min=0)
         I_tmpl = grid[torch.arange(B, device=dev), last, 1]                     # protocol template: last observed cycle
         dmask = self.discharge_half_mask(discharge_first)
+        Q_tmpl = grid[torch.arange(B, device=dev), last, 2]                     # fullcc: Q template, scaled per cycle
+        s_last = ((Q_tmpl * dmask).amax(1) / soc_span).clamp(min=1e-3)
         soh = torch.full((B, max_cycles), float('nan'), device=dev)
         soh_head = torch.full((B, max_cycles), float('nan'), device=dev)
         life = torch.full((B,), float('nan'), device=dev)
@@ -302,6 +357,13 @@ class HierGen(nn.Module):
                     grids.append(g.cpu())
                 z_next = self.encode(g)
                 s_next = (g[:, 2] * dmask).amax(1) / soc_span
+            elif mode == 'fullcc':
+                s_next = mu
+                q_cc = Q_tmpl * (mu / s_last).clamp(min=0.0).unsqueeze(1)
+                g = self.generate_cycle(h, I_tmpl, dmask, sample=sample, q_given=q_cc)
+                if len(grids) < keep_grids:
+                    grids.append(g.cpu())
+                z_next = self.encode(g)
             else:
                 raise ValueError(mode)
             idx = cur.clamp(max=max_cycles - 1)
@@ -324,4 +386,28 @@ class HierGen(nn.Module):
             hl[any_b] = below.float().argmax(1)[any_b].float() + 1
             out['life_head'] = hl
             out['grids'] = grids
+        if mode == 'fullcc':
+            out['grids'] = grids
         return out
+
+    @torch.no_grad()
+    def free_run_metrics(self, curves, mask, discharge_first, read_idx):
+        """Generate the cycles in read_idx (-1 = none) from the TEACHER-FORCED cycle state, free-running the reading
+        stack with the cycle's true I. gen: V and dQ fed back (full mode); cc: Q given = the cycle's true Q (fullcc with
+        the true capacity). -> fr_v_mae_V, fr_qd_mae (capacity, Q / nominal) for gen; fr_cc_v_mae_V for cc."""
+        B, N = mask.shape
+        valid = read_idx >= 0
+        if not valid.any():
+            return {}
+        grid = curves[:, :, :3]
+        z = self.encode(grid)
+        h = self.cycle_stack(torch.cat([self.start.expand(B, 1, self.D), z[:, :-1]], 1))
+        bi, ri = valid.nonzero(as_tuple=True)
+        ci = read_idx[bi, ri]
+        g, hc = grid[bi, ci], h[bi, ci]
+        dmask = self.discharge_half_mask(discharge_first[bi])
+        gen = self.generate_cycle(hc, g[:, 1], dmask)
+        cc = self.generate_cycle(hc, g[:, 1], dmask, q_given=g[:, 2])
+        qd_true, qd_gen = (g[:, 2] * dmask).amax(1), (gen[:, 2] * dmask).amax(1)
+        return dict(fr_v_mae_V=(gen[:, 0] - g[:, 0]).abs().mean(), fr_qd_mae=(qd_gen - qd_true).abs().mean(),
+                    fr_cc_v_mae_V=(cc[:, 0] - g[:, 0]).abs().mean())

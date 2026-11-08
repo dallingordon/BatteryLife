@@ -66,13 +66,19 @@ p.add_argument('--grad_clip', type=float, default=1.0)
 p.add_argument('--w_soh', type=float, default=1.0)
 p.add_argument('--w_latent', type=float, default=1.0)
 p.add_argument('--w_read', type=float, default=1.0)
+p.add_argument('--unroll_k', type=int, default=0, help='K-pass parallel unroll of the cycle stack on its own zhat after '
+               'a random cut per cell (0 = off); loss on cycles after the cut')
+p.add_argument('--unroll_w', type=float, default=1.0, help='weight of the unroll losses (SOH NLL + w_latent * latent)')
+p.add_argument('--read_vnoise', type=float, default=0.0, help='train noise std on the reading v_prev (normalized V)')
+p.add_argument('--read_qnoise', type=float, default=0.0, help='train noise std on the reading q_prev (Q / nominal)')
+p.add_argument('--fr_cycles', type=int, default=2, help='val: cycles per cell generated free-running (fr_* metrics)')
 p.add_argument('--num_workers', type=int, default=2)
 # evaluation
 p.add_argument('--prefix', type=int, default=100)
 p.add_argument('--eval_every', type=int, default=10)
 p.add_argument('--eval_batch', type=int, default=64)
 p.add_argument('--max_rollout_cycles', type=int, default=4000)
-p.add_argument('--final_modes', nargs='+', default=['latent', 'full'], choices=['latent', 'full'])
+p.add_argument('--final_modes', nargs='+', default=['latent', 'full', 'fullcc'], choices=['latent', 'full', 'fullcc'])
 p.add_argument('--final_splits', nargs='+', default=['val', 'test'])
 p.add_argument('--sample', type=int, default=0, help='full rollout: sample from the predicted Gaussians (else means)')
 p.add_argument('--eval_only', type=int, default=0, help='skip training, load the checkpoint, run the final evaluation')
@@ -182,6 +188,9 @@ def teacher_forced_val(ds):
         b = to_dev(batch)
         ri = pick_read_idx(batch['mask'], args.read_cycles).to(dev)
         out = model(b['curves'], b['mask'], b['soh'], b['discharge_first'], ri)
+        if args.fr_cycles > 0:
+            out.update(model.free_run_metrics(b['curves'], b['mask'], b['discharge_first'],
+                                              pick_read_idx(batch['mask'], args.fr_cycles).to(dev)))
         for k, v in out.items():
             agg[k] = agg.get(k, 0.0) + float(v)
         n += 1
@@ -207,6 +216,8 @@ if not args.eval_only:
             loss = args.w_soh * out['soh_nll'] + args.w_latent * out['latent_mse']
             if 'read_v_nll' in out:
                 loss = loss + args.w_read * (out['read_v_nll'] + out['read_q_nll'])
+            if 'unroll_soh_nll' in out:
+                loss = loss + args.unroll_w * (args.w_soh * out['unroll_soh_nll'] + args.w_latent * out['unroll_latent_mse'])
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
@@ -262,7 +273,7 @@ try:
     for ax, i in zip(axs.ravel(), pick):
         c = test.cells[i]
         ax.plot(np.arange(1, len(c['soh']) + 1), c['soh'], color='k', lw=1, label='true (raw)')
-        for m, col in (('latent', '#1f77b4'), ('full', '#d62728')):
+        for m, col in (('latent', '#1f77b4'), ('full', '#d62728'), ('fullcc', '#2ca02c')):
             if m in ro and 'soh' in ro[m]:
                 s = ro[m]['soh'][i].astype(np.float32)
                 k = np.isfinite(s)

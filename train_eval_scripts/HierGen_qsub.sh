@@ -3,6 +3,9 @@
 #   CYCLE_LAYER READ_LAYER   vanilla (default) | s4d          N_CYCLE N_READ   4 4       D_MODEL 128
 #   EPOCHS 200  LR 5e-4  BATCH_CELLS 8  READ_CYCLES 32  W_SOH 1  W_LATENT 1  W_READ 1  PREFIX 100  MAX_ROLLOUT 4000
 #   SEEDS "2021"   TAG (default <cycle>_<read>)   EXTRA (more train_hiergen.py flags, quoted)
+#   UNROLL_K 0  UNROLL_W 1  READ_VNOISE 0  READ_QNOISE 0  FINAL_MODES "latent full fullcc"  FINAL_SPLITS "val test"
+#   EVAL_ONLY 0 (1 = load checkpoints/HierGen_<TAG>_seed<S>/model.pt, only run the final eval)
+#   LOG_SUFFIX "" (appended to the log name, e.g. _evalcc, so an eval-only rerun does not overwrite the training log)
 # Log: results_logs/HierGen_<TAG>_seed<S>.log ; checkpoint + rollouts + trajectories_test.png in checkpoints/HierGen_<TAG>_seed<S>/
 #$ -P nsf-energize
 #$ -N HierGen
@@ -24,5 +27,8 @@ for seed in ${SEEDS:-2021}; do
     --n_cycle_layers "${N_CYCLE:-4}" --n_read_layers "${N_READ:-4}" --d_model "${D_MODEL:-128}" \
     --epochs "${EPOCHS:-200}" --lr "${LR:-5e-4}" --batch_cells "${BATCH_CELLS:-8}" --read_cycles "${READ_CYCLES:-32}" \
     --w_soh "${W_SOH:-1}" --w_latent "${W_LATENT:-1}" --w_read "${W_READ:-1}" --prefix "${PREFIX:-100}" \
-    --max_rollout_cycles "${MAX_ROLLOUT:-4000}" ${EXTRA} 2>&1 | tee "results_logs/HierGen_${TAG}_seed${seed}.log"
+    --max_rollout_cycles "${MAX_ROLLOUT:-4000}" --unroll_k "${UNROLL_K:-0}" --unroll_w "${UNROLL_W:-1}" \
+    --read_vnoise "${READ_VNOISE:-0}" --read_qnoise "${READ_QNOISE:-0}" --final_modes ${FINAL_MODES:-latent full fullcc} \
+    --final_splits ${FINAL_SPLITS:-val test} --eval_only "${EVAL_ONLY:-0}" \
+    ${EXTRA} 2>&1 | tee "results_logs/HierGen_${TAG}_seed${seed}${LOG_SUFFIX}.log"
 done

@@ -1,0 +1,16 @@
+# HierGen fixes, 11/08 (see claude/hiergen_rollout_diagnosis_11_08.md). Mamba both stacks, 3 seeds.
+# 1. HGcc: eval-only fullcc rollout (capacity from the SOH head, Q coulomb-counted from the scaled template, V generated)
+#    on the existing 10/18 checkpoints -> results_logs/HierGen_vanilla_vanilla_seed<S>_evalcc.log. Test split only.
+# 2. HGu16: retrain with --unroll_k 16 (latent unroll losses after a random cut). Final eval: latent, full, fullcc.
+# 3. HGu16n: + reading-input noise (v_prev 0.05 normalized ~15 mV, q_prev 0.01 Q/nominal; dQ target vs noisy prev).
+# Compare to 10/18 Mamba: test latent 0.526 +- 0.084, full 1.11 +- 0.22. Before submitting: test_hiergen ALL PASSED.
+short	group	script	CYCLE_LAYER	READ_LAYER	TAG	SEEDS	UNROLL_K	READ_VNOISE	READ_QNOISE	EVAL_ONLY	FINAL_MODES	FINAL_SPLITS	LOG_SUFFIX	H_RT	purpose
+HGcc_s2021	hiergen_cc_eval	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	-	2021	-	-	-	1	fullcc	test	_evalcc	04:00:00	eval-only: fullcc rollout on the 10/18 Mamba checkpoint (no retraining)
+HGcc_s42	hiergen_cc_eval	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	-	42	-	-	-	1	fullcc	test	_evalcc	04:00:00	eval-only: fullcc rollout on the 10/18 Mamba checkpoint (no retraining)
+HGcc_s2024	hiergen_cc_eval	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	-	2024	-	-	-	1	fullcc	test	_evalcc	04:00:00	eval-only: fullcc rollout on the 10/18 Mamba checkpoint (no retraining)
+HGu16_s2021	hiergen_unroll	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16	2021	16	-	-	-	-	-	-	36:00:00	Mamba HierGen + 16-pass latent unroll
+HGu16_s42	hiergen_unroll	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16	42	16	-	-	-	-	-	-	36:00:00	Mamba HierGen + 16-pass latent unroll
+HGu16_s2024	hiergen_unroll	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16	2024	16	-	-	-	-	-	-	36:00:00	Mamba HierGen + 16-pass latent unroll
+HGu16n_s2021	hiergen_unroll_noise	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n	2021	16	0.05	0.01	-	-	-	-	36:00:00	Mamba HierGen + 16-pass latent unroll + reading-input noise
+HGu16n_s42	hiergen_unroll_noise	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n	42	16	0.05	0.01	-	-	-	-	36:00:00	Mamba HierGen + 16-pass latent unroll + reading-input noise
+HGu16n_s2024	hiergen_unroll_noise	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n	2024	16	0.05	0.01	-	-	-	-	36:00:00	Mamba HierGen + 16-pass latent unroll + reading-input noise

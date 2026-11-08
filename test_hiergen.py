@@ -11,7 +11,9 @@ Checks for HierGen (models/HierGen.py, data_provider/data_loader_gen.py, train_h
   3. stepping the reading stack with the true previous values == the teacher-forced forward (so generation runs the
      model it was trained as); stepping the cycle stack == the parallel h
   4. rollout (latent + full) runs, cells are independent of their batch-mates, life is the first cycle <= 0.8
-  5. every parameter gets a gradient
+  5. every parameter gets a gradient (with the 11/08 unroll + reading-noise losses on)
+  6. (11/08) generate_cycle with a given Q (fullcc), unrolled_h == free-running step mode for cycles <= cut + K,
+     fullcc rollout Q = template x (predicted SOH / last observed SOH), free_run_metrics runs
 """
 import argparse
 from types import SimpleNamespace
@@ -141,6 +143,16 @@ def run_checks(layer, dev):
     check('generate_cycle: generated V equals the forward mean on its own generated history',
           rel(og[..., 0], vn) < 1e-3, f'(rel {rel(og[..., 0], vn):.1e})')
 
+    # 3d. generate_cycle with a given Q (fullcc): Q is exactly the given one, V == forward mean on (gen V, given Q)
+    with torch.no_grad():
+        qg = g[:, 2] * 0.9
+        genq = m.generate_cycle(hc, g[:, 1], dmask, q_given=qg)
+        ogq, _ = read_out(torch.stack([genq[:, 0], g[:, 1], qg], 1), hc, dfirst)
+        vnq = (genq[:, 0] - m.chan_mean[0, 0, 0]) / m.chan_std[0, 0, 0]
+    check('generate_cycle(q_given): Q channel == given Q', torch.equal(genq[:, 2], qg))
+    check('generate_cycle(q_given): generated V equals the forward mean on (own V, given Q)',
+          rel(ogq[..., 0], vnq) < 1e-3, f'(rel {rel(ogq[..., 0], vnq):.1e})')
+
     # 3c. cycle stack stepping == parallel
     with torch.no_grad():
         z = m.encode(curves[:, :, :3])
@@ -154,11 +166,34 @@ def run_checks(layer, dev):
         hh = torch.stack(hh, 1)
     check('cycle stack: step == parallel h', rel(hh, h) < 1e-3, f'(rel {rel(hh, h):.1e})')
 
+    # 3e. unrolled_h: exact free-running h (step mode, zhat fed back from the cut on) for cycles <= cut + K; causal
+    K = 3
+    cut = torch.tensor([3, 5, 8], device=dev)
+    with torch.no_grad():
+        z = m.encode(curves[:, :, :3])
+        hu = m.unrolled_h(z, cut, K)
+        s = m.cycle_stack.init_state(B, dev)
+        hs, s = m.cycle_stack.step(m.start.expand(B, m.D), s)
+        ref = [hs]
+        for c in range(N - 1):
+            x = torch.where((c < cut).unsqueeze(1), z[:, c], m.latent_head(hs))
+            hs, s = m.cycle_stack.step(x, s)
+            ref.append(hs)
+        ref = torch.stack(ref, 1)
+        z2 = z.clone()
+        z2[:, 1] += 1.0
+        hu2 = m.unrolled_h(z2, cut, K)
+    exact = max(rel(hu[b, :int(cut[b]) + K + 1], ref[b, :int(cut[b]) + K + 1]) for b in range(B))
+    check(f'unrolled_h (K={K}) == free-running step mode for cycles <= cut + K', exact < 1e-3, f'(rel {exact:.1e})')
+    check('... and only approximate beyond (the test can tell)', rel(hu[0, 3 + K + 1:], ref[0, 3 + K + 1:]) > 1e-4)
+    check('unrolled_h causal: z of cycle 1 does not change h for cycles 0..1',
+          torch.allclose(hu[:, :2], hu2[:, :2], atol=1e-5) and not torch.allclose(hu[:, 2], hu2[:, 2]))
+
     # 4. rollout
     span = torch.ones(B, device=dev)
     mask2 = mask.clone()
     mask2[1, 7:] = False                                                    # cell 1 has only 7 observed cycles
-    for mode in ('latent', 'full'):
+    for mode in ('latent', 'full', 'fullcc'):
         with torch.no_grad():
             r = m.rollout(curves, mask2, dfirst, span, prefix=10, max_cycles=40, mode=mode)
             r1 = m.rollout(curves[1:2], mask2[1:2], dfirst[1:2], span[1:2], prefix=10, max_cycles=40, mode=mode)
@@ -175,11 +210,35 @@ def run_checks(layer, dev):
             ok_life &= (torch.isnan(L[b]).item() if len(below) == 0 else L[b].item() == below[0].item() + 1)
         check(f'rollout {mode}: life = first generated cycle with SOH <= 0.8 (1-based)', bool(ok_life), f'{L.tolist()}')
 
-    # 5. gradients
+    # 4b. fullcc: first generated cycle's Q = last observed Q x (its SOH / last observed SOH)
+    with torch.no_grad():
+        r = m.rollout(curves, mask2, dfirst, span, prefix=10, max_cycles=40, mode='fullcc', keep_grids=1)
+    n_obs = mask2.sum(1).clamp(max=10)
+    ok = True
+    for b in range(B):
+        qt = curves[b, n_obs[b] - 1, 2]
+        s_last = (qt * m.discharge_half_mask(dfirst)[b]).amax() / span[b]
+        qg = r['grids'][0][b, 2].to(dev)
+        expect = qt * (r['soh'][b, n_obs[b]] / s_last).clamp(min=0)
+        ok &= bool(torch.allclose(qg, expect, atol=1e-5))
+    check('rollout fullcc: generated Q = template x predicted SOH / last observed SOH', ok)
+
+    # 4c. free-running metrics
+    with torch.no_grad():
+        fr = m.free_run_metrics(curves, mask, dfirst, torch.tensor([[0, 4], [2, -1], [5, 9]], device=dev))
+    check('free_run_metrics finite', set(fr) == {'fr_v_mae_V', 'fr_qd_mae', 'fr_cc_v_mae_V'} and
+          all(torch.isfinite(v) for v in fr.values()), f'{ {k: round(float(v), 4) for k, v in fr.items()} }')
+
+    # 5. gradients, with the unroll + reading-noise losses on
+    torch.manual_seed(1)
+    m = HierGen(cfg(layer, P, unroll_k=3, read_vnoise=0.05, read_qnoise=0.01), torch.tensor([3.3, 0.0, 0.5]),
+                torch.tensor([0.3, 1.0, 0.3])).to(dev)
     m.train()
     ri = torch.tensor([[0, 3, 11], [2, -1, -1], [5, 6, 7]], device=dev)
     out = m(curves, mask, soh, dfirst, ri)
-    loss = out['soh_nll'] + out['latent_mse'] + out['read_v_nll'] + out['read_q_nll']
+    check('unroll losses present', {'unroll_soh_nll', 'unroll_soh_mae', 'unroll_latent_mse'} <= set(out))
+    loss = out['soh_nll'] + out['latent_mse'] + out['read_v_nll'] + out['read_q_nll'] + out['unroll_soh_nll'] + \
+        out['unroll_latent_mse']
     loss.backward()
     nog = [n for n, q in m.named_parameters() if q.requires_grad and (q.grad is None or q.grad.abs().sum() == 0)]
     check('every parameter gets a gradient', not nog, f'{nog[:5]}')
@@ -222,7 +281,7 @@ if cli.data:
           f'{ {k: round(float(v), 3) for k, v in out.items()} }')
     with torch.no_grad():
         span = torch.tensor([tr.cells[i]['soc_span'] for i in range(4)], device=dev)
-        for mode in ('latent', 'full'):
+        for mode in ('latent', 'full', 'fullcc'):
             r = m.rollout(b['curves'], b['mask'], b['discharge_first'], span, prefix=100, max_cycles=110, mode=mode)
             check(f'real rollout {mode} (10 cycles past 100)', bool(torch.isfinite(r['soh'][:, 100:110]).any()))
 
