@@ -1,0 +1,44 @@
+=== 10/18 (night) ===
+
+--- Where the tau setups stand (Li-ion test MAPE) ---
+S4D grid: old 0.203 | tdtconst 0.208 | tdtreal 0.261 | real+logtau 0.267
+S4D raw records: const 0.260 +- 0.015 (3 seeds) | real 0.252 (2 seeds; seed 2024 = 8161142, finishing)
+Mamba grid: old 0.294 | const 0.260 | real 0.260.  Mamba raw: Mrc_s2021/s42 running, Mrc_s2024 + Mrr x3 queued
+-> only per-cycle-normalized setups (grid) are good for S4D. Raw runs stop at epochs 1-5 (overfit / patience?).
+
+--- New code (all committed + pulled on SCC) ---
+1. RAW_TAU=cycle_norm: tau = 300 * step / cycle duration (rests included, option a), boundary tau RAW_TAU_BND 1 vs 0.
+   sweep experiments/sweep_10_18_cnorm.tsv (12 jobs S4cn1/S4cn0/Mcn1/Mcn0) -- NOT SUBMITTED YET.
+   Test first: qsub -N test_cnorm -o test_cnorm.qlog -v RAW_TAU=cycle_norm,NO_GPU=1 train_eval_scripts/test_raw_qsub.sh
+   (8176272 submitted 10/18 22:45 -- check test_cnorm.qlog: ALL PASSED + "[raw val] tau cycle_norm ... per-cycle sum" ~300)
+   then: bash train_eval_scripts/submit_from_config.sh experiments/sweep_10_18_cnorm.tsv
+   Option (b) noted, not built: normalize charge / discharge halves separately (150 + 150).
+2. --lradj cosine (per-step, warmup): sweep_10_18_s4cos.tsv, 9 jobs 8176262-70 (S4c1e4/3e4/1e3 x 3 seeds), queued.
+   Check first log: "lr schedule: cosine | ..." and lr falling to floor by epoch 20.
+3. capacity_check.py: label = first cycle with max-discharge-capacity / nominal / SOC span <= 0.8 (extrapolated if last
+   SOH in (0.8, 0.825); XJTU interpolated). MATR_b1c5: label 1071 == recomputed 1071. Plots in figures/capacity_check/.
+   All cells: qsub train_eval_scripts/capacity_check_qsub.sh (not run).
+4. HierGen (generative, SaShiMi-style): models/HierGen.py, data_provider/data_loader_gen.py, precompute_gen_cells.py,
+   train_hiergen.py, test_hiergen.py. Cycle Mamba (1 step/cycle, SOH + latent heads) + reading Mamba (1 step/grid
+   point, conditioned on cycle state, predicts V and dQ given I). Rollout from cycle 100 to SOH <= 0.8, latent vs full
+   (ablation, same weights). Compare with baseline AT PREFIX 100 (0.203 averages prefixes 1..100).
+   Project doc: claude/hiergen_generative_10_18.md
+
+--- Queue state 10/18 23:42 + what to do next ---
+8177989 gencache    running (CPU)  -> precompute_gen.qlog, look for "[check] ... OK"
+8177991 test_hiergen running WITHOUT the cache (hold came too late). Model checks valid; --data part will fail (expected).
+        -> read test_hiergen.qlog, then after gencache finishes RERUN: qsub train_eval_scripts/test_hiergen_qsub.sh
+8177992-97 HGm/HGs x3 seeds: USER HOLD. Release only after the rerun ends ALL PASSED:
+        qrls 8177992 8177993 8177994 8177995 8177996 8177997
+S4D arch ablation (sweep_10_18_s4arch.tsv, 8177164-8177200): seed 2021 of each of 12 arms queued; seeds 42/2024 on
+        USER HOLD (seed-2021 screen). Release seeds only for arms that match/beat S4aBase:
+        held ids: 8177165 66 | 68 69 | 71 72 | 74 75 | 77 78 | 80 81 | 83 84 | 86 87 | 90 91 | 93 94 | 96 97 | 99 8177200
+        (order per arm: Base, L8, L16, L24, Dm32, Dm128, Ex1, Ex4, Ds32, Ds64, Ds98, DtStd)
+dTW*/dsIBpL05 (8170319-25): unknown to these notes, probably another project -- left alone.
+Lower priority without holding: qalter -p -100 <ids>
+
+--- Readouts when done ---
+cosine:   python3 collect_results.py --logs 'results_logs/LongMamba_Pooled_s4d_*cos20w1*.log' --out_prefix results_logs/s4cos
+raw:      python3 collect_results.py --logs 'results_logs/LongMamba_Pooled_raw_*.log' --out_prefix results_logs/raw
+arch:     python3 collect_results.py --logs 'results_logs/LongMamba_Pooled_s4d_breadout_rfirst*scan*_Lionly_seed*.log' --out_prefix results_logs/s4arch
+HierGen:  grep "HierGen result" results_logs/HierGen_*.log ; checkpoints/HierGen_<tag>_seed<S>/trajectories_test.png

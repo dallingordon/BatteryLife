@@ -1,0 +1,23 @@
+C rate
+
+Time to charge and discharge 
+How fast its being charged. 
+
+Manually detect what a cycle is. 
+
+<1000 cells
+ 
+There are similar diagnostic offline testing….
+The “rests” are resistance calculations. For sure in Stanford. 
+Or other similar tests happening in them.  
+Formation; for the first couple cycles, you want reactions to be slow. 
+
+Little to be gained from 
+
+Feature engineering for machine learning enabled early prediction of battery lifetime. 
+
+Capacity and energy simultaneously
+
+It matters the voltage it’s at.  
+If they were coin cells.  
+Mili amp hour cells…get rid off 
