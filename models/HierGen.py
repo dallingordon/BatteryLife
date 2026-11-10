@@ -38,6 +38,14 @@ Training additions (11/08, all off by default):
                  zhat of pass k-1 for cycles >= cut; after K passes h is exactly the free-running h for cycles
                  <= cut + K, a K-deep approximation beyond). Passes 1..K-1 without grad. Losses unroll_soh_nll /
                  unroll_latent_mse on cycles > cut. Targets the latent rollout's collapse to a population-mean fade.
+    gen_k K      (11/10) the FULL-mode analogue: from the teacher-forced state at a random cut per cell, generate K
+                 cycles exactly as rollout(mode='full', prefix=cut) does (reading stack, protocol I = the last real
+                 cycle before the cut; no grad), re-encode the generated grids WITH grad, run the cycle stack on
+                 [real z < cut, generated z cut..cut+K-1] with grad, and train on the REAL cycles cut+1..cut+K:
+                 gen_soh_nll (SOH head) + gen_read_v_nll / gen_read_q_nll (teacher-forced reading loss on the real
+                 curves, conditioned on the state that came from the generated history). Teaches the cycle stack /
+                 encoder / reading stack to continue from the model's own generated curves (11/08: encode(generated
+                 grid) is out of distribution and full-mode SOH drifts to ~1.3). No backprop through generation.
     read_vnoise / read_qnoise   Gaussian noise on the reading stack's v_prev (normalized V) / q_prev (Q / nominal)
                  inputs; the dQ target is taken relative to the NOISY q_prev, so the model learns to correct drift.
 Both stacks run recurrently in rollout (S4D: explicit complex recurrence; Mamba: mamba_ssm's step()).
@@ -174,6 +182,8 @@ class HierGen(nn.Module):
         self.unroll_k = int(getattr(cfg, 'unroll_k', 0))
         self.read_vnoise = float(getattr(cfg, 'read_vnoise', 0.0))
         self.read_qnoise = float(getattr(cfg, 'read_qnoise', 0.0))
+        self.gen_k = int(getattr(cfg, 'gen_k', 0))
+        self.gen_read = int(getattr(cfg, 'gen_read', 4))
         self.read_head = nn.Linear(D, 4)          # V mean, V logvar, dQ mean, dQ logvar
 
     # -------------------------------------------------------------------------------------------- pieces
@@ -228,6 +238,68 @@ class HierGen(nn.Module):
         x = torch.where(keep, z, zhat)
         return self.cycle_stack(torch.cat([start, x[:, :-1]], 1))
 
+    def generated_h(self, z, grid, discharge_first, cut, K, h0):
+        """Cycle-stack states with cycles cut[b] .. cut[b]+K-1 replaced by the model's own GENERATED cycles.
+        z [B, N, D] (with grad), grid [B, N, 3, P], cut [B] long in [1, n-1], h0 [B, N, D] teacher-forced h.
+        Generation = rollout(mode='full', prefix=cut): cycle cut is generated from h0[:, cut] with the protocol I of
+        cycle cut-1, encoded, fed to the cycle stack, the next cycle generated from the new state, ... (no grad).
+        The generated grids are then re-encoded with grad and one cycle-stack pass with grad gives hg.
+        -> hg [B, L, D] (L = max(cut) + K + 1 capped at N; hg[:, j] for cut < j <= cut + K is the state after the
+           generated cycles cut..j-1), G [B, K, 3, P] the generated grids."""
+        B, N, D = z.shape
+        dev = z.device
+        L = int(min(N, int(cut.max()) + K + 1))
+        rows = torch.arange(B, device=dev)
+        kk = torch.arange(K, device=dev)
+        idx = cut.unsqueeze(1) + kk.unsqueeze(0)                                # [B, K] cycles replaced
+        ok = idx < L
+        idx_c = idx.clamp(max=L - 1)
+        dmask = self.discharge_half_mask(discharge_first)
+        I_tmpl = grid[rows, (cut - 1).clamp(min=0), 1]
+        start = self.start.expand(B, 1, D)
+        gens = []
+        with torch.no_grad():
+            x = z[:, :L].detach().clone()
+            h = h0[:, :L].detach()
+            for k in range(K):
+                g = self.generate_cycle(h[rows, idx_c[:, k]], I_tmpl, dmask)
+                gens.append(g)
+                if k < K - 1:
+                    zk = self.encode(g)
+                    x[rows[ok[:, k]], idx_c[ok[:, k], k]] = zk[ok[:, k]]
+                    h = self.cycle_stack(torch.cat([start, x[:, :-1]], 1))
+        G = torch.stack(gens, 1)                                                # [B, K, 3, P]
+        zg = self.encode(G)                                                     # [B, K, D], grad into the encoder
+        x = z[:, :L].clone()
+        bi = rows.unsqueeze(1).expand(B, K)
+        x[bi[ok], idx_c[ok]] = zg[ok]
+        hg = self.cycle_stack(torch.cat([start, x[:, :-1]], 1))
+        return hg, G
+
+    def _read_loss(self, g, hc, dmask, prefix=''):
+        """Teacher-forced reading loss on real grids g [M, 3, P] conditioned on cycle states hc [M, D]."""
+        feats, q_prev = self.read_features(g[:, 0], g[:, 2], g[:, 1], dmask)
+        if self.training and (self.read_vnoise > 0 or self.read_qnoise > 0):
+            first_of_half = torch.zeros_like(q_prev, dtype=torch.bool)
+            first_of_half[:, 0] = True
+            first_of_half[:, self.H] = True
+            vn_noise = self.read_vnoise * torch.randn_like(q_prev)
+            vn_noise[:, 0] = 0.0                                                    # v_prev at t=0 stays 0
+            q_noise = (self.read_qnoise * torch.randn_like(q_prev)).masked_fill(first_of_half, 0.0)
+            q_prev = q_prev + q_noise                                               # dQ target vs the NOISY prev
+            feats = torch.cat([feats[..., :1] + vn_noise.unsqueeze(-1), q_prev.unsqueeze(-1), feats[..., 2:]], -1)
+        x = self.read_in(feats) + self.pos.weight.unsqueeze(0) + self.read_cond(hc).unsqueeze(1)
+        o = self.read_head(self.read_stack(x))                              # [M, P, 4]
+        vt, qt = self.read_targets(g[:, 0], g[:, 2], q_prev)
+        out = {prefix + 'read_v_nll': gaussian_nll(o[..., 0], o[..., 1], vt).mean(),
+               prefix + 'read_q_nll': gaussian_nll(o[..., 2], o[..., 3], qt).mean(),
+               prefix + 'read_v_mae_V': ((o[..., 0] - vt).abs().mean() * self.chan_std[0, 0, 0])}
+        # capacity of the cycle from the teacher-forced dQ predictions vs the true grid Q at the end of discharge
+        qd_pred = ((o[..., 2] / self.H + q_prev) * dmask).amax(1)
+        qd_true = (g[:, 2] * dmask).amax(1)
+        out[prefix + 'read_qd_mae'] = (qd_pred - qd_true).abs().mean()
+        return out
+
     # -------------------------------------------------------------------------------------------- training
     def forward(self, curves, mask, soh, discharge_first, read_idx):
         """curves [B, N, 4, P], mask [B, N], soh [B, N], discharge_first [B], read_idx [B, R] (cycles for the reading
@@ -259,29 +331,28 @@ class HierGen(nn.Module):
         if valid.any():
             bi, ri = valid.nonzero(as_tuple=True)
             ci = read_idx[bi, ri]
-            g = grid[bi, ci]                                                    # [M, 3, P]
-            hc = h[bi, ci]                                                      # [M, D]
-            dmask = self.discharge_half_mask(discharge_first[bi])
-            feats, q_prev = self.read_features(g[:, 0], g[:, 2], g[:, 1], dmask)
-            if self.training and (self.read_vnoise > 0 or self.read_qnoise > 0):
-                first_of_half = torch.zeros_like(q_prev, dtype=torch.bool)
-                first_of_half[:, 0] = True
-                first_of_half[:, self.H] = True
-                vn_noise = self.read_vnoise * torch.randn_like(q_prev)
-                vn_noise[:, 0] = 0.0                                                    # v_prev at t=0 stays 0
-                q_noise = (self.read_qnoise * torch.randn_like(q_prev)).masked_fill(first_of_half, 0.0)
-                q_prev = q_prev + q_noise                                               # dQ target vs the NOISY prev
-                feats = torch.cat([feats[..., :1] + vn_noise.unsqueeze(-1), q_prev.unsqueeze(-1), feats[..., 2:]], -1)
-            x = self.read_in(feats) + self.pos.weight.unsqueeze(0) + self.read_cond(hc).unsqueeze(1)
-            o = self.read_head(self.read_stack(x))                              # [M, P, 4]
-            vt, qt = self.read_targets(g[:, 0], g[:, 2], q_prev)
-            out['read_v_nll'] = gaussian_nll(o[..., 0], o[..., 1], vt).mean()
-            out['read_q_nll'] = gaussian_nll(o[..., 2], o[..., 3], qt).mean()
-            out['read_v_mae_V'] = ((o[..., 0] - vt).abs().mean() * self.chan_std[0, 0, 0])
-            # capacity of the cycle from the teacher-forced dQ predictions vs the true grid Q at the end of discharge
-            qd_pred = ((o[..., 2] / self.H + q_prev) * dmask).amax(1)
-            qd_true = (g[:, 2] * dmask).amax(1)
-            out['read_qd_mae'] = (qd_pred - qd_true).abs().mean()
+            out.update(self._read_loss(grid[bi, ci], h[bi, ci], self.discharge_half_mask(discharge_first[bi])))
+        if self.gen_k > 0:
+            K = self.gen_k
+            n = mask.sum(1)
+            cut = (torch.rand(B, device=z.device) * (n - 1).clamp(min=1).float()).long() + 1     # in [1, n-1]
+            hg, _ = self.generated_h(z, grid, discharge_first, cut, K, h0=h)
+            L = hg.shape[1]
+            j = torch.arange(L, device=z.device).unsqueeze(0)
+            gm = m[:, :L] * ((j > cut.unsqueeze(1)) & (j <= (cut + K).unsqueeze(1))).float()
+            den = gm.sum().clamp(min=1.0)
+            mu_g, lv_g = self.soh_out(hg)
+            out['gen_soh_nll'] = (gaussian_nll(mu_g, lv_g, soh[:, :L]) * gm).sum() / den
+            out['gen_soh_mae'] = ((mu_g - soh[:, :L]).abs() * gm).sum() / den
+            # reading loss on up to gen_read of the real cycles cut+1..cut+K per cell, from the generated-history state
+            score = torch.rand(gm.shape, device=z.device).masked_fill(gm == 0, -1.0)
+            top = score.topk(min(self.gen_read, L), dim=1)
+            sel = top.values >= 0
+            if sel.any():
+                gb = torch.arange(B, device=z.device).unsqueeze(1).expand_as(top.indices)[sel]
+                gc = top.indices[sel]
+                out.update(self._read_loss(grid[gb, gc], hg[gb, gc], self.discharge_half_mask(discharge_first[gb]),
+                                           prefix='gen_'))
         return out
 
     # -------------------------------------------------------------------------------------------- generation

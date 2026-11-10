@@ -14,6 +14,8 @@ Checks for HierGen (models/HierGen.py, data_provider/data_loader_gen.py, train_h
   5. every parameter gets a gradient (with the 11/08 unroll + reading-noise losses on)
   6. (11/08) generate_cycle with a given Q (fullcc), unrolled_h == free-running step mode for cycles <= cut + K,
      fullcc rollout Q = template x (predicted SOH / last observed SOH), free_run_metrics runs
+  7. (11/10) generated_h: its generated grids and SOH-head means == rollout(mode='full', prefix=cut) for the K cycles
+     after the cut; real cycles >= cut never reach hg up to cut + K; no grad through generation, grad into the encoder
 """
 import argparse
 from types import SimpleNamespace
@@ -229,16 +231,51 @@ def run_checks(layer, dev):
     check('free_run_metrics finite', set(fr) == {'fr_v_mae_V', 'fr_qd_mae', 'fr_cc_v_mae_V'} and
           all(torch.isfinite(v) for v in fr.values()), f'{ {k: round(float(v), 4) for k, v in fr.items()} }')
 
+    # 4d. generated_h == full rollout from the same cut
+    K = 3
+    cut = torch.tensor([4, 2, 6], device=dev)
+    with torch.no_grad():
+        z = m.encode(curves[:, :, :3])
+        h0 = m.cycle_stack(torch.cat([m.start.expand(B, 1, m.D), z[:, :-1]], 1))
+        hg, G = m.generated_h(z, curves[:, :, :3], dfirst, cut, K, h0)
+        maskc = torch.arange(N, device=dev).unsqueeze(0) < cut.unsqueeze(1)     # n_obs = cut per cell
+        r = m.rollout(curves, maskc, dfirst, span, prefix=N, max_cycles=N, mode='full', threshold=-1.0, keep_grids=K)
+        mu_g, _ = m.soh_out(hg)
+    gerr = max(rel(G[:, k], r['grids'][k].to(dev)) for k in range(K))
+    serr = max(abs(float(mu_g[b, cut[b] + k] - r['soh_head'][b, cut[b] + k])) for b in range(B) for k in range(K))
+    check(f'generated_h grids == rollout full (prefix = cut, K={K})', gerr < 1e-3, f'(rel {gerr:.1e})')
+    check('generated_h SOH-head means == rollout full soh_head on the K generated cycles', serr < 1e-3, f'({serr:.1e})')
+    c2 = curves.clone()
+    for b in range(B):
+        c2[b, cut[b]:cut[b] + K, 0] += 0.5 * torch.randn_like(c2[b, cut[b]:cut[b] + K, 0])   # real cycles cut..cut+K-1
+    with torch.no_grad():
+        z2 = m.encode(c2[:, :, :3])
+        hg2, _ = m.generated_h(z2, c2[:, :, :3], dfirst, cut, K, h0)
+    leak = max(rel(hg2[b, :cut[b] + K + 1], hg[b, :cut[b] + K + 1]) for b in range(B))
+    check('generated_h: real cycles cut..cut+K-1 do not reach hg up to cut + K', leak < 1e-5, f'(rel {leak:.1e})')
+    c3 = curves.clone()
+    c3[0, cut[0] - 1, 0] += 0.5 * torch.randn_like(c3[0, cut[0] - 1, 0])
+    with torch.no_grad():
+        z3 = m.encode(c3[:, :, :3])
+        h03 = m.cycle_stack(torch.cat([m.start.expand(B, 1, m.D), z3[:, :-1]], 1))
+        hg3, _ = m.generated_h(z3, c3[:, :, :3], dfirst, cut, K, h03)
+    check('... and the last real cycle before the cut does', rel(hg3[0, cut[0]:cut[0] + K + 1], hg[0, cut[0]:cut[0] + K + 1]) > 1e-4)
+    zg = m.encode(curves[:, :, :3])
+    hgg, Gg = m.generated_h(zg, curves[:, :, :3], dfirst, cut, K, h0)
+    check('generated_h: no grad through the generated grids, hg has grad', (not Gg.requires_grad) and hgg.requires_grad)
+
     # 5. gradients, with the unroll + reading-noise losses on
     torch.manual_seed(1)
-    m = HierGen(cfg(layer, P, unroll_k=3, read_vnoise=0.05, read_qnoise=0.01), torch.tensor([3.3, 0.0, 0.5]),
+    m = HierGen(cfg(layer, P, unroll_k=3, read_vnoise=0.05, read_qnoise=0.01, gen_k=2, gen_read=2),
+                torch.tensor([3.3, 0.0, 0.5]),
                 torch.tensor([0.3, 1.0, 0.3])).to(dev)
     m.train()
     ri = torch.tensor([[0, 3, 11], [2, -1, -1], [5, 6, 7]], device=dev)
     out = m(curves, mask, soh, dfirst, ri)
     check('unroll losses present', {'unroll_soh_nll', 'unroll_soh_mae', 'unroll_latent_mse'} <= set(out))
+    check('gen losses present', {'gen_soh_nll', 'gen_soh_mae', 'gen_read_v_nll', 'gen_read_q_nll'} <= set(out))
     loss = out['soh_nll'] + out['latent_mse'] + out['read_v_nll'] + out['read_q_nll'] + out['unroll_soh_nll'] + \
-        out['unroll_latent_mse']
+        out['unroll_latent_mse'] + out['gen_soh_nll'] + out['gen_read_v_nll'] + out['gen_read_q_nll']
     loss.backward()
     nog = [n for n, q in m.named_parameters() if q.requires_grad and (q.grad is None or q.grad.abs().sum() == 0)]
     check('every parameter gets a gradient', not nog, f'{nog[:5]}')

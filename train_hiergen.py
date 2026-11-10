@@ -8,7 +8,10 @@ Training (teacher forcing), per step a batch of cells, each with its WHOLE histo
     loss = w_soh * SOH NLL (every cycle, from the state before it)
          + w_latent * ||zhat_c - sg(z_c)||^2 (every cycle)
          + w_read * (V NLL + dQ NLL) on --read_cycles random cycles per cell (300-step reading sequences)
-Model selection: val EOL MAPE of the LATENT rollout from cycle --prefix (every --eval_every epochs; cheap).
+         (11/10, --gen_k K) + gen_w * (w_soh * gen SOH NLL + w_read * gen reading NLL): K cycles generated free-running
+         from a random cut (as the full rollout does), cycle stack re-run on them, loss on the real next K cycles
+Model selection (--select_mode): val EOL MAPE of the LATENT rollout from cycle --prefix (default; cheap), or of the
+FULL rollout on a fixed random subset of --select_cells val cells (every --eval_every epochs).
 End of training (best checkpoint): latent and full rollouts on val and test -> EOL MAPE / 15%-acc / MAE, seen / unseen,
 per dataset. EOL = first generated cycle with SOH <= 0.8 (same threshold as the label); never reached by
 --max_rollout_cycles -> counted as --max_rollout_cycles (and reported).
@@ -69,6 +72,11 @@ p.add_argument('--w_read', type=float, default=1.0)
 p.add_argument('--unroll_k', type=int, default=0, help='K-pass parallel unroll of the cycle stack on its own zhat after '
                'a random cut per cell (0 = off); loss on cycles after the cut')
 p.add_argument('--unroll_w', type=float, default=1.0, help='weight of the unroll losses (SOH NLL + w_latent * latent)')
+p.add_argument('--gen_k', type=int, default=0, help='generated-history unroll: K cycles generated free-running from a '
+               'random cut per cell (as rollout full), loss on the real next K cycles (0 = off)')
+p.add_argument('--gen_w', type=float, default=1.0, help='weight of the gen losses (SOH NLL + w_read * reading NLL)')
+p.add_argument('--gen_read', type=int, default=4, help='real cycles per cell (of the K after the cut) with the gen '
+               'reading loss')
 p.add_argument('--read_vnoise', type=float, default=0.0, help='train noise std on the reading v_prev (normalized V)')
 p.add_argument('--read_qnoise', type=float, default=0.0, help='train noise std on the reading q_prev (Q / nominal)')
 p.add_argument('--fr_cycles', type=int, default=2, help='val: cycles per cell generated free-running (fr_* metrics)')
@@ -78,6 +86,9 @@ p.add_argument('--prefix', type=int, default=100)
 p.add_argument('--eval_every', type=int, default=10)
 p.add_argument('--eval_batch', type=int, default=64)
 p.add_argument('--max_rollout_cycles', type=int, default=4000)
+p.add_argument('--select_mode', default='latent', choices=['latent', 'full'],
+               help='checkpoint selection: val latent rollout MAPE (all val cells) or val full rollout MAPE (subset)')
+p.add_argument('--select_cells', type=int, default=32, help='select_mode full: val cells in the fixed selection subset')
 p.add_argument('--final_modes', nargs='+', default=['latent', 'full', 'fullcc'], choices=['latent', 'full', 'fullcc'])
 p.add_argument('--final_splits', nargs='+', default=['val', 'test'])
 p.add_argument('--sample', type=int, default=0, help='full rollout: sample from the predicted Gaussians (else means)')
@@ -204,6 +215,13 @@ def fmt(name, r):
 
 
 best, best_epoch = float('inf'), -1
+if args.select_mode == 'full':
+    import copy
+    val_sel = copy.copy(val)
+    val_sel._mm = {}
+    pick = np.random.RandomState(0).permutation(len(val.cells))[:args.select_cells]    # same subset for every seed
+    val_sel.cells = [val.cells[i] for i in sorted(pick)]
+    print(f'selection: val FULL rollout MAPE on {len(val_sel.cells)} fixed val cells', flush=True)
 ckpt_path = os.path.join(ckpt_dir, 'model.pt')
 if not args.eval_only:
     step = 0
@@ -218,6 +236,11 @@ if not args.eval_only:
                 loss = loss + args.w_read * (out['read_v_nll'] + out['read_q_nll'])
             if 'unroll_soh_nll' in out:
                 loss = loss + args.unroll_w * (args.w_soh * out['unroll_soh_nll'] + args.w_latent * out['unroll_latent_mse'])
+            if 'gen_soh_nll' in out:
+                gl = args.w_soh * out['gen_soh_nll']
+                if 'gen_read_v_nll' in out:
+                    gl = gl + args.w_read * (out['gen_read_v_nll'] + out['gen_read_q_nll'])
+                loss = loss + args.gen_w * gl
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
@@ -238,11 +261,18 @@ if not args.eval_only:
             print(f'  val teacher-forced: ' + ' | '.join(f'{k} {v:.4f}' for k, v in tf.items()), flush=True)
             print('  ' + fmt(f'val latent rollout (prefix {args.prefix}) epoch {epoch}', r) + f' | {time.time() - t1:.0f}s',
                   flush=True)
+            if args.select_mode == 'full':
+                t2 = time.time()
+                rs, _ = evaluate(val_sel, 'full', args.max_rollout_cycles)
+                for k in ('full', 'full_head'):
+                    print('  ' + fmt(f'val-sel {k} rollout (prefix {args.prefix}) epoch {epoch}', rs[k]) +
+                          f' | {time.time() - t2:.0f}s', flush=True)
+                r = rs['full']
             if r['MAPE'] < best:
                 best, best_epoch = r['MAPE'], epoch
                 torch.save(dict(model=model.state_dict(), args=vars(args), mean=mean, std=std, epoch=epoch), ckpt_path)
-                print(f'  saved best (val latent MAPE {best:.4f}) -> {ckpt_path}', flush=True)
-    print(f'best epoch {best_epoch} | val latent MAPE {best:.4f}', flush=True)
+                print(f'  saved best (val {args.select_mode} MAPE {best:.4f}) -> {ckpt_path}', flush=True)
+    print(f'best epoch {best_epoch} | val {args.select_mode} MAPE {best:.4f}', flush=True)
 
 ck = torch.load(ckpt_path, map_location=dev, weights_only=False)
 model.load_state_dict(ck['model'])

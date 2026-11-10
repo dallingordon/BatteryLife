@@ -1,0 +1,9 @@
+# HierGen generated-history unroll, 11/10 (see claude/status_11_10.md). Mamba both stacks, 3 seeds, 40G GPU (qsub header).
+# u16n config (unroll 16, read noise v 0.05 / q 0.01) + --gen_k 8: K=8 cycles generated free-running from a random cut
+# (exactly as the full rollout), cycle stack re-run on them, SOH + reading loss on the real next 8 cycles.
+# Checkpoint selection on val FULL rollout MAPE over a fixed 32-cell val subset (not latent).
+# Compare to u16n s2024: test latent 0.313, full 1.184; 10/18 Mamba full 1.11 +- 0.22. Before submitting: test_hiergen ALL PASSED.
+short	group	script	CYCLE_LAYER	READ_LAYER	TAG	SEEDS	UNROLL_K	READ_VNOISE	READ_QNOISE	GEN_K	SELECT_MODE	H_RT	purpose
+HGg8_s2021	hiergen_gen	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n_g8	2021	16	0.05	0.01	8	full	36:00:00	Mamba HierGen u16n + 8-cycle generated-history unroll, selected on val full rollout
+HGg8_s42	hiergen_gen	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n_g8	42	16	0.05	0.01	8	full	36:00:00	Mamba HierGen u16n + 8-cycle generated-history unroll, selected on val full rollout
+HGg8_s2024	hiergen_gen	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n_g8	2024	16	0.05	0.01	8	full	36:00:00	Mamba HierGen u16n + 8-cycle generated-history unroll, selected on val full rollout
