@@ -48,6 +48,15 @@ Training additions (11/08, all off by default):
                  grid) is out of distribution and full-mode SOH drifts to ~1.3). No backprop through generation.
     read_vnoise / read_qnoise   Gaussian noise on the reading stack's v_prev (normalized V) / q_prev (Q / nominal)
                  inputs; the dQ target is taken relative to the NOISY q_prev, so the model learns to correct drift.
+    read_selfgen f  (11/11) self-generated reading inputs (scheduled sampling / DAgger on the 300-step reading stack):
+                 a fraction f of the reading-loss cycles first GENERATE the cycle free-running (generate_cycle, no
+                 grad: from the same teacher-forced cycle state, with the cycle's true I), then the teacher-forced-style
+                 pass with grad takes v_prev / q_prev from that generated curve and is scored on the REAL V_t and
+                 dQ_t = Q_real_t - q_prev_generated, i.e. "from where you actually are, get back to the data". The
+                 inputs then carry the free-running error that full mode sees (11/10: fr_v_mae 0.036 V vs 0.005
+                 teacher-forced), not the one-step error. Losses sg_read_v_nll / sg_read_q_nll; sg_in_v_mae_V /
+                 sg_in_qd_mae = how far the generated inputs were from the real curve (a free-running metric).
+                 No reading noise on these rows. selfgen_sample: generate by sampling instead of the means.
 Both stacks run recurrently in rollout (S4D: explicit complex recurrence; Mamba: mamba_ssm's step()).
 """
 import math
@@ -184,6 +193,8 @@ class HierGen(nn.Module):
         self.read_qnoise = float(getattr(cfg, 'read_qnoise', 0.0))
         self.gen_k = int(getattr(cfg, 'gen_k', 0))
         self.gen_read = int(getattr(cfg, 'gen_read', 4))
+        self.read_selfgen = float(getattr(cfg, 'read_selfgen', 0.0))
+        self.selfgen_sample = bool(getattr(cfg, 'selfgen_sample', 0))
         self.read_head = nn.Linear(D, 4)          # V mean, V logvar, dQ mean, dQ logvar
 
     # -------------------------------------------------------------------------------------------- pieces
@@ -276,10 +287,19 @@ class HierGen(nn.Module):
         hg = self.cycle_stack(torch.cat([start, x[:, :-1]], 1))
         return hg, G
 
-    def _read_loss(self, g, hc, dmask, prefix=''):
-        """Teacher-forced reading loss on real grids g [M, 3, P] conditioned on cycle states hc [M, D]."""
-        feats, q_prev = self.read_features(g[:, 0], g[:, 2], g[:, 1], dmask)
-        if self.training and (self.read_vnoise > 0 or self.read_qnoise > 0):
+    def _read_loss(self, g, hc, dmask, prefix='', selfgen=False):
+        """Reading loss on real grids g [M, 3, P] conditioned on cycle states hc [M, D]. Teacher-forced (inputs = the
+        real previous V / Q, + training noise), or selfgen: inputs = the model's own free-running generation of the
+        cycle (no grad), targets still the real curve."""
+        out = {}
+        if selfgen:
+            gen = self.generate_cycle(hc.detach(), g[:, 1], dmask, sample=self.selfgen_sample)    # no grad
+            feats, q_prev = self.read_features(gen[:, 0], gen[:, 2], g[:, 1], dmask)
+            out[prefix + 'in_v_mae_V'] = (gen[:, 0] - g[:, 0]).abs().mean()
+            out[prefix + 'in_qd_mae'] = ((gen[:, 2] * dmask).amax(1) - (g[:, 2] * dmask).amax(1)).abs().mean()
+        else:
+            feats, q_prev = self.read_features(g[:, 0], g[:, 2], g[:, 1], dmask)
+        if self.training and not selfgen and (self.read_vnoise > 0 or self.read_qnoise > 0):
             first_of_half = torch.zeros_like(q_prev, dtype=torch.bool)
             first_of_half[:, 0] = True
             first_of_half[:, self.H] = True
@@ -291,9 +311,9 @@ class HierGen(nn.Module):
         x = self.read_in(feats) + self.pos.weight.unsqueeze(0) + self.read_cond(hc).unsqueeze(1)
         o = self.read_head(self.read_stack(x))                              # [M, P, 4]
         vt, qt = self.read_targets(g[:, 0], g[:, 2], q_prev)
-        out = {prefix + 'read_v_nll': gaussian_nll(o[..., 0], o[..., 1], vt).mean(),
-               prefix + 'read_q_nll': gaussian_nll(o[..., 2], o[..., 3], qt).mean(),
-               prefix + 'read_v_mae_V': ((o[..., 0] - vt).abs().mean() * self.chan_std[0, 0, 0])}
+        out.update({prefix + 'read_v_nll': gaussian_nll(o[..., 0], o[..., 1], vt).mean(),
+                    prefix + 'read_q_nll': gaussian_nll(o[..., 2], o[..., 3], qt).mean(),
+                    prefix + 'read_v_mae_V': ((o[..., 0] - vt).abs().mean() * self.chan_std[0, 0, 0])})
         # capacity of the cycle from the teacher-forced dQ predictions vs the true grid Q at the end of discharge
         qd_pred = ((o[..., 2] / self.H + q_prev) * dmask).amax(1)
         qd_true = (g[:, 2] * dmask).amax(1)
@@ -331,7 +351,16 @@ class HierGen(nn.Module):
         if valid.any():
             bi, ri = valid.nonzero(as_tuple=True)
             ci = read_idx[bi, ri]
-            out.update(self._read_loss(grid[bi, ci], h[bi, ci], self.discharge_half_mask(discharge_first[bi])))
+            g_r, h_r, dm_r = grid[bi, ci], h[bi, ci], self.discharge_half_mask(discharge_first[bi])
+            M = g_r.shape[0]
+            n_sg = int(round(self.read_selfgen * M)) if self.read_selfgen > 0 else 0
+            sg = torch.zeros(M, dtype=torch.bool, device=z.device)
+            if n_sg > 0:
+                sg[torch.randperm(M, device=z.device)[:n_sg]] = True
+            if (~sg).any():
+                out.update(self._read_loss(g_r[~sg], h_r[~sg], dm_r[~sg]))
+            if sg.any():
+                out.update(self._read_loss(g_r[sg], h_r[sg], dm_r[sg], prefix='sg_', selfgen=True))
         if self.gen_k > 0:
             K = self.gen_k
             n = mask.sum(1)

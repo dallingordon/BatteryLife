@@ -10,6 +10,12 @@ Training (teacher forcing), per step a batch of cells, each with its WHOLE histo
          + w_read * (V NLL + dQ NLL) on --read_cycles random cycles per cell (300-step reading sequences)
          (11/10, --gen_k K) + gen_w * (w_soh * gen SOH NLL + w_read * gen reading NLL): K cycles generated free-running
          from a random cut (as the full rollout does), cycle stack re-run on them, loss on the real next K cycles
+         (11/11, --read_selfgen f) + selfgen_w * w_read * (sg V NLL + sg dQ NLL): a fraction f of the reading-loss
+         cycles take their v_prev / q_prev inputs from the model's own free-running generation of that cycle (no
+         grad), targets the real curve (scheduled sampling on the reading stack; see models/HierGen.py)
+Fine-tuning (--init_from PATH, '{seed}' is filled in): start from a checkpoint's weights (same architecture), fresh
+optimizer / schedule; with --select_mode full the starting weights are evaluated once on the selection subset
+(printed as epoch 0, not saved, so the fine-tune's best is always a fine-tuned epoch).
 Model selection (--select_mode): val EOL MAPE of the LATENT rollout from cycle --prefix (default; cheap), or of the
 FULL rollout on a fixed random subset of --select_cells val cells (every --eval_every epochs).
 End of training (best checkpoint): latent and full rollouts on val and test -> EOL MAPE / 15%-acc / MAE, seen / unseen,
@@ -79,6 +85,11 @@ p.add_argument('--gen_read', type=int, default=4, help='real cycles per cell (of
                'reading loss')
 p.add_argument('--read_vnoise', type=float, default=0.0, help='train noise std on the reading v_prev (normalized V)')
 p.add_argument('--read_qnoise', type=float, default=0.0, help='train noise std on the reading q_prev (Q / nominal)')
+p.add_argument('--read_selfgen', type=float, default=0.0, help='fraction of reading-loss cycles whose inputs are the '
+               "model's own free-running generation of the cycle (no grad); targets the real curve (0 = off)")
+p.add_argument('--selfgen_sample', type=int, default=0, help='selfgen: generate by sampling (else the means, as in eval)')
+p.add_argument('--selfgen_w', type=float, default=1.0, help='weight of the selfgen reading NLL (times w_read)')
+p.add_argument('--init_from', default='', help="fine-tune: checkpoint to start from ('{seed}' -> --seed)")
 p.add_argument('--fr_cycles', type=int, default=2, help='val: cycles per cell generated free-running (fr_* metrics)')
 p.add_argument('--num_workers', type=int, default=2)
 # evaluation
@@ -115,6 +126,11 @@ mean, std = train.channel_stats()
 print(f'channel mean {mean.tolist()} std {std.tolist()} (V volts, I C-rate, Q / nominal)', flush=True)
 
 model = HierGen(args, mean, std).to(dev)
+if args.init_from:
+    init_path = args.init_from.format(seed=args.seed)
+    ck0 = torch.load(init_path, map_location=dev, weights_only=False)
+    model.load_state_dict(ck0['model'])                       # strict: the architecture must match
+    print(f'init_from {init_path} (its epoch {ck0["epoch"]}, tag {ck0["args"].get("tag")})', flush=True)
 n_par = sum(p.numel() for p in model.parameters())
 print(f'parameters: {n_par / 1e6:.2f}M | cycle {args.cycle_layer} x{args.n_cycle_layers} | read {args.read_layer} '
       f'x{args.n_read_layers}', flush=True)
@@ -225,6 +241,12 @@ if args.select_mode == 'full':
 ckpt_path = os.path.join(ckpt_dir, 'model.pt')
 if not args.eval_only:
     step = 0
+    if args.init_from and args.select_mode == 'full':
+        t2 = time.time()
+        rs, _ = evaluate(val_sel, 'full', args.max_rollout_cycles)
+        for k in ('full', 'full_head'):
+            print('  ' + fmt(f'val-sel {k} rollout (prefix {args.prefix}) epoch 0 (init_from, not saved)', rs[k]) +
+                  f' | {time.time() - t2:.0f}s', flush=True)
     for epoch in range(1, args.epochs + 1):
         t0, agg, nb = time.time(), {}, 0
         for batch in loader:
@@ -236,6 +258,8 @@ if not args.eval_only:
                 loss = loss + args.w_read * (out['read_v_nll'] + out['read_q_nll'])
             if 'unroll_soh_nll' in out:
                 loss = loss + args.unroll_w * (args.w_soh * out['unroll_soh_nll'] + args.w_latent * out['unroll_latent_mse'])
+            if 'sg_read_v_nll' in out:
+                loss = loss + args.selfgen_w * args.w_read * (out['sg_read_v_nll'] + out['sg_read_q_nll'])
             if 'gen_soh_nll' in out:
                 gl = args.w_soh * out['gen_soh_nll']
                 if 'gen_read_v_nll' in out:

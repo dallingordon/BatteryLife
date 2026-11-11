@@ -7,6 +7,7 @@
 #$ -l h_rt=01:00:00
 #$ -l gpus=1
 #$ -l gpu_c=7.0
+#$ -l gpu_type=!RTXP6000
 #$ -pe omp 4
 module load gcc/12.2.0
 module load cuda/12.2

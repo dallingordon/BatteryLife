@@ -1,0 +1,15 @@
+# 11/11 (see claude/hiergen_selfgen_big_11_11.md). Mamba both stacks, 3 seeds, 40G GPU, no RTXP6000 (qsub header).
+# HGsgft: fine-tune the u16n checkpoints 30 epochs (lr 1e-4, warmup 1) with --read_selfgen 0.5: half the reading-loss
+#   cycles take v_prev / q_prev from the model's own free-running generation (no grad), targets the real curve.
+#   Selection on val FULL rollout MAPE (32 fixed val cells, every 5 epochs; epoch 0 = the u16n weights, printed only).
+#   Compare to u16n (same seeds): test full 0.685 / 0.802 / 1.184, rho 0.53 / 0.66 / 0.52; constant-656 0.611.
+# HGbig: the u16n config, 256 wide, 8 cycle + 8 reading layers (was 128 / 4 + 4, about 1.2M params), from scratch,
+#   grad checkpointing on the reading stack. Clean size ablation vs u16n (same selection: val latent).
+# Before submitting: test_hiergen ALL PASSED (incl. section 8).
+short	group	script	CYCLE_LAYER	READ_LAYER	TAG	SEEDS	UNROLL_K	READ_VNOISE	READ_QNOISE	READ_SELFGEN	INIT_FROM	EPOCHS	LR	WARMUP	EVAL_EVERY	SELECT_MODE	D_MODEL	D_FF	N_CYCLE	N_READ	GRAD_CKPT	H_RT	purpose
+HGsgft_s2021	hiergen_sg	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n_sgft	2021	16	0.05	0.01	0.5	checkpoints/HierGen_vanilla_vanilla_u16n_seed{seed}/model.pt	30	1e-4	1	5	full	-	-	-	-	-	12:00:00	fine-tune the u16n checkpoint: half the reading cycles get self-generated inputs; selected on val full
+HGsgft_s42	hiergen_sg	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n_sgft	42	16	0.05	0.01	0.5	checkpoints/HierGen_vanilla_vanilla_u16n_seed{seed}/model.pt	30	1e-4	1	5	full	-	-	-	-	-	12:00:00	fine-tune the u16n checkpoint: half the reading cycles get self-generated inputs; selected on val full
+HGsgft_s2024	hiergen_sg	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n_sgft	2024	16	0.05	0.01	0.5	checkpoints/HierGen_vanilla_vanilla_u16n_seed{seed}/model.pt	30	1e-4	1	5	full	-	-	-	-	-	12:00:00	fine-tune the u16n checkpoint: half the reading cycles get self-generated inputs; selected on val full
+HGbig_s2021	hiergen_big	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n_d256L8	2021	16	0.05	0.01	-	-	-	-	-	-	-	256	512	8	8	1	36:00:00	u16n config at d_model 256 / d_ff 512 / 8+8 layers (about 7-8M params), from scratch; selection as u16n (latent)
+HGbig_s42	hiergen_big	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n_d256L8	42	16	0.05	0.01	-	-	-	-	-	-	-	256	512	8	8	1	36:00:00	u16n config at d_model 256 / d_ff 512 / 8+8 layers (about 7-8M params), from scratch; selection as u16n (latent)
+HGbig_s2024	hiergen_big	train_eval_scripts/HierGen_qsub.sh	vanilla	vanilla	vanilla_vanilla_u16n_d256L8	2024	16	0.05	0.01	-	-	-	-	-	-	-	256	512	8	8	1	36:00:00	u16n config at d_model 256 / d_ff 512 / 8+8 layers (about 7-8M params), from scratch; selection as u16n (latent)

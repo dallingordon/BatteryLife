@@ -16,6 +16,9 @@ Checks for HierGen (models/HierGen.py, data_provider/data_loader_gen.py, train_h
      fullcc rollout Q = template x (predicted SOH / last observed SOH), free_run_metrics runs
   7. (11/10) generated_h: its generated grids and SOH-head means == rollout(mode='full', prefix=cut) for the K cycles
      after the cut; real cycles >= cut never reach hg up to cut + K; no grad through generation, grad into the encoder
+  8. (11/11) read_selfgen: the sg_ reading loss == a pass whose inputs are generate_cycle's own curve (from the same
+     teacher-forced state, the cycle's true I) and whose targets are the REAL curve; differs from teacher forcing;
+     with read_selfgen 0.5 both losses are present and every parameter gets a gradient
 """
 import argparse
 from types import SimpleNamespace
@@ -40,7 +43,7 @@ def rel(a, b):
     return ((a - b).abs().max() / (b.abs().max() + 1e-12)).item()
 
 
-from models.HierGen import HierGen, SeqStack
+from models.HierGen import HierGen, SeqStack, gaussian_nll
 
 
 def cfg(layer='s4d', P=20, **kw):
@@ -280,6 +283,48 @@ def run_checks(layer, dev):
     nog = [n for n, q in m.named_parameters() if q.requires_grad and (q.grad is None or q.grad.abs().sum() == 0)]
     check('every parameter gets a gradient', not nog, f'{nog[:5]}')
     check('losses finite', all(torch.isfinite(v).all() for v in out.values()), f'{ {k: round(float(v), 3) for k, v in out.items()} }')
+
+    # 8. read_selfgen
+    torch.manual_seed(2)
+    m = HierGen(cfg(layer, P, read_selfgen=1.0), torch.tensor([3.3, 0.0, 0.5]), torch.tensor([0.3, 1.0, 0.3])).to(dev)
+    m.eval()
+    ri = torch.tensor([[0, 3, 11], [2, -1, -1], [5, 6, 7]], device=dev)
+    with torch.no_grad():
+        out = m(curves, mask, soh, dfirst, ri)
+        bi, rr = (ri >= 0).nonzero(as_tuple=True)
+        ci = ri[bi, rr]
+        z = m.encode(curves[:, :, :3])
+        h = m.cycle_stack(torch.cat([m.start.expand(B, 1, m.D), z[:, :-1]], 1))
+        g, hc, dm = curves[bi, ci, :3], h[bi, ci], m.discharge_half_mask(dfirst[bi])
+
+        def nll_from(Vin, Qin):
+            f, qp = m.read_features(Vin, Qin, g[:, 1], dm)
+            x = m.read_in(f) + m.pos.weight.unsqueeze(0) + m.read_cond(hc).unsqueeze(1)
+            o = m.read_head(m.read_stack(x))
+            vt, qt = m.read_targets(g[:, 0], g[:, 2], qp)                  # targets: the real curve
+            return gaussian_nll(o[..., 0], o[..., 1], vt).mean(), gaussian_nll(o[..., 2], o[..., 3], qt).mean()
+        gen = m.generate_cycle(hc, g[:, 1], dm)
+        ref_v, ref_q = nll_from(gen[:, 0], gen[:, 2])
+        tf_v, tf_q = nll_from(g[:, 0], g[:, 2])
+    check('read_selfgen 1: only the sg_ reading losses (+ input-drift metrics)', 'read_v_nll' not in out and
+          {'sg_read_v_nll', 'sg_read_q_nll', 'sg_in_v_mae_V', 'sg_in_qd_mae'} <= set(out), f'{sorted(out)}')
+    ev = abs(float(out['sg_read_v_nll'] - ref_v)) / (1 + abs(float(ref_v)))
+    eq = abs(float(out['sg_read_q_nll'] - ref_q)) / (1 + abs(float(ref_q)))
+    check('sg loss == inputs from generate_cycle (same state, true I), targets the real curve', max(ev, eq) < 1e-3,
+          f'(rel {max(ev, eq):.1e})')
+    check('... and differs from the teacher-forced loss (the test can tell)',
+          abs(float(ref_v - tf_v)) + abs(float(ref_q - tf_q)) > 1e-4)
+    check('sg_in_v_mae_V == |generated V - real V|', abs(float(out['sg_in_v_mae_V'] - (gen[:, 0] - g[:, 0]).abs().mean())) < 1e-5)
+    torch.manual_seed(3)
+    m = HierGen(cfg(layer, P, read_selfgen=0.5, read_vnoise=0.05, read_qnoise=0.01), torch.tensor([3.3, 0.0, 0.5]),
+                torch.tensor([0.3, 1.0, 0.3])).to(dev)
+    m.train()
+    out = m(curves, mask, soh, dfirst, ri)
+    check('read_selfgen 0.5: teacher-forced and sg reading losses both present', {'read_v_nll', 'sg_read_v_nll'} <= set(out))
+    (out['soh_nll'] + out['latent_mse'] + out['read_v_nll'] + out['read_q_nll'] + out['sg_read_v_nll'] +
+     out['sg_read_q_nll']).backward()
+    nog = [n for n, q in m.named_parameters() if q.requires_grad and (q.grad is None or q.grad.abs().sum() == 0)]
+    check('read_selfgen 0.5: every parameter gets a gradient', not nog, f'{nog[:5]}')
 
 
 run_checks('s4d', 'cpu')
