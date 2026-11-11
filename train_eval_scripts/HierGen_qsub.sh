@@ -15,6 +15,8 @@
 #$ -l gpus=1
 #$ -l gpu_c=7.0
 #$ -l gpu_memory=40G
+# scc-703: "no kernel image is available" on every job (11/10, 4/4 failed; the scc-503/512 L40S jobs ran fine)
+#$ -l h=!scc-703*
 #$ -pe omp 4
 module load gcc/12.2.0
 module load cuda/12.2
