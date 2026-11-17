@@ -24,6 +24,7 @@ module load gcc/12.2.0
 module load cuda/12.2
 cd /projectnb/nsf-energize/dgordon/Projects/BatteryLife
 source venv_mamba/bin/activate
+export PYTORCH_CUDA_ALLOC_CONF=${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}
 mkdir -p results_logs
 CYCLE_LAYER=${CYCLE_LAYER:-vanilla}
 READ_LAYER=${READ_LAYER:-vanilla}

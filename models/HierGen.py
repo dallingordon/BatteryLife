@@ -178,10 +178,13 @@ class HierGen(nn.Module):
         self.start = nn.Parameter(torch.randn(D) * 0.02)
         common = dict(d_state=cfg.d_state, d_conv=cfg.d_conv, expand=cfg.expand, s4_backend=cfg.s4_backend,
                       scan_impl=cfg.mamba_scan, mixer_cls=mixer_cls)
+        # grad_ckpt: 0 off, 1 reading stack only, 2 reading + cycle stack (the cycle stack sees B cells x full history,
+        # twice with grad when unroll_k > 0; HGbig at 256 / 8+8 OOMed on 44G without it). Same math either way.
+        gc = int(getattr(cfg, 'grad_ckpt', 0))
         self.cycle_stack = SeqStack(cfg.cycle_layer, D, cfg.n_cycle_layers, dt_min=cfg.cyc_dt_min, dt_max=cfg.cyc_dt_max,
-                                    **common)
+                                    grad_ckpt=gc >= 2, **common)
         self.read_stack = SeqStack(cfg.read_layer, D, cfg.n_read_layers, dt_min=cfg.read_dt_min, dt_max=cfg.read_dt_max,
-                                   grad_ckpt=bool(cfg.grad_ckpt), **common)
+                                   grad_ckpt=gc >= 1, **common)
         self.soh_head = nn.Sequential(nn.Linear(D, D), nn.GELU(), nn.Linear(D, 2))
         self.latent_head = nn.Sequential(nn.Linear(D, D), nn.GELU(), nn.Linear(D, D))
         self.read_in = nn.Linear(N_READ_FEATURES, D)

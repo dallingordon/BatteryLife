@@ -62,7 +62,7 @@ p.add_argument('--read_dt_min', type=float, default=1e-3, help='S4D timescales o
 p.add_argument('--read_dt_max', type=float, default=1e-1)
 p.add_argument('--s4_backend', default='fft', choices=['fft', 'scan'])
 p.add_argument('--mamba_scan', default='cuda', choices=['cuda', 'ref'])
-p.add_argument('--grad_ckpt', type=int, default=0)
+p.add_argument('--grad_ckpt', type=int, default=0, help='0 off, 1 reading stack, 2 reading + cycle stack')
 # training
 p.add_argument('--epochs', type=int, default=200)
 p.add_argument('--batch_cells', type=int, default=8)
