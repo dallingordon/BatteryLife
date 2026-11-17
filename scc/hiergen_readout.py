@@ -28,6 +28,8 @@ for tag in a.tags:
                 print(f'{tag:34s} s{seed:5s} {mode:7s} MISSING (best ep {ep})'); continue
             z = np.load(f)
             life, lab = z['life'].astype(float), z['label'].astype(float)
+            never = int((~np.isfinite(life)).sum())  # never crossed 0.8 -> scored as max_c, as train_hiergen.life_metrics
+            life = np.where(np.isfinite(life), life, a.max_c)
             if first:
                 print(f'n={len(lab)}  label p10/50/90 = ' + ' / '.join(f'{v:.0f}' for v in np.percentile(lab, [10, 50, 90])))
                 print(f'constant-101 MAPE {np.mean(np.abs(101 - lab) / lab):.3f} | constant-median MAPE {np.mean(np.abs(np.median(lab) - lab) / lab):.3f}')
@@ -37,4 +39,4 @@ for tag in a.tags:
             rho = spearmanr(life, lab).correlation
             q = np.percentile(life, [10, 50, 90])
             print(f'{tag:34s} s{seed:5s} {mode:7s} {mape:6.3f} {rho:6.2f} {np.median(life / lab):5.2f} '
-                  f'{q[0]:5.0f} {q[1]:5.0f} {q[2]:5.0f} {int((life >= a.max_c).sum()):5d} {ep}')
+                  f'{q[0]:5.0f} {q[1]:5.0f} {q[2]:5.0f} {never:5d} {ep}')
